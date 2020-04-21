@@ -1,4 +1,4 @@
 # FED3_Viz
 a GUI for plotting FED3 data
 
-![FED3](img/redRED.jpg)
+<img src="img/fedRED.jpg" style="zoom:10%">
