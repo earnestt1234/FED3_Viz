@@ -1,5 +1,5 @@
 # FED3 Viz
-a GUI for plotting FED3 data	
+a GUI for plotting FED3 data
 
 <img src="img/fedviz_textlogo.png" style="zoom:30%">
 
@@ -28,4 +28,4 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
   - individual pellet retrieval
   - group average pellet retrieval
   - motor turns & battery life
-  - 
+  -
