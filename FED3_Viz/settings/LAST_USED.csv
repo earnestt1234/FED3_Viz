@@ -1,0 +1,21 @@
+,Values
+shade_dark,True
+lights_on,7 am
+lights_off,7 pm
+allgroups,True
+skip_duplicates,True
+overwrite,False
+weirdwarn,True
+pellet_values,Cumulative
+pellet_bins,1
+pellet_color,blue
+pellet_align,False
+average_error,SEM
+average_bins,1
+load_last_used,False
+average_align,False
+average_align_start,7 am
+average_align_days,3
+dn_value,pellets
+dn_error,SEM
+dn_show_indvl,True
