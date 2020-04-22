@@ -4,9 +4,13 @@ a GUI for plotting FED3 data
 <p align="center">
 	<img src="img/fedviz_textlogo.png" width="500">
 </p>
+
 ## Table of Contents
-
-
+- [What is FED3?](#what-is-fed3)
+- [What is FED3 Viz?](#what-is-fed3-viz)
+- [Current Features](#current-features)
+- [Installation](#installation)
+- [Beta Statement](#beta-statement)
 
 ## What is FED3?
 
