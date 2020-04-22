@@ -52,11 +52,11 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
 
   FED3 Viz uses primarily `matplotlib` and `seaborn` for visualizations.
   <p align="center">
-      <img src="img/examples/pelletplot.png" width="500">
+      <img src="img/examples/pelletplot.png" width="700">
   </p>
 
   <p align="center">
-      <img src="img/examples/diagnostic plot.png" width="500">
+      <img src="img/examples/diagnostic plot.png" width="600">
   </p>
 
   <p align="center">
