@@ -82,7 +82,7 @@ cd C:/Users/earne/Downloads/FED3_Viz
 This will look slightly different depending on your OS.  If you are in the correct directory, you can then call the following command to install the required packages:
 
 ```
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 This may take a few minutes.  
