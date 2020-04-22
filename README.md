@@ -9,6 +9,7 @@ a GUI for plotting FED3 data
 - [What is FED3?](#what-is-fed3)
 - [What is FED3 Viz?](#what-is-fed3-viz)
 - [Current Features](#current-features)
+- [Gallery](#gallery)
 - [Installation](#installation)
 - [Beta Statement](#beta-statement)
 
@@ -41,15 +42,30 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
 
 - Savable code and data for each plot
 
-- Viewer showing properties of FED data files
+- Sortable viewer showing recording properties
 
 - Group labels for averaging data
 
 - Savable settings
 
+## Gallery
+
+  FED3 Viz uses primarily `matplotlib` and `seaborn` for visualizations.
   <p align="center">
-      <img src="img/daynightplot.png" width="500">
+      <img src="img/examples/pelletplot.png" width="500">
   </p>
+
+  <p align="center">
+      <img src="img/examples/diagnostic plot.png" width="500">
+  </p>
+
+  <p align="center">
+      <img src="img/examples/daynightplot.png" width="500">
+  </p>
+
+  <p align="center">
+      <img src="img/examples/ipi.png" width="500">
+  </p>  
 
 ## Installation
 
@@ -59,9 +75,15 @@ FED3 Viz can either be run from a packaged application file, or from a Python in
 
 **This program is currently in "beta"**: it has only been tested by a few individuals on their machines, with a small selection of data files.  Additionally, the program is still being actively worked on, and likely will be through summer 2020.  I am eager to have other people try the application and report bugs, preferably through GitHub or on the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  
 
-Moreover, we will certainly consider and try to meet any requests for additional features/graphs! I appreciate the [input so far*](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c), and would love more.
+Moreover, we will certainly consider and try to meet any requests for additional features/graphs! I greatly appreciate the [input so far*](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c), and would love more.
 
 *The user-requested features so far have not been implemented, but working on it :sweat_smile:
 
+Some features that I aim to integrate:
 
+- more plots for active/inactive pokes (also errors)
+- recognition of recording mode
+- progressive ratio breakpoint
+- 24 hour circadian plots
+- additional group averaging plots (e.g. for interpellet intervals)
 
