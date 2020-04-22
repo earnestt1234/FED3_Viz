@@ -6,7 +6,7 @@ a GUI for plotting FED3 data
 </p>
 ## Table of Contents
 
-[TOC]
+
 
 ## What is FED3?
 
