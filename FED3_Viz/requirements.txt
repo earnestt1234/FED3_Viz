@@ -15,3 +15,4 @@ scipy==1.4.1
 seaborn==0.10.0
 six==1.14.0
 wincertstore==0.2
+xlrd==1.2.0
