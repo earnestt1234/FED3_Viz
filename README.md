@@ -73,7 +73,7 @@ FED3 Viz can either be run from a packaged application file, or from a Python in
 
 ## Beta Statement
 
-**This program is currently in "beta"**: it has only been tested by a few individuals on their machines, with a small selection of data files.  Additionally, the program is still being actively worked on, and likely will be through summer 2020.  I am eager to have other people try the application and report bugs, preferably through GitHub or on the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  
+**This program is currently in "beta"**: it has only been tested by a few individuals on their machines, with a small selection of data files.  Additionally, the program is still being actively worked on, and likely will be through summer 2020.  I am eager to have other people try the application and report bugs, preferably [through GitHub](https://github.com/earnestt1234/FED3_Viz/issues) or the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  
 
 Moreover, we will certainly consider and try to meet any requests for additional features/graphs! I greatly appreciate the [input so far*](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c), and would love more.
 
