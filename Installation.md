@@ -18,10 +18,10 @@ System Requirements:
 Instructions:
 
 1. Visit the [releases page](https://github.com/earnestt1234/FED3_Viz/releases)
-2. From the most recent version, download the`FED3_Viz_Windows64.zip` and unzip.
-3. In the unzipped folder, navigate to `FED3 Viz/dist/main/FED3Viz.exe`.
+2. From the most recent version, download the`fed3viz-win64.zip` and unzip.
+3. In the unzipped folder, navigate to `fed3viz/fed3viz.exe`.
 4. (Optional) Right-click > Create shortcut and place the shortcut in a less nasty folder*.
-5. Double click the `.exe` or the shortcut to run - you may have to permit Windows security to let the application run.
+5. Double click the `.exe` or the shortcut to run - you may have to permit Windows security to let the application run.  Startup is sometimes slow on the first use but gets better.
 
 *_I haven't figured out how to bundle the zip folder with a working relative shortcut..._
 
@@ -91,10 +91,10 @@ This may take a few minutes.
 
 #### Step 4: Run the FED3 Viz script
 
-You are now ready to run FED3 Viz!  The script which generates the application is `main.py`.  You can run this script from Anaconda Prompt by moving into the `FED3_Viz` folder and calling:
+You are now ready to run FED3 Viz!  The script which generates the application is `fed3viz.py`.  You can run this script from Anaconda Prompt by moving into the `FED3_Viz` folder and calling:
 
 ```
-python main.py
+python fed3viz.py
 ```
 
 You can also run the script in any other Python terminal or IDE, but you may have to take extra steps to point to the `fed_viz` virtual environment.
@@ -102,7 +102,7 @@ You can also run the script in any other Python terminal or IDE, but you may hav
 In my hands, there are a few guidelines which, if not met, may result in errors:
 
 - The script is being run in the virtual environment with the dependencies installed
-- the current working directory of the interpreter running the script is the same of `main.py`
+- the current working directory of the interpreter running the script is the same of `fed3viz.py`
 - the files and organization of folders within `FED3_Viz/` have not been moved or altered (with the exception of saved settings or group labels in the `settings/` and `groups/` directories.)
 
 Note that if you want to close the environment and return to the global installation of Python, you can call (on Windows):
