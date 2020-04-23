@@ -87,3 +87,9 @@ Some features that I aim to integrate:
 - 24 hour circadian plots
 - additional group averaging plots (e.g. for interpellet intervals)
 
+Things that would be great to get feedback on:
+ - If you encounter any issue while using the program, like crashes or errors
+ - Any confusing/unexpected behavior (whether my intention or not)
+ - Any additional features you feel it is lacking
+ - Little issues with the interface (like window size, buttons being grayed out, selection highlighting)
+ - The "Plot Code" function specifically; I encountered a confusing issue with this prior to releasing that I think I have fixed, but it may still be broken.  Additionally, do generated plot codes actually generate the plot in a new Python environment?
