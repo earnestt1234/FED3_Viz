@@ -6,10 +6,18 @@ in FED3 Viz.  Creates a runnable python script for recreating graphs.
 @author: https://github.com/earnestt1234
 """
 import inspect
+from importlib import import_module
+import importlib.util
+import os
 
-from load.load import FED3_File
-from plots import plots
+mymod1 = import_module('load.load') #my load module
+homedir = os.path.dirname(os.path.dirname(__file__))
+plotsloc = os.path.join(homedir, 'plots/plots.py')
+spec = importlib.util.spec_from_file_location("plots.plots", plotsloc)
+mymod2 = importlib.util.module_from_spec(spec) #my plots module
+spec.loader.exec_module(mymod2)
 
+plotfuncs = {name:func for name, func in inspect.getmembers(mymod2)}
 
 string_arguments = ['pellet_color', 'pellet_bins', 'average_bins',
                     'average_error', 'dn_value', 'dn_error']
@@ -25,7 +33,7 @@ def add_quotes(string):
 
 def generate_code(PLOTOBJ):
     used_args = PLOTOBJ.arguments
-    plotfunc    = PLOTOBJ.plotfunc
+    plotfunc    = plotfuncs[PLOTOBJ.plotfunc.__name__]
     args_ordered = inspect.getfullargspec(plotfunc).args
 
     output = ""
@@ -51,18 +59,18 @@ from scipy import stats
 register_matplotlib_converters()
 """
     load_code = '\n\n#CODE TO LOAD FED DATA FROM A DIRECTORY\n\n'
-    load_code += inspect.getsource(FED3_File)
+    load_code += inspect.getsource(mymod1.FED3_File)
     
     shade_functions = '\n#HELPER FUNCTIONS (SHADING DARK)\n\n'
-    shade_functions += inspect.getsource(plots.convert_dt64_to_dt) + '\n'
-    shade_functions += inspect.getsource(plots.hours_between) + '\n'
-    shade_functions += inspect.getsource(plots.night_intervals) + '\n'
-    shade_functions += inspect.getsource(plots.shade_darkness)
+    shade_functions += inspect.getsource(mymod2.convert_dt64_to_dt) + '\n'
+    shade_functions += inspect.getsource(mymod2.hours_between) + '\n'
+    shade_functions += inspect.getsource(mymod2.night_intervals) + '\n'
+    shade_functions += inspect.getsource(mymod2.shade_darkness)
     
     bar_functions = '\n#HELPER FUNCTIONS (DAY/NIGHT PLOTS)\n\n'
-    bar_functions += inspect.getsource(plots.night_intervals) + '\n'
-    bar_functions += inspect.getsource(plots.dn_get_yvals) + '\n'
-    bar_functions += inspect.getsource(plots.raw_data_scatter)
+    bar_functions += inspect.getsource(mymod2.night_intervals) + '\n'
+    bar_functions += inspect.getsource(mymod2.dn_get_yvals) + '\n'
+    bar_functions += inspect.getsource(mymod2.raw_data_scatter)
         
     function_code ='\n#PLOTTING FUNCTION:\n\n'
     inspected = inspect.getsource(plotfunc).replace('plt.close()','')

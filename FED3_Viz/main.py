@@ -253,11 +253,11 @@ class FED3_Viz(tk.Tk):
         self.plot_container.grid(row=0,column=2,sticky='nsew')
         self.plot_tab.grid_rowconfigure(0,weight=1)
         self.plot_rename.grid(row=0,column=0,sticky='ew')
-        self.plot_delete.grid(row=1,column=0,sticky='ew')
-        self.plot_popout.grid(row=2,column=0,sticky='ew')  
-        self.plot_save.grid(row=3,column=0,sticky='ew')
-        self.plot_inspect.grid(row=4,column=0,sticky='ew')
-        self.plot_data.grid(row=5, column=0,sticky='ew')
+        self.plot_popout.grid(row=1,column=0,sticky='ew')  
+        self.plot_save.grid(row=2,column=0,sticky='ew')
+        self.plot_inspect.grid(row=3,column=0,sticky='ew')
+        self.plot_data.grid(row=4, column=0,sticky='ew')
+        self.plot_delete.grid(row=5,column=0,sticky='ew', pady=(20,0))
             
     #---INIT WIDGETS FOR SETTINGS TAB
         #organization frames
@@ -585,7 +585,7 @@ class FED3_Viz(tk.Tk):
                       ('Excel', '*.xls *.xslx'),]
         files = tk.filedialog.askopenfilenames(title='Select FED3 Data',
                                                filetypes=file_types)
-        loaded_filenames = [fed.filename for fed in self.LOADED_FEDS]
+        loaded_filenames = [fed.basename for fed in self.LOADED_FEDS]
         pass_FEDs = []
         failed_FEDs = []
         weird_FEDs = []
@@ -665,7 +665,7 @@ class FED3_Viz(tk.Tk):
             self.update_buttons_home()
         
     def save_groups(self):
-        group_dict = {fed.filename : fed.group for fed in self.LOADED_FEDS
+        group_dict = {fed.basename : fed.group for fed in self.LOADED_FEDS
                       if fed.group}
         savepath = tk.filedialog.asksaveasfilename(title='Select where to save group labels',
                                                        defaultextension='.csv',
@@ -684,7 +684,7 @@ class FED3_Viz(tk.Tk):
         if settings_file:
             df = pd.read_csv(settings_file[0],index_col=0,dtype=str)
             for fed in self.LOADED_FEDS:
-                filename = fed.filename
+                filename = fed.basename
                 if filename in df.columns:
                     fed.group = []
                     for grp in df[filename]:
@@ -835,7 +835,7 @@ class FED3_Viz(tk.Tk):
     def update_file_view(self):
         self.files_spreadsheet.delete(*self.files_spreadsheet.get_children())
         for i,fed in enumerate(self.LOADED_FEDS):
-            values = (fed.filename, fed.events, fed.start_time.strftime('%b %d %Y, %H:%M'),
+            values = (fed.basename, fed.events, fed.start_time.strftime('%b %d %Y, %H:%M'),
                       fed.end_time.strftime('%b %d %Y, %H:%M'),
                       str(fed.duration), ', '.join(fed.group))
             self.files_spreadsheet.insert('', i, str(i), values=values)
@@ -860,7 +860,7 @@ class FED3_Viz(tk.Tk):
             column = self.files_spreadsheet.identify_column(event.x)
             column_name = self.files_spreadsheet.column(column)['id']
             if column_name == "Name":
-                self.LOADED_FEDS.sort(key=lambda x:x.filename, reverse=reverse)
+                self.LOADED_FEDS.sort(key=lambda x:x.basename, reverse=reverse)
             if column_name == "start time":
                 self.LOADED_FEDS.sort(key=lambda x:x.start_time, reverse=reverse)
             if column_name == "end time":

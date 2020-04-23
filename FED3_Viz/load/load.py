@@ -24,7 +24,9 @@ class FED3_File():
                             'Right_Poke_Count',
                             'Pellet_Count',
                             'Retrieval_Time',]
-        splitext = os.path.splitext(os.path.basename(directory))
+        
+        self.basename = os.path.basename(directory)
+        splitext = os.path.splitext(self.basename)
         self.filename = splitext[0]
         self.extension = splitext[1].lower()
         self.foreign_columns=[]
