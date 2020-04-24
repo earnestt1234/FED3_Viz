@@ -47,11 +47,11 @@ Python can be installed in multiple ways.  These instructions will follow the An
 
 Visit the [Anaconda download page](https://www.anaconda.com/distribution/) and download/install the **Python 3** (e.g. 3.7) version that matches your OS.  Anaconda will install the Python language, a place to run code, and lots of helpful packages (some used by FED3 Viz).
 
-#### Step 3a: Install requirements with a virtual environment (recommended*)
+#### Step 3: Install requirements with a virtual environment (recommended*)
 
 FED3 Viz was built in Python 3.7.7, with specific versions of some 3rd party packages (like `pandas`, `matplotlib`, etc.).  It is possible that changes to any of these libraries may alter or disrupt FED3 VIz's functionality in the future.  To get around that issue, you can create a *virtual environment*; a segmented version of Python on your PC where specific versions of packages can be installed.  These instructions will describe how to do so in Anaconda (but this is [doable](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) without Anaconda).
 
-To make a virtual environment with Anaconda (a la [these instructions](https://docs.anaconda.com/anaconda/user-guide/tasks/switch-environment/)), open Anaconda Prompt.  Run the following command, where `fed_viz` is the name you give the new environment:
+To make a virtual environment with Anaconda (a la [these instructions](https://docs.anaconda.com/anaconda/user-guide/tasks/switch-environment/)), open Anaconda Prompt on Windows, or on Mac you can just use Terminal (for the latter if you find you can't use `conda` commands, you may have to do some [additional setup](https://towardsdatascience.com/how-to-successfully-install-anaconda-on-a-mac-and-actually-get-it-to-work-53ce18025f97).  Run the following command, where `fed_viz` is the name you give the new environment:
 
 ```
 conda create --name fed_fiz python=3.7
@@ -117,3 +117,8 @@ Or on Mac/Linux:
 conda deactivate
 ```
 
+##### Note for Mac/Linux Users:
+
+FED3 Viz was developed on Windows.  I have just tested that the Python script still works on Mac, but there are some differences, most noticeably some of the design looks a little uglier :frowning_face:.  I'm working on fixing that in a coming update.   I haven't found any functional bugs on Mac yet.
+
+I will not be able to test the Linux version, or make any kind of application for Linux.  If anyone does end up using this on Linux, I'd be curious to see how it works.
