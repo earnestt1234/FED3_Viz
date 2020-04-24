@@ -28,12 +28,12 @@ class FED_Plot():
         self.figure = figure
         self.frame  = frame
         self.figname = figname
-        self.width  = width
-        self.height = height
         self.arguments = arguments
         self.plotfunc = plotfunc
         self.plotdata = plotdata
         self.fednames = []
+        self.width  = int(self.figure.get_size_inches()[0] *self.figure.dpi)
+        self.height = int(self.figure.get_size_inches()[1] *self.figure.dpi)
 
 class FED3_Viz(tk.Tk):
     def __init__(self):
@@ -431,72 +431,6 @@ class FED3_Viz(tk.Tk):
         self.settings_save_button = tk.Button(self.load_settings_frame,
                                               text='Save',
                                               command=self.save_settings)
-        
-    #---PLACE WIDGETS FOR SETTINGS TAB
-        self.general_settings_label.grid(row=0,column=0,sticky='w')
-        self.nightshade_checkbox.grid(row=1,column=0,padx=(20,160),sticky='w')
-        self.nightshade_lightson.grid(row=1,column=1,sticky='w')
-        self.nightshade_lightsoff.grid(row=1,column=2,sticky='w')
-        self.allgroups.grid(row=2,column=0,padx=(20,0),sticky='w')
-        self.loadduplicates_checkbox.grid(row=3,column=0,padx=(20,0),sticky='w')
-        self.overwrite_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
-        self.weirdfed_warning.grid(row=5,column=0,padx=(20,0),sticky='w')
-        
-        self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))       
-        self.pelletplottype_label.grid(row=1,column=0,padx=(20,100),sticky='w')
-        self.pelletplottype_menu.grid(row=1,column=1,sticky='nw')
-        self.pelletplotcumu_label.grid(row=2,column=0,padx=(20,100),sticky='w')
-        self.pelletplotcumu_menu.grid(row=2,column=1,sticky='w')
-        self.pelletplotcolor_label.grid(row=3,column=0,padx=(20,100),sticky='w')
-        self.pelletplotcolor_menu.grid(row=3,column=1,sticky='nw')
-        self.pelletplotalign_checkbox.grid(row=4,column=0,padx=(20,100),
-                                           sticky='nw')
-        
-        self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
-        self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
-        self.average_error_menu.grid(row=1,column=1,sticky='nw')
-        self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
-        self.average_bin_menu.grid(row=2,column=1,sticky='w')
-        self.average_align_checkbox.grid(row=4,column=0,padx=(20,0),
-                                         sticky='nw')
-        self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
-        self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
-        
-        self.daynight_settings_label.grid(row=0,column=0,sticky='w')
-        self.daynight_values_label.grid(row=1,column=0,sticky='w',padx=(20,175))
-        self.daynight_values.grid(row=1,column=1,sticky='w')
-        self.daynight_error_label.grid(row=2,column=0,sticky='w',padx=(20,175))
-        self.daynight_error_menu.grid(row=2,column=1,sticky='w')
-        self.daynight_show_indvl.grid(row=3,column=0,sticky='w',padx=(20,0))
-        
-        self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
-        self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
-        self.settings_load_button.grid(row=1,column=2,sticky='w',ipadx=20,padx=(0,10))
-        self.settings_save_button.grid(row=1,column=3,sticky='nw',ipadx=20)
-        self.settings_lastused.grid(row=2,column=0,sticky='w',padx=(20,0))
-        
-    #---LOAD SETTINGS ON START
-    #try to load default settings when the application starts:
-        default=True
-        last_used = 'settings/LAST_USED.csv'
-        if os.path.isfile(last_used):
-            try:
-                settings_df = pd.read_csv(last_used,index_col=0)
-                if settings_df.loc['load_last_used','Values'] == 'True':
-                    del settings_df
-                    self.load_settings(dialog=False,settings_file=[last_used])
-                    default=False
-            except:
-                print("Found 'LAST_USED.CSV' settings file, but couldn't load!")
-
-        if default:
-            default_file = 'settings/DEFAULT.csv'
-            if os.path.isfile(default_file):
-                try:
-                    self.load_settings(dialog=False,settings_file=[default_file])
-                except:
-                    print("Found 'DEFAULT.CSV' settings file, but couldn't load!")
-                    
     #---INIT WIDGETS FOR ABOUT TAB
         self.graphic_frame = tk.Frame(self.about_tab)
         self.information_frame = tk.Frame(self.about_tab)
@@ -580,6 +514,74 @@ class FED3_Viz(tk.Tk):
         self.googlegr1.grid(row=5,column=0,sticky='w')
         self.googlegr2.grid(row=5,column=1,sticky='w')
         self.caveat.grid(row=1, column=0, pady=40, columnspan=2)
+
+        
+    #---PLACE WIDGETS FOR SETTINGS TAB
+        self.general_settings_label.grid(row=0,column=0,sticky='w')
+        self.nightshade_checkbox.grid(row=1,column=0,padx=(20,160),sticky='w')
+        self.nightshade_lightson.grid(row=1,column=1,sticky='w')
+        self.nightshade_lightsoff.grid(row=1,column=2,sticky='w')
+        self.allgroups.grid(row=2,column=0,padx=(20,0),sticky='w')
+        self.loadduplicates_checkbox.grid(row=3,column=0,padx=(20,0),sticky='w')
+        self.overwrite_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
+        self.weirdfed_warning.grid(row=5,column=0,padx=(20,0),sticky='w')
+        
+        self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))       
+        self.pelletplottype_label.grid(row=1,column=0,padx=(20,100),sticky='w')
+        self.pelletplottype_menu.grid(row=1,column=1,sticky='nw')
+        self.pelletplotcumu_label.grid(row=2,column=0,padx=(20,100),sticky='w')
+        self.pelletplotcumu_menu.grid(row=2,column=1,sticky='w')
+        self.pelletplotcolor_label.grid(row=3,column=0,padx=(20,100),sticky='w')
+        self.pelletplotcolor_menu.grid(row=3,column=1,sticky='nw')
+        self.pelletplotalign_checkbox.grid(row=4,column=0,padx=(20,100),
+                                           sticky='nw')
+        
+        self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
+        self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
+        self.average_error_menu.grid(row=1,column=1,sticky='nw')
+        self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
+        self.average_bin_menu.grid(row=2,column=1,sticky='w')
+        self.average_align_checkbox.grid(row=4,column=0,padx=(20,0),
+                                         sticky='nw')
+        self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
+        self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
+        
+        self.daynight_settings_label.grid(row=0,column=0,sticky='w')
+        self.daynight_values_label.grid(row=1,column=0,sticky='w',padx=(20,175))
+        self.daynight_values.grid(row=1,column=1,sticky='w')
+        self.daynight_error_label.grid(row=2,column=0,sticky='w',padx=(20,175))
+        self.daynight_error_menu.grid(row=2,column=1,sticky='w')
+        self.daynight_show_indvl.grid(row=3,column=0,sticky='w',padx=(20,0))
+        
+        self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
+        self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
+        self.settings_load_button.grid(row=1,column=2,sticky='w',ipadx=20,padx=(0,10))
+        self.settings_save_button.grid(row=1,column=3,sticky='nw',ipadx=20)
+        self.settings_lastused.grid(row=2,column=0,sticky='w',padx=(20,0))
+        
+    #---LOAD SETTINGS ON START
+    #try to load default settings when the application starts:
+        default=True
+        last_used = 'settings/LAST_USED.csv'
+        if os.path.isfile(last_used):
+            try:
+                settings_df = pd.read_csv(last_used,index_col=0)
+                if settings_df.loc['load_last_used','Values'] == 'True':
+                    del settings_df
+                    self.load_settings(dialog=False,settings_file=[last_used])
+                    default=False
+            except:
+                print("Found 'LAST_USED.CSV' settings file, but couldn't load!")
+
+        if default:
+            default_file = 'settings/DEFAULT.csv'
+            if os.path.isfile(default_file):
+                try:
+                    self.load_settings(dialog=False,settings_file=[default_file])
+                except:
+                    print("Found 'DEFAULT.CSV' settings file, but couldn't load!")
+                    
+
 
     #---MAC CONFIG
         def config_color_mac(widget):
@@ -1123,8 +1125,8 @@ class FED3_Viz(tk.Tk):
             if graph != fig_name:
                 self.PLOTS[graph].frame.grid_remove()
         self.tabcontrol.select(self.plot_tab)
-        width = str(self.PLOTS[fig_name].width)
-        height = str(self.PLOTS[fig_name].height)
+        width = str(self.PLOTS[fig_name].width + 400)
+        height = str(self.PLOTS[fig_name].height + 60)
         self.geometry(width+'x'+height)
         frame.grid()
         frame.tkraise()
