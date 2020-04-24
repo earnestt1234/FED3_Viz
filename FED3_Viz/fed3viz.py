@@ -6,6 +6,7 @@ FED3 Viz: A tkinter program for visualizing FED3 Data
 """
 import os
 import pandas as pd
+import platform
 import tkinter as tk
 import tkinter.filedialog
 import webbrowser
@@ -58,10 +59,10 @@ class FED3_Viz(tk.Tk):
         
     #---SETUP TABS
         self.tabcontrol = ttk.Notebook(self)
-        self.home_tab   = ttk.Frame(self.tabcontrol)
-        self.plot_tab   = ttk.Frame(self.tabcontrol)
-        self.settings_tab = ttk.Frame(self.tabcontrol)
-        self.about_tab = ttk.Frame(self.tabcontrol)
+        self.home_tab   = tk.Frame(self.tabcontrol)
+        self.plot_tab   = tk.Frame(self.tabcontrol)
+        self.settings_tab = tk.Frame(self.tabcontrol)
+        self.about_tab = tk.Frame(self.tabcontrol)
         self.tabcontrol.add(self.home_tab, text='Home')
         self.tabcontrol.add(self.plot_tab, text='Plots')
         self.tabcontrol.add(self.settings_tab, text='Settings')
@@ -510,6 +511,8 @@ class FED3_Viz(tk.Tk):
         self.sep1 = ttk.Separator(self.graphic_frame, orient='horizontal')
         #information
         bold = ('Segoe 9 bold')
+        if platform.system() == 'Darwin':
+            bold=None
         self.precolon_text = tk.Frame(self.information_frame)
         self.postcolon_text = tk.Frame(self.information_frame)
         self.version1 = tk.Label(self.precolon_text, text='Version:', font=bold)
@@ -578,11 +581,29 @@ class FED3_Viz(tk.Tk):
         self.googlegr2.grid(row=5,column=1,sticky='w')
         self.caveat.grid(row=1, column=0, pady=40, columnspan=2)
 
+    #---MAC CONFIG
+        def config_color_mac(widget):
+            if type(widget) in [tk.Button, tk.Frame, tk.Label,]:
+                widget.configure(bg='#E2E2E2')
+            if type(widget) == tk.Button:
+                widget.configure(highlightbackground='#E2E2E2')
+            if type(widget) == tk.Checkbutton:
+                widget.configure(bg='#E2E2E2',selectcolor='black')
+            if widget.grid_slaves():
+                for i in widget.grid_slaves():
+                    config_color_mac(i)
+        
+        if platform.system() == 'Darwin':
+            self.settings_tab.focus_set()
+            for widget in [self.home_tab, self.plot_tab,
+                            self.settings_tab, self.about_tab]:
+                config_color_mac(widget)
+
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True):
         file_types = [('All', '*.*'),
                       ('Comma-Separated Values', '*.csv'),
-                      ('Excel', '*.xls *.xslx'),]
+                      ('Excel', '*.xls, *.xslx'),]
         files = tk.filedialog.askopenfilenames(title='Select FED3 Data',
                                                filetypes=file_types)
         loaded_filenames = [fed.basename for fed in self.LOADED_FEDS]
@@ -1344,7 +1365,8 @@ class FED3_Viz(tk.Tk):
             warning1.grid(row=0,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
         if weird_names:
             warning2.grid(row=1,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
-        
+   
+
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.save_last_used)
 root.bind('<Escape>', root.update_all_buttons)
