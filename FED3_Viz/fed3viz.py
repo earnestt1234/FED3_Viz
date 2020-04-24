@@ -24,7 +24,7 @@ from plots import plots
 
 class FED_Plot():
     def __init__(self, figure, frame, figname,
-                 plotfunc, arguments, plotdata=None, width=1375, height=600,):       
+                 plotfunc, arguments, plotdata=None,):       
         self.figure = figure
         self.frame  = frame
         self.figname = figname
@@ -583,7 +583,7 @@ class FED3_Viz(tk.Tk):
                     
 
 
-    #---MAC CONFIG
+    #---OS CONFIG
         def config_color_mac(widget):
             if type(widget) in [tk.Button, tk.Frame, tk.Label,]:
                 widget.configure(bg='#E2E2E2')
@@ -596,11 +596,11 @@ class FED3_Viz(tk.Tk):
                     config_color_mac(i)
         
         if platform.system() == 'Darwin':
-            self.settings_tab.focus_set()
+            os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
+            self.plot_listbox.config(width=20)
             for widget in [self.home_tab, self.plot_tab,
                             self.settings_tab, self.about_tab]:
                 config_color_mac(widget)
-
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True):
         file_types = [('All', '*.*'),
@@ -807,8 +807,7 @@ class FED3_Viz(tk.Tk):
         plotdata = getdata.interpellet_interval_plot(**arg_dict)
         new_plot = FED_Plot(figure=fig, frame=new_plot_frame,figname=fig_name,
                             plotfunc=plots.interpellet_interval_plot,
-                            plotdata=plotdata,arguments=arg_dict,width=800,
-                            height=700)
+                            plotdata=plotdata,arguments=arg_dict,)
         self.PLOTS[fig_name] = new_plot
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
@@ -826,8 +825,7 @@ class FED3_Viz(tk.Tk):
             plotdata = getdata.diagnostic_plot(**arg_dict)
             new_plot = FED_Plot(figure=fig, frame=new_plot_frame,figname=fig_name,
                                 plotfunc=plots.diagnostic_plot,
-                                plotdata=plotdata, arguments=arg_dict,
-                                width=1200,height=700)
+                                plotdata=plotdata, arguments=arg_dict,)
             self.PLOTS[fig_name] = new_plot
             self.draw_figure(new_plot)
             self.raise_figure(fig_name)
@@ -848,8 +846,7 @@ class FED3_Viz(tk.Tk):
         new_plot_frame = ttk.Frame(self.plot_container)
         new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
                             figname=fig_name, plotfunc=plots.daynight_plot,
-                            arguments=args_dict, plotdata=plotdata,
-                            width=1000, height=700)
+                            arguments=args_dict, plotdata=plotdata,)
         self.PLOTS[fig_name] = new_plot
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
@@ -1367,11 +1364,14 @@ class FED3_Viz(tk.Tk):
             warning1.grid(row=0,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
         if weird_names:
             warning2.grid(row=1,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
-   
-
+ 
+    
 root = FED3_Viz()
+# def print_focus(*args):
+#     print(root.focus_get())
 root.protocol("WM_DELETE_WINDOW", root.save_last_used)
 root.bind('<Escape>', root.update_all_buttons)
+# root.bind('<ButtonRelease-1>', print_focus)
 root.maxsize(1500,1000)
 root.minsize(1050,20)
 if __name__=="__main__":
