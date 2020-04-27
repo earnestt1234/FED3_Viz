@@ -1,12 +1,12 @@
 ,Values
-shade_dark,False
+shade_dark,True
 lights_on,7 am
 lights_off,7 pm
 allgroups,True
 skip_duplicates,True
 overwrite,False
 weirdwarn,True
-pellet_values,Frequency
+pellet_values,Cumulative
 pellet_bins,1
 pellet_color,blue
 pellet_align,False
