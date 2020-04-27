@@ -38,7 +38,7 @@ Instructions:
 2. From the most recent version, download the`fed3viz-osx.zip` (under "Assets") and unzip.
 3. In the unzipped folder, navigate to `fed3viz/fed3viz` (the UNIX executable file)
 4. (Optional) Right-click > Make Alias and place the shortcut in a less nasty folder*.
-5. Double click `fed3viz` or the shortcut to run - you may have to permit Mac security to let the application run (from an unknown developer).  Startup is sometimes slow on the first use but gets better.
+5. Double click `fed3viz` or the shortcut to run - you may have to permit Mac security to let the application run (from an unknown developer).  Startup is sometimes slow on the first use but gets better.  Currently the Mac application will have a console running in the background.
 
 
 
