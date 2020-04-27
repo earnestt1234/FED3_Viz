@@ -299,7 +299,7 @@ class FED3_Viz(tk.Tk):
                                                 text='Individual Pellet Plots',
                                                 font=self.section_font)
         self.pelletplottype_label    = tk.Label(self.pellet_settings_frame,
-                                                text=self.section_font)
+                                                text='Values to plot')
         self.pelletplotcumu_label    = tk.Label(self.pellet_settings_frame,
                                                 text='Bin size of pellet frequency (hours)',
                                                 fg='gray')
@@ -486,11 +486,14 @@ class FED3_Viz(tk.Tk):
                                   fg='blue',cursor='hand2')
         self.googlegr2.bind('<ButtonRelease-1>', 
                             lambda event: self.open_url(googlegr_url))
+        spaces = 100
+        if platform.system() == 'Darwin':
+            spaces = 60
         caveat_text = ('FED3 Viz is still being developed and has not ' +
                       'been thoroughly tested.  Please help improve the ' +
                       'program by sharing compliments, criticisms, bugs, ' +
                       'and other requests on the FED Google Group.\n' +
-                      ' '*100 + '-Tom & Lex')
+                      ' '*spaces + '-Tom & Lex')
         self.caveat = tk.Label(self.information_frame,text=caveat_text,
                                wraplength=400, justify=tk.LEFT)
         
