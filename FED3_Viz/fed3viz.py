@@ -6,6 +6,7 @@ FED3 Viz: A tkinter program for visualizing FED3 Data
 """
 import os
 import pandas as pd
+import platform
 import tkinter as tk
 import tkinter.filedialog
 import webbrowser
@@ -23,25 +24,27 @@ from plots import plots
 
 class FED_Plot():
     def __init__(self, figure, frame, figname,
-                 plotfunc, arguments, plotdata=None, width=1375, height=600,):       
+                 plotfunc, arguments, plotdata=None,):       
         self.figure = figure
         self.frame  = frame
         self.figname = figname
-        self.width  = width
-        self.height = height
         self.arguments = arguments
         self.plotfunc = plotfunc
         self.plotdata = plotdata
         self.fednames = []
+        self.width  = int(self.figure.get_size_inches()[0] *self.figure.dpi)
+        self.height = int(self.figure.get_size_inches()[1] *self.figure.dpi)
 
 class FED3_Viz(tk.Tk):
     def __init__(self):
         super(FED3_Viz, self).__init__()
         self.title('FED3 Viz')
-        self.iconbitmap('img/fedviz_logo.ico')
+        if not platform.system() == 'Darwin': 
+            self.iconbitmap('img/fedviz_logo.ico')
         self.LOADED_FEDS = []
         self.PLOTS = OrderedDict()
         self.GROUPS = []
+        self.mac_color = '#E2E2E2'
         self.colors =  ['blue','red','green','yellow','purple','orange',
                         'black',]
         times = []
@@ -58,10 +61,10 @@ class FED3_Viz(tk.Tk):
         
     #---SETUP TABS
         self.tabcontrol = ttk.Notebook(self)
-        self.home_tab   = ttk.Frame(self.tabcontrol)
-        self.plot_tab   = ttk.Frame(self.tabcontrol)
-        self.settings_tab = ttk.Frame(self.tabcontrol)
-        self.about_tab = ttk.Frame(self.tabcontrol)
+        self.home_tab   = tk.Frame(self.tabcontrol)
+        self.plot_tab   = tk.Frame(self.tabcontrol)
+        self.settings_tab = tk.Frame(self.tabcontrol)
+        self.about_tab = tk.Frame(self.tabcontrol)
         self.tabcontrol.add(self.home_tab, text='Home')
         self.tabcontrol.add(self.plot_tab, text='Plots')
         self.tabcontrol.add(self.settings_tab, text='Settings')
@@ -285,15 +288,18 @@ class FED3_Viz(tk.Tk):
                                       padx=(20,20))
         
         #labels
+        self.section_font = 'Segoe 10 bold'
+        if platform.system() == 'Darwin':
+            self.section_font = 'Segoe 14 bold'
         self.general_settings_label = tk.Label(self.general_settings_frame,
                                                text='General',
-                                               font='Segoe 10 bold')
+                                               font=self.section_font)
         
         self.pellet_settings_label   = tk.Label(self.pellet_settings_frame,
                                                 text='Individual Pellet Plots',
-                                                font='Segoe 10 bold')
+                                                font=self.section_font)
         self.pelletplottype_label    = tk.Label(self.pellet_settings_frame,
-                                                text='Values to plot')
+                                                text=self.section_font)
         self.pelletplotcumu_label    = tk.Label(self.pellet_settings_frame,
                                                 text='Bin size of pellet frequency (hours)',
                                                 fg='gray')
@@ -302,21 +308,21 @@ class FED3_Viz(tk.Tk):
         
         self.average_settings_label  = tk.Label(self.average_settings_frame,
                                                 text='Average Pellet Plots',
-                                                font='Segoe 10 bold')
+                                                font=self.section_font)
         self.average_error_label     = tk.Label(self.average_settings_frame,
                                                 text='Error value for average plots')
         self.average_bin_label       = tk.Label(self.average_settings_frame,
                                                 text='Bin size for averaging (hours)')
         self.daynight_settings_label = tk.Label(self.daynight_settings_frame,
                                                 text='Day/Night Plots',
-                                                font='Segoe 10 bold')
+                                                font=self.section_font)
         self.daynight_values_label = tk.Label(self.daynight_settings_frame,
                                               text='Values to plot')
         self.daynight_error_label  = tk.Label(self.daynight_settings_frame,
                                               text='Error bar value')
         self.load_settings_label = tk.Label(self.load_settings_frame,
                                               text='Save/Load Settings',
-                                              font='Segoe 10 bold')
+                                              font=self.section_font)
         lse_text = 'Save the current settings for future use.'
         self.load_settings_explan = tk.Label(self.load_settings_frame,
                                              text=lse_text)
@@ -325,7 +331,7 @@ class FED3_Viz(tk.Tk):
         #   general
         self.nightshade_checkbox_val= tk.BooleanVar()
         self.nightshade_checkbox_val.set(True)
-        self.nightshade_checkbox = tk.Checkbutton(self.general_settings_frame,
+        self.nightshade_checkbox = ttk.Checkbutton(self.general_settings_frame,
                                                   text='Shade dark periods (lights on/off)',
                                                   var=self.nightshade_checkbox_val,
                                                   command=self.check_nightshade)
@@ -337,24 +343,23 @@ class FED3_Viz(tk.Tk):
         self.nightshade_lightsoff.set('7 pm')
         self.allgroups_val = tk.BooleanVar()
         self.allgroups_val.set(True)
-        self.allgroups = tk.Checkbutton(self.general_settings_frame,
+        self.allgroups = ttk.Checkbutton(self.general_settings_frame,
                                         text='For plots using groups, include all loaded groups\nrather than those selected',
-                                        justify=tk.LEFT,
                                         var=self.allgroups_val, 
                                         command=self.update_buttons_home)
         self.loadduplicates_checkbox_val = tk.BooleanVar()
         self.loadduplicates_checkbox_val.set(True)
-        self.loadduplicates_checkbox = tk.Checkbutton(self.general_settings_frame,
+        self.loadduplicates_checkbox = ttk.Checkbutton(self.general_settings_frame,
                                                       text='Don\'t load a FED if its filename is already loaded',
                                                       var=self.loadduplicates_checkbox_val)
         self.overwrite_checkbox_val = tk.BooleanVar()
         self.overwrite_checkbox_val.set(False)
-        self.overwrite_checkbox = tk.Checkbutton(self.general_settings_frame,
+        self.overwrite_checkbox = ttk.Checkbutton(self.general_settings_frame,
                                                  text='Overwrite plots & plot data with same name when saving',
                                                  var=self.overwrite_checkbox_val)
         self.weirdfed_warning_val = tk.BooleanVar()
         self.weirdfed_warning_val.set(True)
-        self.weirdfed_warning = tk.Checkbutton(self.general_settings_frame,
+        self.weirdfed_warning = ttk.Checkbutton(self.general_settings_frame,
                                                text='Show missing column warning when loading',
                                                var=self.weirdfed_warning_val)
         #   pellet plot
@@ -372,7 +377,7 @@ class FED3_Viz(tk.Tk):
         self.pelletplotcolor_menu.set('blue')
         self.pelletplotalign_checkbox_val = tk.BooleanVar()
         self.pelletplotalign_checkbox_val.set(False)
-        self.pelletplotalign_checkbox = tk.Checkbutton(self.pellet_settings_frame,
+        self.pelletplotalign_checkbox = ttk.Checkbutton(self.pellet_settings_frame,
                                                        text='Align multi pellet plots to the same start time',
                                                        var=self.pelletplotalign_checkbox_val)
         #   average
@@ -388,7 +393,7 @@ class FED3_Viz(tk.Tk):
         
         self.average_align_checkbox_val = tk.BooleanVar()
         self.average_align_checkbox_val.set(True)
-        self.average_align_checkbox = tk.Checkbutton(self.average_settings_frame,
+        self.average_align_checkbox = ttk.Checkbutton(self.average_settings_frame,
                                                      text='Align average plots to the same start time (start time/no. days)',
                                                      command=self.check_average_align,
                                                      variable=self.average_align_checkbox_val)
@@ -413,14 +418,14 @@ class FED3_Viz(tk.Tk):
         self.daynight_error_menu.set('SEM')
         self.daynight_show_indvl_val = tk.BooleanVar()
         self.daynight_show_indvl_val.set(True)
-        self.daynight_show_indvl = tk.Checkbutton(self.daynight_settings_frame,
+        self.daynight_show_indvl = ttk.Checkbutton(self.daynight_settings_frame,
                                                   text='Show individual FED data points',
                                                   var=self.daynight_show_indvl_val)
         
         #   load/save
         self.settings_lastused_val = tk.BooleanVar()
         self.settings_lastused_val.set(False)
-        self.settings_lastused = tk.Checkbutton(self.load_settings_frame,
+        self.settings_lastused = ttk.Checkbutton(self.load_settings_frame,
                                                 text='Load last used settings when opening',
                                                 var=self.settings_lastused_val)         
         #buttons
@@ -430,72 +435,6 @@ class FED3_Viz(tk.Tk):
         self.settings_save_button = tk.Button(self.load_settings_frame,
                                               text='Save',
                                               command=self.save_settings)
-        
-    #---PLACE WIDGETS FOR SETTINGS TAB
-        self.general_settings_label.grid(row=0,column=0,sticky='w')
-        self.nightshade_checkbox.grid(row=1,column=0,padx=(20,160),sticky='w')
-        self.nightshade_lightson.grid(row=1,column=1,sticky='w')
-        self.nightshade_lightsoff.grid(row=1,column=2,sticky='w')
-        self.allgroups.grid(row=2,column=0,padx=(20,0),sticky='w')
-        self.loadduplicates_checkbox.grid(row=3,column=0,padx=(20,0),sticky='w')
-        self.overwrite_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
-        self.weirdfed_warning.grid(row=5,column=0,padx=(20,0),sticky='w')
-        
-        self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))       
-        self.pelletplottype_label.grid(row=1,column=0,padx=(20,100),sticky='w')
-        self.pelletplottype_menu.grid(row=1,column=1,sticky='nw')
-        self.pelletplotcumu_label.grid(row=2,column=0,padx=(20,100),sticky='w')
-        self.pelletplotcumu_menu.grid(row=2,column=1,sticky='w')
-        self.pelletplotcolor_label.grid(row=3,column=0,padx=(20,100),sticky='w')
-        self.pelletplotcolor_menu.grid(row=3,column=1,sticky='nw')
-        self.pelletplotalign_checkbox.grid(row=4,column=0,padx=(20,100),
-                                           sticky='nw')
-        
-        self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
-        self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
-        self.average_error_menu.grid(row=1,column=1,sticky='nw')
-        self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
-        self.average_bin_menu.grid(row=2,column=1,sticky='w')
-        self.average_align_checkbox.grid(row=4,column=0,padx=(20,0),
-                                         sticky='nw')
-        self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
-        self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
-        
-        self.daynight_settings_label.grid(row=0,column=0,sticky='w')
-        self.daynight_values_label.grid(row=1,column=0,sticky='w',padx=(20,175))
-        self.daynight_values.grid(row=1,column=1,sticky='w')
-        self.daynight_error_label.grid(row=2,column=0,sticky='w',padx=(20,175))
-        self.daynight_error_menu.grid(row=2,column=1,sticky='w')
-        self.daynight_show_indvl.grid(row=3,column=0,sticky='w',padx=(20,0))
-        
-        self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
-        self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
-        self.settings_load_button.grid(row=1,column=2,sticky='w',ipadx=20,padx=(0,10))
-        self.settings_save_button.grid(row=1,column=3,sticky='nw',ipadx=20)
-        self.settings_lastused.grid(row=2,column=0,sticky='w',padx=(20,0))
-        
-    #---LOAD SETTINGS ON START
-    #try to load default settings when the application starts:
-        default=True
-        last_used = 'settings/LAST_USED.csv'
-        if os.path.isfile(last_used):
-            try:
-                settings_df = pd.read_csv(last_used,index_col=0)
-                if settings_df.loc['load_last_used','Values'] == 'True':
-                    del settings_df
-                    self.load_settings(dialog=False,settings_file=[last_used])
-                    default=False
-            except:
-                print("Found 'LAST_USED.CSV' settings file, but couldn't load!")
-
-        if default:
-            default_file = 'settings/DEFAULT.csv'
-            if os.path.isfile(default_file):
-                try:
-                    self.load_settings(dialog=False,settings_file=[default_file])
-                except:
-                    print("Found 'DEFAULT.CSV' settings file, but couldn't load!")
-                    
     #---INIT WIDGETS FOR ABOUT TAB
         self.graphic_frame = tk.Frame(self.about_tab)
         self.information_frame = tk.Frame(self.about_tab)
@@ -510,6 +449,8 @@ class FED3_Viz(tk.Tk):
         self.sep1 = ttk.Separator(self.graphic_frame, orient='horizontal')
         #information
         bold = ('Segoe 9 bold')
+        if platform.system() == 'Darwin':
+            bold=None
         self.precolon_text = tk.Frame(self.information_frame)
         self.postcolon_text = tk.Frame(self.information_frame)
         self.version1 = tk.Label(self.precolon_text, text='Version:', font=bold)
@@ -578,11 +519,96 @@ class FED3_Viz(tk.Tk):
         self.googlegr2.grid(row=5,column=1,sticky='w')
         self.caveat.grid(row=1, column=0, pady=40, columnspan=2)
 
+        
+    #---PLACE WIDGETS FOR SETTINGS TAB
+        self.general_settings_label.grid(row=0,column=0,sticky='w')
+        self.nightshade_checkbox.grid(row=1,column=0,padx=(20,160),sticky='w')
+        self.nightshade_lightson.grid(row=1,column=1,sticky='w')
+        self.nightshade_lightsoff.grid(row=1,column=2,sticky='w')
+        self.allgroups.grid(row=2,column=0,padx=(20,0),sticky='w')
+        self.loadduplicates_checkbox.grid(row=3,column=0,padx=(20,0),sticky='w')
+        self.overwrite_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
+        self.weirdfed_warning.grid(row=5,column=0,padx=(20,0),sticky='w')
+        
+        self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))       
+        self.pelletplottype_label.grid(row=1,column=0,padx=(20,100),sticky='w')
+        self.pelletplottype_menu.grid(row=1,column=1,sticky='nw')
+        self.pelletplotcumu_label.grid(row=2,column=0,padx=(20,100),sticky='w')
+        self.pelletplotcumu_menu.grid(row=2,column=1,sticky='w')
+        self.pelletplotcolor_label.grid(row=3,column=0,padx=(20,100),sticky='w')
+        self.pelletplotcolor_menu.grid(row=3,column=1,sticky='nw')
+        self.pelletplotalign_checkbox.grid(row=4,column=0,padx=(20,100),
+                                           sticky='nw')
+        
+        self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
+        self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
+        self.average_error_menu.grid(row=1,column=1,sticky='nw')
+        self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
+        self.average_bin_menu.grid(row=2,column=1,sticky='w')
+        self.average_align_checkbox.grid(row=4,column=0,padx=(20,0),
+                                         sticky='nw')
+        self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
+        self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
+        
+        self.daynight_settings_label.grid(row=0,column=0,sticky='w')
+        self.daynight_values_label.grid(row=1,column=0,sticky='w',padx=(20,175))
+        self.daynight_values.grid(row=1,column=1,sticky='w')
+        self.daynight_error_label.grid(row=2,column=0,sticky='w',padx=(20,175))
+        self.daynight_error_menu.grid(row=2,column=1,sticky='w')
+        self.daynight_show_indvl.grid(row=3,column=0,sticky='w',padx=(20,0))
+        
+        self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
+        self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
+        self.settings_load_button.grid(row=1,column=2,sticky='w',ipadx=20,padx=(0,10))
+        self.settings_save_button.grid(row=1,column=3,sticky='nw',ipadx=20)
+        self.settings_lastused.grid(row=2,column=0,sticky='w',padx=(20,0))
+        
+    #---LOAD SETTINGS ON START
+    #try to load default settings when the application starts:
+        default=True
+        last_used = 'settings/LAST_USED.csv'
+        if os.path.isfile(last_used):
+            try:
+                settings_df = pd.read_csv(last_used,index_col=0)
+                if settings_df.loc['load_last_used','Values'] == 'True':
+                    del settings_df
+                    self.load_settings(dialog=False,settings_file=[last_used])
+                    default=False
+            except:
+                print("Found 'LAST_USED.CSV' settings file, but couldn't load!")
+
+        if default:
+            default_file = 'settings/DEFAULT.csv'
+            if os.path.isfile(default_file):
+                try:
+                    self.load_settings(dialog=False,settings_file=[default_file])
+                except:
+                    print("Found 'DEFAULT.CSV' settings file, but couldn't load!")
+                    
+    #---OS CONFIG
+        self.w_offset = 400
+        self.h_offset = 60
+        def config_color_mac(widget):
+            if type(widget) in [tk.Button, tk.Frame, tk.Label,]:
+                widget.configure(bg=self.mac_color)
+            if type(widget) == tk.Button:
+                widget.configure(highlightbackground=self.mac_color)
+            if widget.grid_slaves():
+                for i in widget.grid_slaves():
+                    config_color_mac(i)
+        
+        if platform.system() == 'Darwin':
+            self.plot_listbox.config(width=20)
+            self.w_offset = 350
+            self.h_offset = 100
+            for widget in [self.home_tab, self.plot_tab,
+                            self.settings_tab, self.about_tab]:
+                config_color_mac(widget)
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True):
         file_types = [('All', '*.*'),
                       ('Comma-Separated Values', '*.csv'),
-                      ('Excel', '*.xls *.xslx'),]
+                      ('Excel', '*.xls, *.xslx'),]
         files = tk.filedialog.askopenfilenames(title='Select FED3 Data',
                                                filetypes=file_types)
         loaded_filenames = [fed.basename for fed in self.LOADED_FEDS]
@@ -784,8 +810,7 @@ class FED3_Viz(tk.Tk):
         plotdata = getdata.interpellet_interval_plot(**arg_dict)
         new_plot = FED_Plot(figure=fig, frame=new_plot_frame,figname=fig_name,
                             plotfunc=plots.interpellet_interval_plot,
-                            plotdata=plotdata,arguments=arg_dict,width=800,
-                            height=700)
+                            plotdata=plotdata,arguments=arg_dict,)
         self.PLOTS[fig_name] = new_plot
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
@@ -803,8 +828,7 @@ class FED3_Viz(tk.Tk):
             plotdata = getdata.diagnostic_plot(**arg_dict)
             new_plot = FED_Plot(figure=fig, frame=new_plot_frame,figname=fig_name,
                                 plotfunc=plots.diagnostic_plot,
-                                plotdata=plotdata, arguments=arg_dict,
-                                width=1200,height=700)
+                                plotdata=plotdata, arguments=arg_dict,)
             self.PLOTS[fig_name] = new_plot
             self.draw_figure(new_plot)
             self.raise_figure(fig_name)
@@ -825,8 +849,7 @@ class FED3_Viz(tk.Tk):
         new_plot_frame = ttk.Frame(self.plot_container)
         new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
                             figname=fig_name, plotfunc=plots.daynight_plot,
-                            arguments=args_dict, plotdata=plotdata,
-                            width=1000, height=700)
+                            arguments=args_dict, plotdata=plotdata,)
         self.PLOTS[fig_name] = new_plot
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
@@ -1037,7 +1060,8 @@ class FED3_Viz(tk.Tk):
             plotobj  = self.PLOTS[plotname]
             new_window = tk.Toplevel(self)
             new_window.title('Code for "' + plotname +'"')
-            new_window.iconbitmap('img/python.ico')
+            if not platform.system() == 'Darwin': 
+                new_window.iconbitmap('img/python.ico')
             textview = tk.Text(new_window, width=150)
             code = fed_inspect.generate_code(plotobj)
             textview.insert(tk.END, code)
@@ -1086,7 +1110,8 @@ class FED3_Viz(tk.Tk):
         if pop_window:
             frame = tk.Toplevel(self)
             frame.title(plot_obj.figname)
-            frame.iconbitmap('img/graph_icon.ico')        
+            if not platform.system() == 'Darwin': 
+                frame.iconbitmap('img/graph_icon.ico')        
         canvas = FigureCanvasTkAgg(plot_obj.figure, master=frame)
         canvas.draw_idle()
         canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
@@ -1102,8 +1127,8 @@ class FED3_Viz(tk.Tk):
             if graph != fig_name:
                 self.PLOTS[graph].frame.grid_remove()
         self.tabcontrol.select(self.plot_tab)
-        width = str(self.PLOTS[fig_name].width)
-        height = str(self.PLOTS[fig_name].height)
+        width = str(self.PLOTS[fig_name].width + self.w_offset)
+        height = str(self.PLOTS[fig_name].height + self.h_offset)
         self.geometry(width+'x'+height)
         frame.grid()
         frame.tkraise()
@@ -1308,7 +1333,8 @@ class FED3_Viz(tk.Tk):
         warn_window = tk.Toplevel(self)
         warn_window.grab_set()
         warn_window.title('Average Plot Error')
-        warn_window.iconbitmap('img/exclam.ico')
+        if not platform.system() == 'Darwin':
+            warn_window.iconbitmap('img/exclam.ico')
         text = ("There are no intervals where the selected FEDs all overlap." +
                 '\n\nYou can still make an average pellet plot by checking' +  
                 '\n"Align average plots to the same start time" in the settings tab.')
@@ -1320,7 +1346,8 @@ class FED3_Viz(tk.Tk):
         warn_window = tk.Toplevel(self)
         warn_window.grab_set()
         warn_window.title('Load Error')
-        warn_window.iconbitmap('img/exclam.ico')
+        if not platform.system() == 'Darwin':
+            warn_window.iconbitmap('img/exclam.ico')
         intro1 = ("The following files were not recognized as FED3 data, " +
                  "and weren't loaded:\n")
         body1 = ''
@@ -1344,10 +1371,14 @@ class FED3_Viz(tk.Tk):
             warning1.grid(row=0,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
         if weird_names:
             warning2.grid(row=1,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
-        
+ 
+    
 root = FED3_Viz()
+# def print_focus(*args):
+#     print(root.focus_get())
 root.protocol("WM_DELETE_WINDOW", root.save_last_used)
 root.bind('<Escape>', root.update_all_buttons)
+# root.bind('<ButtonRelease-1>', print_focus)
 root.maxsize(1500,1000)
 root.minsize(1050,20)
 if __name__=="__main__":
