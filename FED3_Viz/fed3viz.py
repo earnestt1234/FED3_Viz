@@ -584,6 +584,8 @@ class FED3_Viz(tk.Tk):
 
 
     #---OS CONFIG
+        self.w_offset = 400
+        self.h_offset = 60
         def config_color_mac(widget):
             if type(widget) in [tk.Button, tk.Frame, tk.Label,]:
                 widget.configure(bg='#E2E2E2')
@@ -1122,8 +1124,8 @@ class FED3_Viz(tk.Tk):
             if graph != fig_name:
                 self.PLOTS[graph].frame.grid_remove()
         self.tabcontrol.select(self.plot_tab)
-        width = str(self.PLOTS[fig_name].width + 400)
-        height = str(self.PLOTS[fig_name].height + 60)
+        width = str(self.PLOTS[fig_name].width + self.w_offset)
+        height = str(self.PLOTS[fig_name].height + self.h_offset)
         self.geometry(width+'x'+height)
         frame.grid()
         frame.tkraise()
