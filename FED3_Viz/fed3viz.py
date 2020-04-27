@@ -44,6 +44,7 @@ class FED3_Viz(tk.Tk):
         self.LOADED_FEDS = []
         self.PLOTS = OrderedDict()
         self.GROUPS = []
+        self.mac_color = '#E2E2E2'
         self.colors =  ['blue','red','green','yellow','purple','orange',
                         'black',]
         times = []
@@ -591,11 +592,9 @@ class FED3_Viz(tk.Tk):
         self.h_offset = 60
         def config_color_mac(widget):
             if type(widget) in [tk.Button, tk.Frame, tk.Label,]:
-                widget.configure(bg='#E2E2E2')
+                widget.configure(bg=self.mac_color)
             if type(widget) == tk.Button:
-                widget.configure(highlightbackground='#E2E2E2')
-            if type(widget) == tk.Checkbutton:
-                widget.configure(bg='#E2E2E2',selectcolor='black')
+                widget.configure(highlightbackground=self.mac_color)
             if widget.grid_slaves():
                 for i in widget.grid_slaves():
                     config_color_mac(i)
