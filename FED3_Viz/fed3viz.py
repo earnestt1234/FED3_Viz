@@ -585,8 +585,6 @@ class FED3_Viz(tk.Tk):
                 except:
                     print("Found 'DEFAULT.CSV' settings file, but couldn't load!")
                     
-
-
     #---OS CONFIG
         self.w_offset = 400
         self.h_offset = 60
@@ -600,7 +598,6 @@ class FED3_Viz(tk.Tk):
                     config_color_mac(i)
         
         if platform.system() == 'Darwin':
-            os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
             self.plot_listbox.config(width=20)
             self.w_offset = 350
             self.h_offset = 100
