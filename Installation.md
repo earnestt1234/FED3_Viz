@@ -2,13 +2,15 @@
 
 There are two methods for running FED3 Viz: either **downloading the application** or **running the Python script**.
 
-The application (created with [PyInstaller](https://www.pyinstaller.org/)) *hopefully* works like any other computer GUI: just double-click to start.  This method of installation is intended for people who don't have Python installed or don't want to mess around with any code.  **The big caveat is that there is currently only a 64-bit Windows option (only tested on Windows 10)**.  Ideally, there eventually will be 32-bit and Mac OS X applications as well.
+The application (created with [PyInstaller](https://www.pyinstaller.org/)) works like any other computer GUI: just double-click to start.  This method of installation is intended for people who don't have Python installed or don't want to mess around with any code.  Currently, there are 64-bit Windows and Mac OS X options.
 
 The more universal option is running the FED3 Viz Python script in your own interpreter.  This option will involve some futzing with a terminal, but I've done my best to provide detailed instructions below.
 
 If you have any issues with either of the installation methods, please post your issue [here](https://github.com/earnestt1234/FED3_Viz/issues) or on the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  The process of converting the Python script to an application is a black box to me, so I cannot promise that issues with running the `.exe` will be solvable.  Running the Python script will hopefully be less error-prone, and I will aim to prioritize getting that method functioning for everyone.
 
 ## Method 1: Running FED3 Viz from an .exe
+
+### Windows:
 
 System Requirements:
 
@@ -18,12 +20,31 @@ System Requirements:
 Instructions:
 
 1. Visit the [releases page](https://github.com/earnestt1234/FED3_Viz/releases)
-2. From the most recent version, download the`fed3viz-win64.zip` and unzip.
+2. From the most recent version, download the`fed3viz-win64.zip` (under "Assets") and unzip.
 3. In the unzipped folder, navigate to `fed3viz/fed3viz.exe`.
 4. (Optional) Right-click > Create shortcut and place the shortcut in a less nasty folder*.
-5. Double click the `.exe` or the shortcut to run - you may have to permit Windows security to let the application run.  Startup is sometimes slow on the first use but gets better.
+5. Double click the `.exe` or the shortcut to run - you may have to permit Windows security to let the application run (from an unknown developer).  Startup is sometimes slow on the first use but gets better.
+
+### Mac:
+
+System Requirements:
+
+- Mac OS X
+- built on Yosemite v10.10.5, but I have tested on a machine with Catalina
+
+Instructions:
+
+1. Visit the [releases page](https://github.com/earnestt1234/FED3_Viz/releases)
+2. From the most recent version, download the`fed3viz-osx.zip` (under "Assets") and unzip.
+3. In the unzipped folder, navigate to `fed3viz/fed3viz` (the UNIX executable file)
+4. (Optional) Right-click > Make Alias and place the shortcut in a less nasty folder*.
+5. Double click `fed3viz` or the shortcut to run - you may have to permit Mac security to let the application run (from an unknown developer).  Startup is sometimes slow on the first use but gets better.
+
+
 
 *_I haven't figured out how to bundle the zip folder with a working relative shortcut..._
+
+
 
 ## Method 2: Running FED3 Viz from a Python interpreter
 
@@ -87,7 +108,7 @@ pip install -r requirements.txt
 
 This may take a few minutes.  
 
-*Note that you don't *have* to create a virtual environment - you can do the `pip` install in your global Python installation as well.  However, this may cause issues if you have other scripts with different dependencies.  You also may need to uninstall and reinstall some packages if you want to match the versions in `requirements.txt` exactly.
+***Note that you don't *have* to create a virtual environment** - you can do the `pip` install in your global Python installation as well.  However, this may cause issues if you have other scripts with different dependencies.  You also may need to uninstall and reinstall some packages if you want to match the versions in `requirements.txt` exactly.
 
 #### Step 4: Run the FED3 Viz script
 
@@ -119,6 +140,8 @@ conda deactivate
 
 ##### Note for Mac/Linux Users:
 
-FED3 Viz was developed on Windows.  I have just tested that the Python script still works on Mac, but there are some differences, most noticeably some of the design looks a little uglier :frowning_face:.  I'm working on fixing that in a coming update.   I haven't found any functional bugs on Mac yet.
+FED3 Viz was developed on Windows, which may cause issues when running on another system.
 
-I will not be able to test the Linux version, or make any kind of application for Linux.  If anyone does end up using this on Linux, I'd be curious to see how it works.
+When running on **Mac**, I noticed some cosmetic differences in FED3 Viz (due to differences in the system's default widgets); I have been able to make quick fixes for these.  Most of these issues seem to disappear when using the executable, curiously.  Running from the Python script still works (so far I can tell), but there may be some ugly looking buttons and wonky coloring.  I haven't detected any Mac specific functionality issues yet.
+
+I will not be able to test the script on **Linux** , or make any kind of application for Linux.  If anyone does end up using this on Linux, I'd be curious to see how it works.
