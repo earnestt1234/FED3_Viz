@@ -58,17 +58,20 @@ On the FED3 Viz GitHub, there is an "Installation.md" markdown file which contai
   - [Single Pellet Plot](#single-pellet-plot)
   - [Multi Pellet Plot](#multi-pellet-plot)
   - [Average Pellet Plot](#average-pellet-plot)
-  - Interpellet Interval Plot
-  - Day/Night Plot
-  - Diagnostic Plot
+  - [Interpellet Interval Plot](#interpellet-interval-plot)
+  - [Day/Night Plot](#daynight-plot)
+  - [Diagnostic Plot](#diagnostic-plot)
   
-- Viewing and Editing Plots
-  - Renaming
-  - New Window
+- [Managing Plots](#managing-plots)
+  
+  - [Renaming Plots](#renaming-plots)
+  - [New Window](#new-window)
+  - [Navigation Toolbar](#navigation-toolbar)
+  - [Saving Plots](#saving-plots)
+    - [Saving Images](#saving-images)
+    - [Saving Data](#saving-data)
+    - [Saving Code](#saving-code)
   - Deleting Plots
-  - Saving Plots
-  - Saving Plot Data
-  - Saving Plot Code
   
 - Settings
   
@@ -262,18 +265,21 @@ The general steps to create a plot are:
 - Select the FED files to include in the plot
 - Press a plot button from the bottom row of the Home Tab
 
-This section will go through the plots currently available in FED3 Viz and describe what they show and how they are made.
+This section will go through the plot buttons currently available in the Home Tab and describe the plots they create.
 
 There are a couple settings which apply to multiple plots: 
 
 - *Shading dark periods*:  When enabled, applicable plots will have a light gray shading during periods when the lights are off - this can help for detecting circadian patterns of activity.  This setting can be toggled from **Settings > General > Shade dark periods (lights on/off)**.  The start and and time of the dark period can be selected using the dropdown menus next to this setting. Plots which make use of this feature will include a :new_moon_with_face: symbol in their description
 - *Using Groups*: Some plots aggregate data and rely on Groups.  By default, plots which rely on Groups will **plot all Groups present in the Group View**; you can instead use the Group View to select which Groups to include by unticking **Settings > General > For plots using groups, include all loaded groups rather than those selected**.  Plots that utilize groups will be tagged with a :paperclip: symbol in their description.
+- *Handling multiple selections*: For plots that don't use Groups, the data to plot depends on which loaded FED data are highlighted.  More than one file can be highlighted at once, and there are two main ways the program deals with this.  Buttons that combine the highlighted files into one graph are marked by :bar_chart:, while buttons that create multiple plots (one for each highlighted file) are marked by :bar_chart::bar_chart::bar_chart:.  
 
 ### Single Pellet Plot
 
 *Dependent columns =  MM:DD:YYYY hh:mm:ss, Pellet_Count*
 
 *Can use night shading* :new_moon_with_face:
+
+*Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
 
 <p align="center">
 	<img src="img/examples/pelletplot.png" width="500">
@@ -284,6 +290,7 @@ This plot shows the pellets retrieved over time for a single data file.  By defa
 <p align="center">
 	<img src="img/manual/freqplot.png" width="500">
 </p>
+Highlighting a single 
 
 The color of these plots can be set, also (**Settings > Individual Pellet Plots > Default color (single pellet plots**)).
 
@@ -292,6 +299,8 @@ The color of these plots can be set, also (**Settings > Individual Pellet Plots 
 *Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count*
 
 *Can use night shading* :new_moon_with_face:
+
+*Combines all highlighted files into a single plot* :bar_chart:
 
 <p align="center">
 	<img src="img/examples/multipellet.png" width="500">
@@ -330,13 +339,132 @@ Settings specific to these plots are under **Settings > Average Pellet Plots > A
 
 ### Interpellet Interval Plot
 
+**NOTE: These plots only use the KDE version in v0.0.2; future updates will allow the KDE curve to be removed (see below)**
+
 *Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count*
+
+*Combines all highlighted files into a single plot* :bar_chart:
+
+<p align="center">
+	<img src="img/manual/ipi_kde.png" width="500">
+</p>
+
+The Interpellet Interval Plot is a histogram where the values counted are the time between each pellet retrieval event.  This plot can give you a sense of how the mouse feeds or earns pellets, and it show changes in meal or eating frequencies.
+
+This plot is a fairly unaltered use of [`seaborn.distplot`](https://seaborn.pydata.org/generated/seaborn.distplot.html).  The only option, **Settings > Interpellet Interval Plots > Use kernel density estimation** toggles the `kde` argument of this function:
+
+- When ticked, a kernel density estimation (KDE) is used to model the probability density function of the interepellet intervals.  The density estimation is plotted on the y-axis: the area under the whole curve of the KDE is 1, and the area under a certain portion estimates the probability of observations occurring within that portion.
+- When unticked, a raw histogram is parted, the KDE line is removed, and the y-axis represents counts in each bin.
+
+Note that Interpellet Interval Plots use logarithmically spaced x-axes (in minutes).
+
+### Day/Night Plot
+
+*Dependent Columns are different for each value to plot :*
+
+| **Value**             | **Dependent Columns**                                        |
+| --------------------- | ------------------------------------------------------------ |
+| pellets               | *DD:MM:YY hh:mm:ss, Pellet_Count*                            |
+| retrieval time        | *DD:MM:YY hh:mm:ss, Retrieval_Time*                          |
+| interpellet intervals | *DD:MM:YY hh:mm:ss, Pellet_Count*                            |
+| correct pokes/errors  | *DD:MM:YY hh:mm:ss, Pellet_Count, Left_Poke_Count, Right_Poke_Count, Active_Poke* |
 
 *Uses groups* :paperclip:
 
 <p align="center">
-	<img src="img/examples/ipi.png" width="500">
+	<img src="img/examples/daynightplot.png" width="500">
 </p>
-The Interpellet Interval Plot is a histogram where the values counted are the time between each pellet retrieval event.  This plot can give you a sense of how the mouse feeds or earns pellets, and it show changes in meal or eating frequencies.
 
-This plot is a fairly unaltered use of `seaborn.distplot`.
+Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  The options to edit this graph are:
+
+- **Values to plot**: What values are being plotted on the y-axis.  Options are pellets, interpellet intervals, retrieval time (of pellets), correct pokes, and errors; the latter two can also be expressed as a percent.
+- **Error bar value**: What values to use to create error bars; options are SEM (standard error of the mean), STD (standard deviation), or None.
+- **Show individual FED data points**: When ticked, values for individual recordings are superimposed over the bars to show the values contributing to the average.
+
+Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods; those values represent the individual FED data points, and they are averaged to create the value for the bar.
+
+### Diagnostic Plot
+
+*Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count, Battery_Voltage, Motor_Turns*
+
+*Can use night shading* :new_moon_with_face:
+
+*Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
+
+<p align="center">
+	<img src="img/examples/diagnostic plot.png" width="500">
+</p>
+
+The Diagnostic Plot is used to help identify problems with the FED over the course of its recording.  It is a 3 panel plot, which shows the pellets retrieved, motor turns, and battery life over time.
+
+The motor should only need to turn a few times (under 10) for each pellet dispensed.  Slightly higher values than this (10-50) may represent the FED's mechanism to try and unjam, while much higher values (>100) may represent a longer pellet jam.
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
+# Managing Plots
+
+When a plot is created using a button on the Home Tab, the Plots Tab will be raised and the newest plot will be shown in the Display Pane.  All active plots will be shown in the Plot List, and clicking the name of the plot will render it in the Display Pane.  
+
+The Plots Tab has additional buttons which allow you to manage and save your plots; there are also some additional features which allow for editing of the plot after creation.
+
+### Renaming Plots:
+
+To rename a plot, select a **single** plot from the Plot List, and click the **Rename Button**.  In the text entry box that pops up, enter a new name for the plot and click OK.  Plot names must be unique.
+
+### New Window:
+
+To show plots in a new window, select one or more graphs from the Plot List and click the  **New Window Button**.  This feature allows for viewing of multiple graphs simultaneously.
+
+### Navigation Toolbar:
+
+<p align="center">
+	<img src="img/manual/toolbar.png" width="250">
+</p>
+
+FED3 Viz includes a `matplotlib` interactive toolbar for editing rendered plots.  This can be used to limit the axes, zoom in on a certain region of the graph, or alter the aspect ratio.  Specific guidance on how to use this tool can be found [here](https://matplotlib.org/3.1.1/users/navigation_toolbar.html), but note that the keyboard shortcuts will not work.
+
+### Saving Plots
+
+There are three main aspects of plots which can be saved in FED3 Viz: images, data, and code.
+
+##### Saving Images
+
+To save plots, highlight one or more plots from the Plot List and click the **Save Plots Button**.  This will bring up a file dialogue, and prompt the user to select a folder to save the images in.   Plots are saved in `.png` format at 300 DPI.  The name of the file will be the same as the plot's name in the Plot List.  Note that the Navigation Toolbar also has a button that can save plots, but using it (in this case) will limit the DPI to 150.
+
+##### Saving Code
+
+<p align="center">
+	<img src="img/manual/plotcode.png" width="400">
+</p>
+
+FED3 Viz can return the code used to create each plot through the **Plot Code Button**.  The aim of this feature is to allow users to be able to tweak graphs (with Python) in ways not possible from FED3 Viz. 
+
+Each plot button in FED3 Viz is associated with one or more plotting functions defined in Python; settings from the Settings Tab translate into arguments passed to these functions.  The Plot Code Button uses Python's `inspect` library to return the source code of these plotting functions.  The program formats this code with additional lines that are specific to each plot, like the data source and the settings used.
+
+**The Plot Code output should be a functional script**; that is, running the script in a separate Python session should recreate the plot (given the appropriate packages and package versions in that environment).  To achieve this, the output script has to include the following:
+
+- a list of packages to import
+- the definition of a class used to load FED3 data and do some preprocessing
+- definitions of helper functions used by the plotting function
+- definition of the plotting function
+- assignment of the specific arguments used by the function for the plot
+- a line calling the function
+
+All this makes the code somewhat verbose, but it aims to make the script run-able without modification.
+
+Plot Code is displayed in a new window, and can be saved as a `.py` or `.txt` file using the Save As... button at the bottom of the window.
+
+**Saving Data**
+
+Clicking the **Save Plot Data Button** will export one or more `.csv` files which contain the values plotted; the format depends on the type of graph.  These files can be used to recreate graphs or run statistics in separate software.  Clicking the Save Plot Data Button will bring up a file dialogue, and will ask the user to select a location for saving the output.
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
+# FAQ
+
+- **I saved the Python code for a plot and it doesn't run.**  This could be due to many issues, but some possible causes are:
+  - You are not using Python 3
+  - You do not have the necessary packages installed, or their versions are incompatible with FED3 Viz.  The packages used by FED3 Viz are documented in the `requirements.txt` file on GitHub
+  - Your IDE is not showing the plot (sometimes an issue with how inline plotting is handled; sometimes this causes plots not to show on the first run)
+  - There is an error in the output plot script, which is certainly possible!  The most likely issues are that some of the necessary helper functions were not included or the arguments are improperly formatted.  Please report these errors on GitHub with the specific context, both to help solve your specific case and to improve the application.
+- **I have suggestions for improving the plot code I saved.**  Please note that FED3 Viz's plotting functions are designed to handle different settings on the fly, and the code to make one specific plot may be writable in a much less verbose way.  Some pieces of the code may be helpful for the application, but irrelevant to your specific plot.  That being said, I would enjoy discussing (on GitHub) any proposed changes which significantly contribute to the readable or speed of the code.  Aside from that, sharing code may be useful for other users.

@@ -508,7 +508,7 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, *args, **kwargs):
     
     return fig
     
-def interpellet_interval_plot(FEDs, *args, **kwargs):
+def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     for FED in FEDs:
@@ -517,7 +517,8 @@ def interpellet_interval_plot(FEDs, *args, **kwargs):
     fig, ax = plt.subplots(figsize=(4,5), dpi=125)
     lowest = -2
     highest = 5
-    ax.set_ylabel('Count (normalized)')
+    ylabel = 'Density Estimation' if kde else 'Count'
+    ax.set_ylabel(ylabel)
     ax.set_xlabel('minutes between pellets')
     ax.set_xticks(range(lowest,highest))
     ax.set_xticklabels([10**num for num in range(-2,5)])
@@ -531,7 +532,8 @@ def interpellet_interval_plot(FEDs, *args, **kwargs):
         df = FED.data
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
         y = [np.log10(val) for val in y if not pd.isna(val)]
-        sns.distplot(y,bins=bins,label=FED.filename,ax=ax,)
+        sns.distplot(y,bins=bins,label=FED.filename,ax=ax,norm_hist=False,
+                     kde=kde)
     ax.legend(fontsize=8)
     plt.tight_layout()
     

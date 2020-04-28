@@ -280,11 +280,15 @@ class FED3_Viz(tk.Tk):
                                          pady=(0,50))
         
         self.daynight_settings_frame = tk.Frame(self.settings_col2)
-        self.daynight_settings_frame.grid(row=0,column=1,sticky='nsew',
+        self.daynight_settings_frame.grid(row=0,column=0,sticky='nsew',
                                           padx=(20,20))
         
+        self.ipi_settings_frame = tk.Frame(self.settings_col2)
+        self.ipi_settings_frame.grid(row=1,column=0, sticky='nsew',
+                                     padx=20, pady=(20,0))
+        
         self.load_settings_frame = tk.Frame(self.settings_col2)
-        self.load_settings_frame.grid(row=1,column=1,sticky='nsew', 
+        self.load_settings_frame.grid(row=2,column=0,sticky='nsew', 
                                       padx=(20,20))
         
         #labels
@@ -320,6 +324,9 @@ class FED3_Viz(tk.Tk):
                                               text='Values to plot')
         self.daynight_error_label  = tk.Label(self.daynight_settings_frame,
                                               text='Error bar value')
+        self.ipi_settings_label = tk.Label(self.ipi_settings_frame,
+                                           text='Interpellet Interval Plots',
+                                           font=self.section_font)
         self.load_settings_label = tk.Label(self.load_settings_frame,
                                               text='Save/Load Settings',
                                               font=self.section_font)
@@ -422,6 +429,13 @@ class FED3_Viz(tk.Tk):
                                                   text='Show individual FED data points',
                                                   var=self.daynight_show_indvl_val)
         
+        #   ipi
+        self.ipi_kde_val = tk.BooleanVar()
+        self.ipi_kde_val.set(True)
+        self.ipi_kde_checkbox = ttk.Checkbutton(self.ipi_settings_frame,
+                                                text='Use kernel density estimation',
+                                                var=self.ipi_kde_val)
+        
         #   load/save
         self.settings_lastused_val = tk.BooleanVar()
         self.settings_lastused_val.set(False)
@@ -435,6 +449,53 @@ class FED3_Viz(tk.Tk):
         self.settings_save_button = tk.Button(self.load_settings_frame,
                                               text='Save',
                                               command=self.save_settings)
+        
+    #---PLACE WIDGETS FOR SETTINGS TAB
+        self.general_settings_label.grid(row=0,column=0,sticky='w')
+        self.nightshade_checkbox.grid(row=1,column=0,padx=(20,160),sticky='w')
+        self.nightshade_lightson.grid(row=1,column=1,sticky='w')
+        self.nightshade_lightsoff.grid(row=1,column=2,sticky='w')
+        self.allgroups.grid(row=2,column=0,padx=(20,0),sticky='w')
+        self.loadduplicates_checkbox.grid(row=3,column=0,padx=(20,0),sticky='w')
+        self.overwrite_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
+        self.weirdfed_warning.grid(row=5,column=0,padx=(20,0),sticky='w')
+        
+        self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))       
+        self.pelletplottype_label.grid(row=1,column=0,padx=(20,100),sticky='w')
+        self.pelletplottype_menu.grid(row=1,column=1,sticky='nw')
+        self.pelletplotcumu_label.grid(row=2,column=0,padx=(20,100),sticky='w')
+        self.pelletplotcumu_menu.grid(row=2,column=1,sticky='w')
+        self.pelletplotcolor_label.grid(row=3,column=0,padx=(20,100),sticky='w')
+        self.pelletplotcolor_menu.grid(row=3,column=1,sticky='nw')
+        self.pelletplotalign_checkbox.grid(row=4,column=0,padx=(20,100),
+                                           sticky='nw')
+        
+        self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
+        self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
+        self.average_error_menu.grid(row=1,column=1,sticky='nw')
+        self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
+        self.average_bin_menu.grid(row=2,column=1,sticky='w')
+        self.average_align_checkbox.grid(row=4,column=0,padx=(20,0),
+                                         sticky='nw')
+        self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
+        self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
+        
+        self.daynight_settings_label.grid(row=0,column=0,sticky='w')
+        self.daynight_values_label.grid(row=1,column=0,sticky='w',padx=(20,175))
+        self.daynight_values.grid(row=1,column=1,sticky='w')
+        self.daynight_error_label.grid(row=2,column=0,sticky='w',padx=(20,175))
+        self.daynight_error_menu.grid(row=2,column=1,sticky='w')
+        self.daynight_show_indvl.grid(row=3,column=0,sticky='w',padx=(20,0))
+        
+        self.ipi_settings_label.grid(row=0,column=0,sticky='w')
+        self.ipi_kde_checkbox.grid(row=1,column=0,sticky='w',padx=(20,0))
+        
+        self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
+        self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
+        self.settings_load_button.grid(row=1,column=2,sticky='w',ipadx=20,padx=(0,10))
+        self.settings_save_button.grid(row=1,column=3,sticky='nw',ipadx=20)
+        self.settings_lastused.grid(row=2,column=0,sticky='w',padx=(20,0))
+        
     #---INIT WIDGETS FOR ABOUT TAB
         self.graphic_frame = tk.Frame(self.about_tab)
         self.information_frame = tk.Frame(self.about_tab)
@@ -521,50 +582,6 @@ class FED3_Viz(tk.Tk):
         self.googlegr1.grid(row=5,column=0,sticky='w')
         self.googlegr2.grid(row=5,column=1,sticky='w')
         self.caveat.grid(row=1, column=0, pady=40, columnspan=2)
-
-        
-    #---PLACE WIDGETS FOR SETTINGS TAB
-        self.general_settings_label.grid(row=0,column=0,sticky='w')
-        self.nightshade_checkbox.grid(row=1,column=0,padx=(20,160),sticky='w')
-        self.nightshade_lightson.grid(row=1,column=1,sticky='w')
-        self.nightshade_lightsoff.grid(row=1,column=2,sticky='w')
-        self.allgroups.grid(row=2,column=0,padx=(20,0),sticky='w')
-        self.loadduplicates_checkbox.grid(row=3,column=0,padx=(20,0),sticky='w')
-        self.overwrite_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
-        self.weirdfed_warning.grid(row=5,column=0,padx=(20,0),sticky='w')
-        
-        self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))       
-        self.pelletplottype_label.grid(row=1,column=0,padx=(20,100),sticky='w')
-        self.pelletplottype_menu.grid(row=1,column=1,sticky='nw')
-        self.pelletplotcumu_label.grid(row=2,column=0,padx=(20,100),sticky='w')
-        self.pelletplotcumu_menu.grid(row=2,column=1,sticky='w')
-        self.pelletplotcolor_label.grid(row=3,column=0,padx=(20,100),sticky='w')
-        self.pelletplotcolor_menu.grid(row=3,column=1,sticky='nw')
-        self.pelletplotalign_checkbox.grid(row=4,column=0,padx=(20,100),
-                                           sticky='nw')
-        
-        self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
-        self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
-        self.average_error_menu.grid(row=1,column=1,sticky='nw')
-        self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
-        self.average_bin_menu.grid(row=2,column=1,sticky='w')
-        self.average_align_checkbox.grid(row=4,column=0,padx=(20,0),
-                                         sticky='nw')
-        self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
-        self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
-        
-        self.daynight_settings_label.grid(row=0,column=0,sticky='w')
-        self.daynight_values_label.grid(row=1,column=0,sticky='w',padx=(20,175))
-        self.daynight_values.grid(row=1,column=1,sticky='w')
-        self.daynight_error_label.grid(row=2,column=0,sticky='w',padx=(20,175))
-        self.daynight_error_menu.grid(row=2,column=1,sticky='w')
-        self.daynight_show_indvl.grid(row=3,column=0,sticky='w',padx=(20,0))
-        
-        self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
-        self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
-        self.settings_load_button.grid(row=1,column=2,sticky='w',ipadx=20,padx=(0,10))
-        self.settings_save_button.grid(row=1,column=3,sticky='nw',ipadx=20)
-        self.settings_lastused.grid(row=2,column=0,sticky='w',padx=(20,0))
         
     #---LOAD SETTINGS ON START
     #try to load default settings when the application starts:
@@ -1082,7 +1099,7 @@ class FED3_Viz(tk.Tk):
     def save_plot_data(self):
         clicked=self.plot_listbox.curselection()
         if clicked:
-            savepath = tk.filedialog.askdirectory(title='Select where to save highlighted plots')
+            savepath = tk.filedialog.askdirectory(title='Select where to save data for the highlighted plots')
             if savepath:
                 for i in clicked:
                     graph_name=self.plot_listbox.get(i)
@@ -1090,12 +1107,13 @@ class FED3_Viz(tk.Tk):
                     df = plot.plotdata
                     overwrite = self.overwrite_checkbox_val.get()
                     if plot.plotfunc == plots.interpellet_interval_plot:
-                        kde_name = graph_name
-                        kde_save = self.create_file_name(savepath, kde_name,
-                                                         ext = '.csv',
-                                                         overwrite=overwrite)
-                        df[0].to_csv(kde_save)
-                        bar_name = graph_name
+                        if not df[0].empty:
+                            kde_name = graph_name + ' KDE'
+                            kde_save = self.create_file_name(savepath, kde_name,
+                                                             ext = '.csv',
+                                                             overwrite=overwrite)
+                            df[0].to_csv(kde_save)
+                        bar_name = graph_name + ' bars'
                         bar_save = self.create_file_name(savepath, bar_name,
                                                          ext = '.csv',
                                                          overwrite=overwrite)
@@ -1286,6 +1304,7 @@ class FED3_Viz(tk.Tk):
             self.daynight_error_menu.set(settings_df.loc['dn_error','Values'])
             self.daynight_show_indvl_val.set(settings_df.loc['dn_show_indvl','Values'])
             self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
+            self.ipi_kde_val.set(settings_df.loc['kde','Values'])
             self.check_average_align()
             self.check_nightshade()
             self.check_pellet_type()
@@ -1318,7 +1337,8 @@ class FED3_Viz(tk.Tk):
                              average_align_days =self.average_aligndays_menu.get(),
                              dn_value           =self.daynight_values.get(),
                              dn_error           =self.daynight_error_menu.get(),
-                             dn_show_indvl      =self.daynight_show_indvl_val.get(),)
+                             dn_show_indvl      =self.daynight_show_indvl_val.get(),
+                             kde                =self.ipi_kde_val.get())
         return settings_dict
     
     def get_current_settings_as_args(self):

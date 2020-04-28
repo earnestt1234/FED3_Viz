@@ -175,7 +175,7 @@ def diagnostic_plot(FED, *args, **kwargs):
     output.index.name = 'Time'
     return output
 
-def interpellet_interval_plot(FEDs, *args, **kwargs):
+def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
     kde_output = pd.DataFrame()
     bar_output = pd.DataFrame()
     lowest = -2
@@ -191,17 +191,19 @@ def interpellet_interval_plot(FEDs, *args, **kwargs):
         df = FED.data
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
         y = [np.log10(val) for val in y if not pd.isna(val)]
-        plot = sns.distplot(y,bins=bins,label=FED.filename,)
-        kde = plot.get_lines()[0].get_data()
-        kde_dic = {FED.filename:kde[1]}
-        kde_df = pd.DataFrame(kde_dic, index=kde[0])  
-        kde_output = kde_output.join(kde_df, how='outer')
+        plot = sns.distplot(y,bins=bins,label=FED.filename,kde=kde,
+                            norm_hist=False)
+        if kde:
+            kde = plot.get_lines()[0].get_data()
+            kde_dic = {FED.filename:kde[1]}
+            kde_df = pd.DataFrame(kde_dic, index=kde[0])  
+            kde_output = kde_output.join(kde_df, how='outer')
         bar_x = [v.get_x() for v in plot.patches]
         bar_h = [v.get_height() for v in plot.patches]
         bar_dic = {FED.filename:bar_h}
         bar_df = pd.DataFrame(bar_dic, index=bar_x)
         bar_output = bar_output.join(bar_df, how='outer')
-        plt.close()
+        plt.close()      
     kde_output.index.name = 'log10(minutes)'
     bar_output.index.name = 'log10(minutes)'
     return kde_output, bar_output       

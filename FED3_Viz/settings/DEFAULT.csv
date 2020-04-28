@@ -19,3 +19,4 @@ average_align_days,3
 dn_value,pellets
 dn_error,SEM
 dn_show_indvl,True
+kde,True

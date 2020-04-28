@@ -78,18 +78,17 @@ register_matplotlib_converters()
     
     arguments = '\n#ARGUMENT VALUES:\n\n'
     for arg in args_ordered:
-        if arg == 'FEDs':
-            if len(used_args[arg]) > 1:
-                feds_text = ''
-                fed_list = []
-                fed_varname_dict = {}
-                for i, fedfile in enumerate(used_args[arg],start=1):
-                    var_name = 'fed' + str(i)
-                    feds_text += var_name + ' = ' + str(fedfile) + '\n'
-                    fed_list.append(var_name)
-                    fed_varname_dict[fedfile] = var_name
-                feds_text += '\nFEDs = ' + '[%s]' % ', '.join(map(str, fed_list)) + '\n'
-                arguments += feds_text
+        if arg == 'FEDs' and len(used_args['FEDs']) > 1:
+            feds_text = ''
+            fed_list = []
+            fed_varname_dict = {}
+            for i, fedfile in enumerate(used_args[arg],start=1):
+                var_name = 'fed' + str(i)
+                feds_text += var_name + ' = ' + str(fedfile) + '\n'
+                fed_list.append(var_name)
+                fed_varname_dict[fedfile] = var_name
+            feds_text += '\nFEDs = ' + '[%s]' % ', '.join(map(str, fed_list)) + '\n'
+            arguments += feds_text
         elif arg == 'groups':
             arguments += ('\ngroups = ' + str(used_args['groups']) + '\n\n')
             for fedfile in used_args['FEDs']:
