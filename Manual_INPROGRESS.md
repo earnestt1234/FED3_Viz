@@ -337,5 +337,6 @@ Settings specific to these plots are under **Settings > Average Pellet Plots > A
 <p align="center">
 	<img src="img/examples/ipi.png" width="500">
 </p>
+The Interpellet Interval Plot is a histogram where the values counted are the time between each pellet retrieval event.  This plot can give you a sense of how the mouse feeds or earns pellets, and it show changes in meal or eating frequencies.
 
-The Interpellet Interval Plot is a histogram where the values counted are the time between each pellet retrieval event.  This plot can give you a sense of how the mouse feeds or earns pellets, and it show changes in meal or eating frequencies
+This plot is a fairly unaltered use of `seaborn.distplot`.
