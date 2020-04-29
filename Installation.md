@@ -22,7 +22,7 @@ Instructions:
 1. Visit the [releases page](https://github.com/earnestt1234/FED3_Viz/releases)
 2. From the most recent version, download the`fed3viz-win64.zip` (under "Assets") and unzip.
 3. In the unzipped folder, navigate to `fed3viz/fed3viz.exe`.
-4. (Optional) Right-click > Create shortcut and place the shortcut in a less nasty folder*.
+4. (Optional) Right-click > Create shortcut and place the shortcut in a less nasty folder.*  There are `.ico` files which can be used to replace the shortcut icon in the `img` folder.
 5. Double click the `.exe` or the shortcut to run - you may have to permit Windows security to let the application run (from an unknown developer).  Startup is sometimes slow on the first use but gets better.
 
 ### Mac:
@@ -35,12 +35,16 @@ System Requirements:
 Instructions:
 
 1. Visit the [releases page](https://github.com/earnestt1234/FED3_Viz/releases)
+
 2. From the most recent version, download the`fed3viz-osx.zip` (under "Assets") and unzip.
+
 3. In the unzipped folder, navigate to `fed3viz/fed3viz` (the UNIX executable file)
-4. (Optional) Right-click > Make Alias and place the shortcut in a less nasty folder*.
+
+4. (Optional) Right-click > Make Alias and place the shortcut in a less nasty folder.*  There are `.ico` files which can be used to replace the shortcut icon in the `img` folder.
+
 5. Double click `fed3viz` or the shortcut to run - you may have to permit Mac security to let the application run (from an unknown developer).  Startup is sometimes slow on the first use but gets better.  Currently the Mac application will have a console running in the background.
 
-
+   
 
 *_I haven't figured out how to bundle the zip folder with a working relative shortcut..._
 

@@ -26,7 +26,7 @@ If you do notice any inaccuracies, typos, misinformation, or missed content in t
 
 ### Installation
 
-On the FED3 Viz GitHub, there is an "Installation.md" markdown file which contains instructions on how to run FED3 Viz via either a) running the Python script or b) running a bundled application (from Windows or Mac).  These instructions have been appended at the end of this manual.  The rest of the manual will deal with the use of the application once installed.
+On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnestt1234/FED3_Viz/blob/master/Installation.md) markdown file which contains instructions on how to run FED3 Viz via either a) running the Python script or b) running a bundled application (from Windows or Mac).  This manual will only cover the use of the application once installed.
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
@@ -51,6 +51,7 @@ On the FED3 Viz GitHub, there is an "Installation.md" markdown file which contai
   
   - [Creating Groups](#creating-groups)
   - [Deleting Groups](#deleting-groups)
+  
 - [Saving Groups](#saving-groups)
   
 - [Plots](#plots)
@@ -73,14 +74,13 @@ On the FED3 Viz GitHub, there is an "Installation.md" markdown file which contai
     - [Saving Code](#saving-code)
   - [Deleting Plots](#deleting-plots)
   
-- Settings
-  
-  - Loading and Saving Settings
-  
-- FAQ
+- [Settings](#settings)
 
-- Appendix:
-  - Installation Repost
+  - [Saving Settings](#saving-settings)
+  - [Default Settings](#default-settings)
+  - [Last Used Settings](#last-used-settings)
+
+- [FAQ](#faq)
 
   
 
@@ -88,7 +88,7 @@ On the FED3 Viz GitHub, there is an "Installation.md" markdown file which contai
 
 # Tour
 
-This section will introduce the layout of FED3 Viz, and define some areas of the application.  FED3 Viz has 4 different panes, which can be selected by clicking the following tabs at the top of the application window.
+This section will introduce the layout of FED3 Viz, and define some areas of the application.  FED3 Viz has four different panes, which can be selected by clicking the following tabs at the top of the application window.
 
 - **Home Tab**
 - **Plots Tab**
@@ -110,7 +110,7 @@ Elements of the Home Tab:
 4. The **Group View** lists all the currently loaded "groups," used for combining data from multiple FEDs (see the "Groups" section below).
 5. The bottom row of buttons, which correspond to buttons used to create plots.
 
-Whether or not a button is active depends on what data have been loaded into the application; for example, most plotting buttons must have some files selected in order to be active.  Specific cases will be described below in the context of each button's function.
+Whether or not a button is active depends on what data have been loaded into the application; for example, most plotting buttons must have some files selected in order to be active.
 
 ### Plots Tab
 
@@ -164,7 +164,7 @@ The **Load Button** of the Home Tab is used for loading data into FED3 Viz; this
 
 ##### How FEDs Are Loaded
 
-FED3 Viz will attempt to load every file `.csv` or `.xlsx` file selected by the Load Button file dialogue using a Python library for working with tabular data (`pandas`).  The loading process first tries to parse the file to find columns matching the standard FED3 data columns (as of the time of writing).
+FED3 Viz will attempt to load every file `.csv` or `.xlsx` file selected by the Load Button file dialogue using a Python library for working with tabular data (`pandas`).  The loading process first tries to parse the file to find columns matching the standard FED3 data columns (as of the time of writing this manual).
 
 *Standard FED3 Data Columns:*
 
@@ -189,7 +189,7 @@ An error message pop-up may be raised if there are any issues encountered during
 - Unrecognized: the file(s) was not recognized as FED3 data.  This error means that the program failed to load the data.  This can occur from attempts to read non `.csv` or `.xlsx` files, or from correct file types that differ significantly from the standard FED3 file format.  This error can not be suppressed.
 - Missing Data: the file(s) is missing at least one of the default columns.  This means that the file was loaded, but it may be missing some columns which are used by FED3 Viz for plotting; it is meant to serve as a warning that some plots may be unavailable or may produce unexpected results.  This error can occur when the raw data has been edited to remove or rename columns, or when using an earlier version of FED3 Arduino code.  This error can be suppressed by unticking **Settings > General > Show missing column warning when loading.**
 
-Further discussion of problems with loading may be brought up in the **FAQ** as the application develops.  Additionally, the description of each plot in the "Plots" section below will list the data columns required by each plot.
+Further discussion of problems with loading may be brought up in the [FAQ](#FAQ) as the application develops.  Additionally, the description of each plot in the "Plots" section below will list the data columns required by each plot.
 
 ### File View
 
@@ -427,6 +427,8 @@ FED3 Viz includes a `matplotlib` interactive toolbar for editing rendered plots.
 
 There are three main aspects of plots which can be saved in FED3 Viz: images, data, and code.
 
+Note that by default, FED3 Viz will not overwrite images or data saved with conflicting names.  This can be changed by checking **Settings > General > Overwrite plots & data with the same name when saving**.
+
 ##### Saving Images
 
 To save plots, highlight one or more plots from the Plot List and click the **Save Plots Button**.  This will bring up a file dialogue, and prompt the user to select a folder to save the images in.   Plots are saved in `.png` format at 300 DPI.  The name of the file will be the same as the plot's name in the Plot List.  Note that the Navigation Toolbar also has a button that can save plots, but using it (in this case) will limit the DPI to 150.
@@ -466,13 +468,57 @@ To delete plots, highlight one or more plots from the Plot List and hit the **De
 
 # Settings
 
+Most of the settings available on the Settings Tab pertain to plots and were described above.  There are a couple additional aspects of the Settings menu which will be described here.
+
+### Saving Settings
+
+FED3 Viz can save settings and load settings in case of specific user preferences.  Settings files are saved in `.csv` format, and they preserve the state of all settings in the Settings Tab.  There is a default **Settings Folder** for saving settings, which depends on the installation method:
+
+- **Windows or Mac Executable:** `fed3viz/settings/`
+- **Python Script** (i.e. GitHub source code): `FED3_Viz/FED3_Viz/settings/`
+
+To save the current settings, click the **Save Button** under **Settings > Save/Load Settings.**  This will prompt you to provide a name for the settings file.
+
+Settings can later be loaded by using the **Load Button** under **Settings > Save/Load Settings**.  This will default to looking in the Settings Folder.
+
+### Default Settings
+
+The Settings Folder comes with a `DEFAULT.CSV` file, and the program attempts to load this every time it starts up.  You can overwrite this file, or save any other settings as `DEFAULT.CSV` in order to load them automatically at startup.  If this file cannot be found or is improperly formatted in anyway, it will not be loaded and the application will fall back to some built-in default settings.
+
+### Last Used Settings
+
+There is also an option to remember the settings used the last time the application was closed.  Every time the program closes, it writes a `LAST_USED.CSV` file into the Settings Folder, containing the state of settings at that time.  If you have checked **Settings > Save/Load Settings > Load last used settings when opening**, these settings will be loaded.  
+
 <div style="page-break-after: always; break-after: page;"></div> 
 
 # FAQ
 
+This section will mainly cover troubleshooting and issues; please also check the manual for discussion of specific functions and features.
+
+- **I downloaded the executable but it won't run.**   Unfortunately, I am fairly unaware of the exact system requirements for FED3 Viz (it was built with `PyInstaller`, which is largely a black box to me).  If on Windows, one thing you can try is running the `.exe` from the command line (`cd` into the directory and then enter `fed3viz.exe`).  This will leave the console open and may provide an error message which can be shared.  On Mac, the Terminal can similarly be inspected.  
+
+  If the error persists, I would instead recommend trying to run FED3 Viz from the Python script (Method 2 of the Installation instructions).  This is more likely to be troubleshooted successfully. 
+
+- **I can't load some of my FED data, or I can load but some plots don't work**.  The most likely cause is that you have a previous version of FED output data, or that there have been edits to raw data.  FED3 Viz tries to handle old formats of the data, but there may be cases which cannot be caught.  Some examples of current data are included on GitHub in the `example_data` folder.  You can compare your data to these to see if there might be any obvious differences; you can also test that the example data load correctly.  Please share any specific issues on GitHub.
+
+- **I'm seeing errors & warning when starting up or running the program.**  Some of these are to be expected, and you shouldn't worry about them if the program continues to work as expected.  If there are functional issues, please report these errors.
+
+- **On Mac, I don't get the option to select some files when loading.**  This is a bug right now; try to change the file types searched for from "All" to another option, and then back to "All".
+
+- **I'm encountering issues when using files with the same name**.  Please report these; there could be some errors with duplicate files or files with exactly matching names which need to be resolved.  The easiest workaround before a fix is to rename files (outside of FED3 Viz) to be unique. 
+
+- **Will there be more plots/features added?**  Yes!  FED3 Viz will likely be worked on through Summer 2020.  There are more features in the works, particularly in regards to the operant functions of FED3 Viz.  Please share any suggestions for development on GitHub or the FED3 Google Group.
+
 - **I saved the Python code for a plot and it doesn't run.**  This could be due to many issues, but some possible causes are:
+  
   - You are not using Python 3
   - You do not have the necessary packages installed, or their versions are incompatible with FED3 Viz.  The packages used by FED3 Viz are documented in the `requirements.txt` file on GitHub
   - Your IDE is not showing the plot (sometimes an issue with how inline plotting is handled; sometimes this causes plots not to show on the first run)
   - There is an error in the output plot script, which is certainly possible!  The most likely issues are that some of the necessary helper functions were not included or the arguments are improperly formatted.  Please report these errors on GitHub with the specific context, both to help solve your specific case and to improve the application.
-- **I have suggestions for improving the plot code I saved.**  Please note that FED3 Viz's plotting functions are designed to handle different settings on the fly, and the code to make one specific plot may be writable in a much less verbose way.  Some pieces of the code may be helpful for the application, but irrelevant to your specific plot.  That being said, I would enjoy discussing (on GitHub) any proposed changes which significantly contribute to the readable or speed of the code.  Aside from that, sharing code may be useful for other users.
+  
+- **I have suggestions for improving the plot code I saved.**  Please note that FED3 Viz's plotting functions are designed to handle different settings on the fly, and the code to make one specific plot may be writable in a much less verbose way.  Some pieces of the code may be helpful for the application, but irrelevant to your specific plot.  
+
+  That being said, I would enjoy discussing (on GitHub) and possibly including any proposed changes which significantly contribute to the readable or speed of the code.  Aside from that, sharing code may be useful for other users.
+
+- **I can't load some settings, or my settings look weird.**  This could be an issue with altered setting files, or settings files with which have entries that don't match the application.  Please redownload the `DEFAULT.CSV` and `LAST_USED.CSV` files from GitHub and replace them in your FED3 Viz folder.  Alternatively, try to save new settings from the application to overwrite the `DEFAULT.CSV` file.
+- **I have an issue that I have shared and I haven't heard back from anyone.**  Please be aware that FED3 Viz and FEDs are developed and maintained by a small group of researchers as a means to meet our research goals.  We will do our best to respond prudently to questions shared online, but bear with us!
