@@ -71,7 +71,7 @@ On the FED3 Viz GitHub, there is an "Installation.md" markdown file which contai
     - [Saving Images](#saving-images)
     - [Saving Data](#saving-data)
     - [Saving Code](#saving-code)
-  - Deleting Plots
+  - [Deleting Plots](#deleting-plots)
   
 - Settings
   
@@ -457,6 +457,14 @@ Plot Code is displayed in a new window, and can be saved as a `.py` or `.txt` fi
 **Saving Data**
 
 Clicking the **Save Plot Data Button** will export one or more `.csv` files which contain the values plotted; the format depends on the type of graph.  These files can be used to recreate graphs or run statistics in separate software.  Clicking the Save Plot Data Button will bring up a file dialogue, and will ask the user to select a location for saving the output.
+
+### Deleting Plots
+
+To delete plots, highlight one or more plots from the Plot List and hit the **Delete Button**.
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
+# Settings
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
