@@ -248,8 +248,9 @@ class FED3_Viz(tk.Tk):
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
      
-    #---PLOT SELECT DICTIONARY
-        self.plot_help_dict = {'Single Pellet Plot':
+    #---PLOT_NODES_DICTIONARY
+        #associate each plot_treeview entry with a (function, helptext) tuple
+        self.plot_nodes = {'Single Pellet Plot':
                                    'Plot pellets received for one device',}
         
                
@@ -962,13 +963,13 @@ class FED3_Viz(tk.Tk):
         self.home_buttons_help.configure(text=self.hover_text_one_dict[widget])
         
     def clear_hover_text_one(self, event):
-        self.home_buttons_help.configure(text='')
+        self.show_plot_help()
     
-    def show_plot_help(self, event):
+    def show_plot_help(self, *event):
         selection = self.plot_treeview.selection()
         text = self.plot_treeview.item(selection,'text')
-        if text in self.plot_help_dict:
-            self.home_buttons_help.configure(text=self.plot_help_dict[text])
+        if text in self.plot_nodes:
+            self.home_buttons_help.configure(text=self.plot_nodes[text])
         else:
             self.home_buttons_help.configure(text='')
     
