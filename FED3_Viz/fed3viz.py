@@ -88,12 +88,22 @@ class FED3_Viz(tk.Tk):
         self.plot_buttons.grid(row=4,column=0,sticky='ew',columnspan=2)
         
         #labels
+        italic = 'Segoe 10 italic'
+        italicbold = 'Segoe 10 italic bold'
         self.home_buttons_help = tk.Label(self.fed_text, text='Welcome to FED3 Viz!',
                                           anchor='w')
         self.file_view_label    = tk.Label(self.home_sheets, text='File View',
-                                          font='Segoe 10 italic')
+                                          font=italic)
         self.group_view_label    = tk.Label(self.home_sheets, text='Group View',
-                                          font='Segoe 10 italic')
+                                          font=italic)
+        self.pellet_buttonlabel = tk.Label(self.plot_buttons, text='Pellet Plots:',
+                                           font=italicbold)
+        self.poke_buttonlabel = tk.Label(self.plot_buttons, text='Poke Plots:',
+                                         font=italicbold)
+        self.circadian_buttonlabel = tk.Label(self.plot_buttons, text='Circadian Plots:',
+                                              font=italicbold)
+        self.other_buttonlabel    = tk.Label(self.plot_buttons, text='Other Plots:',
+                                              font=italicbold)
         
         #spreadsheets
         treeview_columns = ['Name','# events','start time',
@@ -128,30 +138,45 @@ class FED3_Viz(tk.Tk):
                                        command=self.delete_FEDs,
                                        state=tk.DISABLED,
                                        width=8)
+        plot_bw=25
         self.button_single_pellet_plot = tk.Button(self.plot_buttons, 
                                                    text='Single Pellet Plot',
                                                    command=self.pellet_plot_single_TK,
-                                                   state=tk.DISABLED)
+                                                   state=tk.DISABLED,
+                                                   width=plot_bw)
         self.button_group_pellet_plot  = tk.Button(self.plot_buttons, 
                                                    text='Multi Pellet Plot',
                                                    command=self.pellet_plot_multi_TK,
-                                                   state=tk.DISABLED)
+                                                   state=tk.DISABLED,
+                                                   width=plot_bw)
         self.button_avg_pellet_plot    = tk.Button(self.plot_buttons,
                                                    text='Average Pellet Plot',
                                                    command=self.pellet_plot_avg_TK,
-                                                   state=tk.DISABLED)
+                                                   state=tk.DISABLED,
+                                                   width=plot_bw)
+        self.button_poke_plot          = tk.Button(self.plot_buttons, 
+                                                   text='Single Poke Plot',
+                                                   state=tk.DISABLED,
+                                                   width=plot_bw)
+        self.button_poke_bias          = tk.Button(self.plot_buttons, 
+                                                   text='Single Poke Bias Plot',
+                                                   state=tk.DISABLED,
+                                                   width=plot_bw)
         self.button_interpellet_plot   = tk.Button(self.plot_buttons,
                                                    text='Interpellet Interval Plot',
                                                    command=self.interpellet_plot_TK,
-                                                   state=tk.DISABLED)
+                                                   state=tk.DISABLED,
+                                                   width=plot_bw)
         self.button_diagnostic_plot    = tk.Button(self.plot_buttons,
                                                    text='Diagnostic Plot',
                                                    command=self.diagnostic_plot_TK,
-                                                   state=tk.DISABLED)
+                                                   state=tk.DISABLED,
+                                                   width=plot_bw)
         self.button_daynight_plot      = tk.Button(self.plot_buttons,
                                                    text='Day/Night Plot',
                                                    command=self.daynight_plot_TK,
-                                                   state=tk.DISABLED)
+                                                   state=tk.DISABLED,
+                                                   width=plot_bw)
         self.button_create_group       = tk.Button(self.fed_buttons, text='Create Group',
                                                    command=self.create_group,
                                                    state=tk.DISABLED,
@@ -191,7 +216,11 @@ class FED3_Viz(tk.Tk):
                                     self.button_interpellet_plot:
                                         'Plot histogram of intervals between pellet retrievals',
                                     self.button_daynight_plot:
-                                        'Plot group averages for day/night on a bar chart'}
+                                        'Plot group averages for day/night on a bar chart',
+                                    self.button_poke_plot:
+                                        'Plot the amount of correct and incorrect pokes',
+                                    self.button_poke_bias:
+                                        'Plot the tendency to pick one poke over another'}
         for button in self.hover_text_one_dict.keys():
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
@@ -216,12 +245,19 @@ class FED3_Viz(tk.Tk):
         self.group_view_label.grid(row=1,column=1,sticky='w')
         
         #plot_buttons
-        self.button_single_pellet_plot.grid(row = 0, column = 0,sticky='ew')
-        self.button_group_pellet_plot.grid(row=0, column = 1,sticky='ew')
-        self.button_avg_pellet_plot.grid(row=0,column=2,sticky='ew')
-        self.button_interpellet_plot.grid(row=0,column=3,sticky='ew')
-        self.button_diagnostic_plot.grid(row=0,column=4,sticky='ew')
-        self.button_daynight_plot.grid(row=0,column=5,sticky='ew')
+        self.pellet_buttonlabel.grid(row=0, column=0, sticky='w')
+        self.button_single_pellet_plot.grid(row=1, column=0,sticky='ew',padx=(0,10))
+        self.button_group_pellet_plot.grid(row=2, column=0,sticky='ew',padx=(0,10))
+        self.button_avg_pellet_plot.grid(row=3,column=0,sticky='ew',padx=(0,10))
+        self.poke_buttonlabel.grid(row=0, column=1, sticky='w')
+        self.button_poke_plot.grid(row=1, column=1, sticky='ew', padx=(0,10))
+        self.button_poke_bias.grid(row=2, column=1, sticky='ew', padx=(0,10))
+        self.circadian_buttonlabel.grid(row=0,column=2,sticky='w')
+        self.button_daynight_plot.grid(row=1,column=2,sticky='ew',padx=(0,10))
+        self.other_buttonlabel.grid(row=0, column=3, sticky='w')
+        self.button_interpellet_plot.grid(row=1,column=3,sticky='ew',padx=(0,10))
+        self.button_diagnostic_plot.grid(row=2,column=3,sticky='ew',padx=(0,10))
+        
 
     #---INIT WIDGETS FOR PLOTS TAB
         self.plot_container = tk.Frame(self.plot_tab)
