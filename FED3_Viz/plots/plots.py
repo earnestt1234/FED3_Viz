@@ -82,7 +82,8 @@ def shade_darkness(ax, min_date,max_date,lights_on,lights_off,
                    end,
                    color='gray',
                    alpha=.2,
-                   label='_'*i + 'lights off')
+                   label='_'*i + 'lights off',
+                   zorder=0)
 
 def dn_get_yvals(value, df):
     possible = ['pellets','retrieval time','interpellet intervals',
@@ -120,6 +121,13 @@ def raw_data_scatter(array, xcenter, spread):
     x += xcenter
     return x,y
 
+def poke_resample_func(bin_, val, as_percent):
+    if as_percent: 
+        output = (bin_==val).sum()/len(bin_)*100 if len(bin_) else np.nan
+    else:
+        output = (bin_==val).sum()
+    return output
+     
 #---PLOT FUNCTIONS
 
 def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
@@ -618,3 +626,79 @@ def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
     plt.tight_layout()
     
     return fig
+
+def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_percent,
+              shade_dark, lights_on, lights_off, *args, **kwargs):
+    assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
+    fig, ax = plt.subplots(figsize=(7, 3.5), dpi=150)
+    resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+    if poke_show_correct:
+        y = resampled.apply(poke_resample_func, val=True, as_percent=poke_percent)
+        x = y.index
+        ax.plot(x, y, color='mediumseagreen', label = 'correct pokes')
+    if poke_show_error:
+        y = resampled.apply(poke_resample_func, val=False, as_percent=poke_percent)
+        x = y.index
+        ax.plot(x, y, color='indianred', label = 'error pokes')
+    days = mdates.DayLocator()
+    hours = mdates.HourLocator(byhour=[0,6,12,18])
+    xfmt = mdates.DateFormatter('%b %d')
+    ax.xaxis.set_major_locator(days)
+    ax.xaxis.set_major_formatter(xfmt)
+    ax.xaxis.set_minor_locator(hours)
+    ax.set_xlabel('Time')
+    ylabel = 'Pokes'
+    if poke_percent:
+        ylabel += ' (%)'
+    ax.set_ylabel(ylabel)
+    title = ('Pokes for ' + FED.filename)
+    ax.set_title(title)
+    if shade_dark:
+        shade_darkness(ax, min(x), max(x),
+                       lights_on=lights_on,
+                       lights_off=lights_off)
+    ax.legend(bbox_to_anchor=(1,1), loc='upper left')   
+    plt.tight_layout()
+        
+    return fig
+        
+def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
+              lights_off, dynamic_color, *args, **kwargs):
+    assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
+    fig, ax = plt.subplots(figsize=(7, 3.5), dpi=150)
+    if bias_style == 'correct - error':
+        resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+        y = resampled.apply(lambda b: (b==True).sum() - (b==False).sum())
+    elif bias_style == 'left - right':
+        resampled = FED.data[['Binary_Left_Pokes',
+                              'Binary_Right_Pokes']].resample(poke_bins).sum()
+        y = resampled['Binary_Left_Pokes'] - resampled['Binary_Right_Pokes']
+    x = y.index
+    maxy = max(np.abs(y))*1.1
+    xoffset = (max(x) - min(x))*.05
+    if not dynamic_color:
+        ax.plot(x, y, color = 'magenta', zorder=3)
+    else:
+        xnew = pd.date_range(min(x),max(x),periods=10000)
+        ynew = np.interp(xnew, x, y)
+        ax.scatter(xnew, ynew, s=1, c=ynew,
+                   cmap='bwr', vmin=-maxy, vmax=maxy, zorder=1)
+    days = mdates.DayLocator()
+    hours = mdates.HourLocator(byhour=[0,6,12,18])
+    xfmt = mdates.DateFormatter('%b %d')
+    ax.xaxis.set_major_locator(days)
+    ax.xaxis.set_major_formatter(xfmt)
+    ax.xaxis.set_minor_locator(hours)
+    ax.set_xlabel('Time') 
+    ax.set_ylim(-maxy, maxy)
+    ax.set_xlim(min(x)-xoffset, max(x)+xoffset)
+    ax.set_ylabel('poke bias (' + bias_style + ')')
+    ax.set_title('Poke Bias for ' + FED.filename)
+    ax.axhline(y=0, linestyle='--', color='gray', zorder=2)
+    if shade_dark:
+        shade_darkness(ax, min(x), max(x),
+                       lights_on=lights_on,
+                       lights_off=lights_off)
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left') 
+    return fig
+        
