@@ -79,13 +79,18 @@ class FED3_Viz(tk.Tk):
         self.fed_buttons  = tk.Frame(self.home_tab)
         self.home_sheets = tk.Frame(self.home_tab)
         self.plot_buttons = tk.Frame(self.home_tab)
+        self.plot_selector = tk.Frame(self.home_tab)
         
         self.fed_text.grid(row=1,column=0,sticky='w',padx=(10,0))
         self.fed_buttons.grid(row=2,column=0, sticky='ews') 
         self.home_sheets.grid(row=3,column=0,sticky='nsew',columnspan=2)
         self.home_sheets.rowconfigure(0,weight=1)
         self.home_sheets.columnconfigure(0,weight=1)
-        self.plot_buttons.grid(row=4,column=0,sticky='ew',columnspan=2)
+        self.plot_selector.grid(row=3, column=3, sticky='nsew', padx=(20,0),
+                                columnspan=2)
+        self.plot_selector.rowconfigure(0,weight=1)
+        
+        # self.plot_buttons.grid(row=4,column=0,sticky='ew',columnspan=2)
         
         #labels
         italic = 'Segoe 10 italic'
@@ -115,10 +120,7 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.column('start time', width=125)
         self.files_spreadsheet.column('end time', width=125)
         self.files_spreadsheet.column('duration', width=100)
-        self.files_spreadsheet.column('groups', width=100)
-        self.group_view = tk.Listbox(self.home_sheets,selectmode=tk.EXTENDED,
-                               activestyle=tk.NONE)
-        self.group_view.bind('<ButtonRelease-1>', self.select_group)
+        self.files_spreadsheet.column('groups', width=100)     
         for i,val in enumerate(treeview_columns):
             self.files_spreadsheet.heading(i, text=val)
         self.files_spreadsheet['show'] = 'headings'
@@ -127,7 +129,28 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.bind('<ButtonRelease-1>', self.update_buttons_home)
         self.files_spreadsheet.bind('<Double-Button-1>', lambda event, reverse=True: 
                                     self.sort_FEDs(event,reverse))
-
+        self.group_view = tk.Listbox(self.home_sheets,selectmode=tk.EXTENDED,
+                                     activestyle=tk.NONE, height=5)
+        self.group_view.bind('<ButtonRelease-1>', self.select_group)
+        
+        #plot selector:
+        self.plot_treeview = ttk.Treeview(self.plot_selector, selectmode = 'browse')
+        self.plot_treeview.heading('#0', text='Plots')
+        self.ps_pellet = self.plot_treeview.insert("", 1, text='Pellets')
+        self.plot_treeview.insert(self.ps_pellet, 1, text='Single Pellet Plot')
+        self.plot_treeview.insert(self.ps_pellet, 2, text='Multi Pellet Plot')
+        self.plot_treeview.insert(self.ps_pellet, 3, text='Average Pellet Plot')
+        self.plot_treeview.insert(self.ps_pellet, 4, text='Interpellet Interval')
+        self.ps_poke = self.plot_treeview.insert("", 2, text='Pokes')
+        self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
+        self.plot_treeview.insert(self.ps_poke, 2, text='Poke Bias Plot')
+        self.ps_circadian = self.plot_treeview.insert("", 3, text='Circadian')
+        self.plot_treeview.insert(self.ps_circadian, 1, text='Day/Night Plot')
+        self.plot_treeview.insert(self.ps_circadian, 2, text='Twenty-Four Hour Plot')
+        self.ps_other = self.plot_treeview.insert("", 4, text='Other')
+        self.plot_treeview.insert(self.ps_other, 1, text='Diagnostic Plot')
+        self.plot_treeview.bind('<<TreeviewSelect>>', self.show_plot_help)
+        
         #buttons
         self.button_load   = tk.Button(self.fed_buttons, text='Load',
                                        command=lambda: 
@@ -225,6 +248,11 @@ class FED3_Viz(tk.Tk):
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
      
+    #---PLOT SELECT DICTIONARY
+        self.plot_help_dict = {'Single Pellet Plot':
+                                   'Plot pellets received for one device',}
+        
+               
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
         self.button_load.grid(row=0,column=0,sticky='sew')
@@ -240,9 +268,12 @@ class FED3_Viz(tk.Tk):
         
         #spreadsheets
         self.files_spreadsheet.grid(row=0,column=0,sticky='nsew')
-        self.group_view.grid(row=0,column=1,sticky='nse')
         self.file_view_label.grid(row=1,column=0,sticky='w')
-        self.group_view_label.grid(row=1,column=1,sticky='w')
+        self.group_view.grid(row=2,column=0,sticky='nsew')     
+        self.group_view_label.grid(row=3,column=0,sticky='w')
+        
+        #plot selector
+        self.plot_treeview.grid(row=0,column=0,sticky='nsew')
         
         #plot_buttons
         self.pellet_buttonlabel.grid(row=0, column=0, sticky='w')
@@ -933,6 +964,14 @@ class FED3_Viz(tk.Tk):
     def clear_hover_text_one(self, event):
         self.home_buttons_help.configure(text='')
     
+    def show_plot_help(self, event):
+        selection = self.plot_treeview.selection()
+        text = self.plot_treeview.item(selection,'text')
+        if text in self.plot_help_dict:
+            self.home_buttons_help.configure(text=self.plot_help_dict[text])
+        else:
+            self.home_buttons_help.configure(text='')
+    
     def sort_FEDs(self, event, reverse):
         where_clicked = self.files_spreadsheet.identify_region(event.x,event.y)
         if where_clicked == 'heading':
@@ -1043,6 +1082,12 @@ class FED3_Viz(tk.Tk):
         
     def open_url(self, url, *args):
         webbrowser.open_new(url)
+        
+    def expand_plot_selector(self):
+        self.plot_treeview.item(self.ps_pellet, open=True)
+        self.plot_treeview.item(self.ps_poke, open=True)
+        self.plot_treeview.item(self.ps_circadian, open=True)
+        self.plot_treeview.item(self.ps_other, open=True)
         
     #---PLOT TAB BUTTON FUNCTIONS
     def rename_plot(self):
@@ -1430,14 +1475,10 @@ class FED3_Viz(tk.Tk):
             warning1.grid(row=0,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
         if weird_names:
             warning2.grid(row=1,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
- 
-    
+            
 root = FED3_Viz()
-# def print_focus(*args):
-#     print(root.focus_get())
 root.protocol("WM_DELETE_WINDOW", root.save_last_used)
 root.bind('<Escape>', root.update_all_buttons)
-# root.bind('<ButtonRelease-1>', print_focus)
 root.maxsize(1500,1000)
 root.minsize(1050,20)
 if __name__=="__main__":
