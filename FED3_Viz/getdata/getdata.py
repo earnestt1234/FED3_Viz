@@ -36,7 +36,7 @@ def pellet_plot_multi_aligned(FEDs,*args,**kwargs):
         df = file.data
         x = [(time.total_seconds()/3600) for time in df['Elapsed_Time']]
         y = list(df['Pellet_Count'])
-        dic = {file.filename:y}
+        dic = {file.basename:y}
         df_list.append(pd.DataFrame(dic, index=x))
     output = pd.DataFrame()
     for df in df_list:
@@ -50,7 +50,7 @@ def pellet_plot_multi_unaligned(FEDs,*args,**kwargs):
         df = file.data
         x = df.index.values
         y = list(df['Pellet_Count'])
-        dic = {file.filename:y}
+        dic = {file.basename:y}
         df_list.append(pd.DataFrame(dic, index=x))
     output = pd.DataFrame()
     for df in df_list:
@@ -67,7 +67,7 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, *args,**kwargs):
             x.append(date - df.index.values[0])
         x = [(time/np.timedelta64(1,'h')) for time in x]
         y = list(df['Binary_Pellets'])
-        dic = {file.filename:y}
+        dic = {file.basename:y}
         df_list.append(pd.DataFrame(dic, index=x))
     output = pd.DataFrame()
     for df in df_list:
@@ -81,7 +81,7 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, *args,**kwargs):
         df = file.data.resample(pellet_bins,base=0).sum()
         x = df.index.values
         y = list(df['Binary_Pellets'])
-        dic = {file.filename:y}
+        dic = {file.basename:y}
         df_list.append(pd.DataFrame(dic, index=x))
     output = pd.DataFrame()
     for df in df_list:
@@ -109,8 +109,8 @@ def pellet_plot_average(FEDs, groups, average_bins,
                 df = df[(df.index > latest_start) &
                         (df.index < earliest_end)].copy()
                 avg.append(df['Binary_Pellets'])
-                if file.filename not in output.columns:
-                    indvl_line = pd.DataFrame({file.filename:df['Binary_Pellets']},
+                if file.basename not in output.columns:
+                    indvl_line = pd.DataFrame({file.basename:df['Binary_Pellets']},
                                               index=df.index)
                     output = output.join(indvl_line, how='outer')                     
         group_avg = np.mean(avg, axis=0)
@@ -147,8 +147,8 @@ def pellet_plot_aligned_average(FEDs, groups, average_bins, average_align_start,
                 df.index = [i-alignment_shift for i in df.index]
                 df = df.reindex(date_range)
                 avg.append(df['Binary_Pellets'])
-                if file.filename not in output.columns:
-                    indvl_line = pd.DataFrame({file.filename:df['Binary_Pellets']},
+                if file.basename not in output.columns:
+                    indvl_line = pd.DataFrame({file.basename:df['Binary_Pellets']},
                                               index=df.index)
                     output = output.join(indvl_line, how='outer')
                     
@@ -191,16 +191,16 @@ def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
         df = FED.data
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
         y = [np.log10(val) for val in y if not pd.isna(val)]
-        plot = sns.distplot(y,bins=bins,label=FED.filename,kde=kde,
+        plot = sns.distplot(y,bins=bins,label=FED.basename,kde=kde,
                             norm_hist=False)
         if kde:
             kde = plot.get_lines()[0].get_data()
-            kde_dic = {FED.filename:kde[1]}
+            kde_dic = {FED.basename:kde[1]}
             kde_df = pd.DataFrame(kde_dic, index=kde[0])  
             kde_output = kde_output.join(kde_df, how='outer')
         bar_x = [v.get_x() for v in plot.patches]
         bar_h = [v.get_height() for v in plot.patches]
-        bar_dic = {FED.filename:bar_h}
+        bar_dic = {FED.basename:bar_h}
         bar_df = pd.DataFrame(bar_dic, index=bar_x)
         bar_output = bar_output.join(bar_df, how='outer')
         plt.close()      
@@ -234,11 +234,11 @@ def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
                     night_vals.append(dn_get_yvals(dn_value,night_slice))
                 group_day_values.append(np.mean(day_vals))
                 group_night_values.append(np.mean(night_vals))
-                if fed.filename not in used:
-                    f = fed.filename
+                if fed.basename not in used:
+                    f = fed.basename
                     output.loc[dn_value,f+' day'] = np.mean(day_vals)
                     output.loc[dn_value,f+' night'] = np.mean(night_vals)  
-                    used.append(fed.filename)
+                    used.append(fed.basename)
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
         group_avg_df.loc[dn_value,group+' day'] = group_day_mean
