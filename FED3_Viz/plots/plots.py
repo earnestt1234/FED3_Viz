@@ -700,5 +700,7 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
                        lights_on=lights_on,
                        lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left') 
+    plt.tight_layout()
+    
     return fig
         

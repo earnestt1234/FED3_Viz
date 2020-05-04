@@ -20,3 +20,9 @@ dn_value,pellets
 dn_error,SEM
 dn_show_indvl,True
 kde,True
+poke_bins,1
+poke_show_correct,True
+poke_show_error,True
+poke_percent,False
+bias_style,correct - error
+dynamic_color,True

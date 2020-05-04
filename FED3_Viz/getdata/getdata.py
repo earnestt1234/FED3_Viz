@@ -13,7 +13,7 @@ import seaborn as sns
 
 from scipy import stats
 
-from plots.plots import dn_get_yvals, night_intervals
+from plots.plots import dn_get_yvals, night_intervals, poke_resample_func
 
 def pellet_plot_single(FED,*args, **kwargs):
     df = FED.data
@@ -250,4 +250,35 @@ def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
             group_avg_df.loc[dn_value,group+' day STD'] = np.std(group_day_values)
             group_avg_df.loc[dn_value,group+' night STD'] = np.std(group_night_values)       
     output = output.merge(group_avg_df, left_index=True, right_index=True)
+    return output
+
+def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_percent,
+              *args, **kwargs):
+    output=pd.DataFrame()
+    resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+    if poke_show_correct:
+        y = resampled.apply(poke_resample_func, val=True, as_percent=poke_percent)
+        y = y.rename('Correct Pokes')
+        x = y.index
+        temp = pd.DataFrame(y, index=x,)
+        output = output.join(temp, how='outer')
+    if poke_show_error:
+        y = resampled.apply(poke_resample_func, val=False, as_percent=poke_percent)
+        y = y.rename('Incorrect Pokes')
+        x = y.index
+        temp = pd.DataFrame(y, index=x,)
+        output = output.join(temp, how='outer')
+    return output
+
+def poke_bias(FED, poke_bins, bias_style, *args, **kwargs):
+    if bias_style == 'correct - error':
+        resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+        y = resampled.apply(lambda b: (b==True).sum() - (b==False).sum())
+    elif bias_style == 'left - right':
+        resampled = FED.data[['Binary_Left_Pokes',
+                              'Binary_Right_Pokes']].resample(poke_bins).sum()
+        y = resampled['Binary_Left_Pokes'] - resampled['Binary_Right_Pokes']
+    y = y.rename('Poke Bias (' + bias_style + ')')
+    x = y.index
+    output = pd.DataFrame(y, index=x)
     return output

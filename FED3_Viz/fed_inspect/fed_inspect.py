@@ -20,12 +20,13 @@ spec.loader.exec_module(mymod2)
 plotfuncs = {name:func for name, func in inspect.getmembers(mymod2)}
 
 string_arguments = ['pellet_color', 'pellet_bins', 'average_bins',
-                    'average_error', 'dn_value', 'dn_error']
+                    'average_error', 'dn_value', 'dn_error','bias_style',
+                    'poke_bins']
 shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'pellet_plot_multi_unaligned',
                     'pellet_freq_multi_unaligned',
                     'pellet_plot_average','pellet_plot_aligned_average',
-                    'diagnostic_plot',]
+                    'diagnostic_plot','poke_plot','poke_bias']
     
 def add_quotes(string):
     output = '"' + string + '"'
@@ -71,7 +72,10 @@ register_matplotlib_converters()
     bar_functions += inspect.getsource(mymod2.night_intervals) + '\n'
     bar_functions += inspect.getsource(mymod2.dn_get_yvals) + '\n'
     bar_functions += inspect.getsource(mymod2.raw_data_scatter)
-        
+    
+    poke_functions = '\n#HELPER FUNCTIONS (POKE PLOTS)\n\n'
+    poke_functions += inspect.getsource(mymod2.poke_resample_func)
+    
     function_code ='\n#PLOTTING FUNCTION:\n\n'
     inspected = inspect.getsource(plotfunc).replace('plt.close()','')
     function_code += inspected
@@ -119,8 +123,10 @@ register_matplotlib_converters()
     if plotfunc.__name__ in shade_dark_funcs:
         if used_args['shade_dark'] == True:
             output += shade_functions
-    elif plotfunc.__name__ == 'daynight_plot':
+    if plotfunc.__name__ == 'daynight_plot':
         output += bar_functions
+    if plotfunc.__name__ == 'poke_plot':
+        output += poke_functions
     output += function_code
     output += arguments
     output += call
