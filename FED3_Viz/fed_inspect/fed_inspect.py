@@ -20,7 +20,7 @@ spec.loader.exec_module(mymod2)
 plotfuncs = {name:func for name, func in inspect.getmembers(mymod2)}
 
 string_arguments = ['pellet_color', 'pellet_bins', 'average_bins',
-                    'average_error', 'dn_value', 'dn_error','bias_style',
+                    'average_error', 'circ_value', 'circ_error','bias_style',
                     'poke_bins']
 shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'pellet_plot_multi_unaligned',
@@ -68,9 +68,9 @@ register_matplotlib_converters()
     shade_functions += inspect.getsource(mymod2.night_intervals) + '\n'
     shade_functions += inspect.getsource(mymod2.shade_darkness)
     
-    bar_functions = '\n#HELPER FUNCTIONS (DAY/NIGHT PLOTS)\n\n'
+    bar_functions = '\n#HELPER FUNCTIONS (CIRCADIAN PLOTS)\n\n'
     bar_functions += inspect.getsource(mymod2.night_intervals) + '\n'
-    bar_functions += inspect.getsource(mymod2.dn_get_yvals) + '\n'
+    bar_functions += inspect.getsource(mymod2.circ_get_yvals) + '\n'
     bar_functions += inspect.getsource(mymod2.raw_data_scatter)
     
     poke_functions = '\n#HELPER FUNCTIONS (POKE PLOTS)\n\n'

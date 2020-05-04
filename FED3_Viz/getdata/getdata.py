@@ -13,7 +13,7 @@ import seaborn as sns
 
 from scipy import stats
 
-from plots.plots import dn_get_yvals, night_intervals, poke_resample_func
+from plots.plots import circ_get_yvals, night_intervals, poke_resample_func
 
 def pellet_plot_single(FED,*args, **kwargs):
     df = FED.data
@@ -208,7 +208,7 @@ def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
     bar_output.index.name = 'log10(minutes)'
     return kde_output, bar_output       
 
-def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
+def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                   *args, **kwargs):
     output = pd.DataFrame()
     group_avg_df = pd.DataFrame()
@@ -228,27 +228,27 @@ def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
                 night_vals = []
                 for start, end in days:
                     day_slice = df[(df.index>start) & (df.index<end)].copy()
-                    day_vals.append(dn_get_yvals(dn_value,day_slice))
+                    day_vals.append(circ_get_yvals(day_slice, circ_value))
                 for start, end in nights:
                     night_slice = df[(df.index>start) & (df.index<end)].copy()
-                    night_vals.append(dn_get_yvals(dn_value,night_slice))
+                    night_vals.append(circ_get_yvals(night_slice, circ_value))
                 group_day_values.append(np.mean(day_vals))
                 group_night_values.append(np.mean(night_vals))
                 if fed.basename not in used:
                     f = fed.basename
-                    output.loc[dn_value,f+' day'] = np.mean(day_vals)
-                    output.loc[dn_value,f+' night'] = np.mean(night_vals)  
+                    output.loc[circ_value,f+' day'] = np.mean(day_vals)
+                    output.loc[circ_value,f+' night'] = np.mean(night_vals)  
                     used.append(fed.basename)
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
-        group_avg_df.loc[dn_value,group+' day'] = group_day_mean
-        group_avg_df.loc[dn_value,group+' night'] = group_night_mean
-        if dn_error == 'SEM':
-            group_avg_df.loc[dn_value,group+' day SEM'] = stats.sem(group_day_values)
-            group_avg_df.loc[dn_value,group+' night SEM']= stats.sem(group_night_values)
-        if dn_error == 'STD':
-            group_avg_df.loc[dn_value,group+' day STD'] = np.std(group_day_values)
-            group_avg_df.loc[dn_value,group+' night STD'] = np.std(group_night_values)       
+        group_avg_df.loc[circ_value,group+' day'] = group_day_mean
+        group_avg_df.loc[circ_value,group+' night'] = group_night_mean
+        if circ_error == 'SEM':
+            group_avg_df.loc[circ_value,group+' day SEM'] = stats.sem(group_day_values)
+            group_avg_df.loc[circ_value,group+' night SEM']= stats.sem(group_night_values)
+        if circ_error == 'STD':
+            group_avg_df.loc[circ_value,group+' day STD'] = np.std(group_day_values)
+            group_avg_df.loc[circ_value,group+' night STD'] = np.std(group_night_values)       
     output = output.merge(group_avg_df, left_index=True, right_index=True)
     return output
 

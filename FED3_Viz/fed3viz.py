@@ -136,7 +136,8 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_poke, 2, text='Poke Bias Plot')
         self.ps_circadian = self.plot_treeview.insert("", 3, text='Circadian')
         self.plot_treeview.insert(self.ps_circadian, 1, text='Day/Night Plot')
-        self.plot_treeview.insert(self.ps_circadian, 2, text='Twenty-Four Hour Plot')
+        self.plot_treeview.insert(self.ps_circadian, 2, text='Chronogram (Line)')
+        self.plot_treeview.insert(self.ps_circadian, 3, text='Chronogram (Heatmap)')
         self.ps_other = self.plot_treeview.insert("", 4, text='Other')
         self.plot_treeview.insert(self.ps_other, 1, text='Diagnostic Plot')
         self.plot_treeview.bind('<<TreeviewSelect>>', self.handle_plot_selelection)      
@@ -196,7 +197,9 @@ class FED3_Viz(tk.Tk):
                                 'Single Poke Plot':'Plot the amount of correct or incorrect pokes',
                                 'Poke Bias Plot':'Plot the tendency to pick one poke over another',
                                 'Day/Night Plot':'Plot group averages for day/night on a bar chart',
-                                'Diagnostic Plot':'Plot battery life and motor turns'}
+                                'Diagnostic Plot':'Plot battery life and motor turns',
+                                'Chronogram (Line)':'Plot average 24-hour curves for groups',
+                                'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows'}
             
     #---PLOT TREEVIEW > PLOT FUNCTION
         #associate each plot_treeview entry with a plotting function
@@ -207,7 +210,9 @@ class FED3_Viz(tk.Tk):
                                 'Day/Night Plot':self.daynight_plot_TK,
                                 'Diagnostic Plot':self.diagnostic_plot_TK,
                                 'Single Poke Plot':self.poke_plot_single_TK,
-                                'Poke Bias Plot':self.poke_bias_single_TK}   
+                                'Poke Bias Plot':self.poke_bias_single_TK,
+                                'Chronogram (Line)':self.chronogram_line_TK,
+                                'Chronogram (Heatmap)':self.chronogram_heatmap_TK}   
                
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
@@ -330,7 +335,7 @@ class FED3_Viz(tk.Tk):
         self.average_bin_label       = tk.Label(self.average_settings_frame,
                                                 text='Bin size for averaging (hours)')
         self.daynight_settings_label = tk.Label(self.daynight_settings_frame,
-                                                text='Day/Night Plots',
+                                                text='Circadian Plots',
                                                 font=self.section_font)
         self.daynight_values_label = tk.Label(self.daynight_settings_frame,
                                               text='Values to plot')
@@ -447,7 +452,6 @@ class FED3_Viz(tk.Tk):
         self.daynight_show_indvl = ttk.Checkbutton(self.daynight_settings_frame,
                                                   text='Show individual FED data points',
                                                   var=self.daynight_show_indvl_val)
-        
         #   ipi
         self.ipi_kde_val = tk.BooleanVar()
         self.ipi_kde_val.set(True)
@@ -926,12 +930,47 @@ class FED3_Viz(tk.Tk):
         args_dict['groups'] = groups
         fig = plots.daynight_plot(**args_dict)
         plotdata = getdata.daynight_plot(**args_dict)
-        value = args_dict['dn_value'].capitalize()
+        value = args_dict['circ_value'].capitalize()
         fig_name = self.create_plot_name(value + ' Day Night Plot')
         new_plot_frame = ttk.Frame(self.plot_container)
         new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
                             figname=fig_name, plotfunc=plots.daynight_plot,
                             arguments=args_dict, plotdata=plotdata,)
+        self.PLOTS[fig_name] = new_plot
+        self.draw_figure(new_plot)
+        self.raise_figure(fig_name)
+    
+    def chronogram_line_TK(self):
+        args_dict = self.get_current_settings_as_args()
+        args_dict['FEDs'] = self.LOADED_FEDS
+        if self.allgroups_val.get():
+            groups = self.GROUPS
+        else:
+            ints = [int(i) for i in self.group_view.curselection()]
+            groups = [self.GROUPS[i] for i in ints]
+        args_dict['groups'] = groups
+        fig = plots.line_chronogram(**args_dict)
+        plotdata = None
+        fig_name = self.create_plot_name('Chronogram (Line)')
+        new_plot_frame = ttk.Frame(self.plot_container)
+        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
+                            figname=fig_name, plotfunc=plots.line_chronogram,
+                            arguments=args_dict, plotdata=plotdata,)
+        self.PLOTS[fig_name] = new_plot
+        self.draw_figure(new_plot)
+        self.raise_figure(fig_name)
+    
+    def chronogram_heatmap_TK(self):
+        arg_dict = self.get_current_settings_as_args()
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        arg_dict['FEDs'] = FEDs_to_plot
+        fig_name = self.create_plot_name('Chronogram (Heatmap)')
+        new_plot_frame = ttk.Frame(self.plot_container)
+        figure = plots.heatmap_chronogram(**arg_dict)
+        new_plot = FED_Plot(frame=new_plot_frame, figure=figure,
+                            figname=fig_name, plotfunc=plots.heatmap_chronogram, 
+                            arguments=arg_dict, plotdata=None)
         self.PLOTS[fig_name] = new_plot
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
@@ -1024,13 +1063,14 @@ class FED3_Viz(tk.Tk):
         selection = self.plot_treeview.selection()
         text = self.plot_treeview.item(selection,'text')
         if text in ['Single Pellet Plot', 'Multi Pellet Plot', 'Diagnostic Plot',
-                    'Interpellet Interval','Single Poke Plot', 'Poke Bias Plot']:
+                    'Interpellet Interval','Single Poke Plot', 'Poke Bias Plot',
+                    'Chronogram (Heatmap)']:
             #if there are feds selected
             if self.files_spreadsheet.selection():
                 self.button_create_plot.configure(state=tk.NORMAL)
             else:
                 self.button_create_plot.configure(state=tk.DISABLED)
-        elif text in ['Average Pellet Plot', 'Day/Night Plot']:
+        elif text in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)']:
             #if the all groups box is checked
             if self.allgroups_val.get():
                 #if there are any groups
@@ -1415,9 +1455,9 @@ class FED3_Viz(tk.Tk):
             self.average_align_checkbox_val.set(settings_df.loc['average_align','Values'])
             self.average_alignstart_menu.set(settings_df.loc['average_align_start','Values'])
             self.average_aligndays_menu.set(settings_df.loc['average_align_days','Values'])
-            self.daynight_values.set(settings_df.loc['dn_value','Values'])
-            self.daynight_error_menu.set(settings_df.loc['dn_error','Values'])
-            self.daynight_show_indvl_val.set(settings_df.loc['dn_show_indvl','Values'])
+            self.daynight_values.set(settings_df.loc['circ_value','Values'])
+            self.daynight_error_menu.set(settings_df.loc['circ_error','Values'])
+            self.daynight_show_indvl_val.set(settings_df.loc['circ_show_indvl','Values'])
             self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.ipi_kde_val.set(settings_df.loc['kde','Values'])
             self.poke_bins_menu.set(settings_df.loc['poke_bins','Values'])
@@ -1456,9 +1496,9 @@ class FED3_Viz(tk.Tk):
                              average_align      =self.average_align_checkbox_val.get(),
                              average_align_start=self.average_alignstart_menu.get(),
                              average_align_days =self.average_aligndays_menu.get(),
-                             dn_value           =self.daynight_values.get(),
-                             dn_error           =self.daynight_error_menu.get(),
-                             dn_show_indvl      =self.daynight_show_indvl_val.get(),
+                             circ_value           =self.daynight_values.get(),
+                             circ_error           =self.daynight_error_menu.get(),
+                             circ_show_indvl      =self.daynight_show_indvl_val.get(),
                              kde                =self.ipi_kde_val.get(),
                              poke_bins          =self.poke_bins_menu.get(),
                              poke_show_correct  =self.poke_correct_val.get(),

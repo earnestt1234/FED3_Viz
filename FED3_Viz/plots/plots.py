@@ -85,7 +85,7 @@ def shade_darkness(ax, min_date,max_date,lights_on,lights_off,
                    label='_'*i + 'lights off',
                    zorder=0)
 
-def dn_get_yvals(value, df):
+def circ_get_yvals(df, value):
     possible = ['pellets','retrieval time','interpellet intervals',
                 'correct pokes','errors','correct pokes (%)','errors (%)']
     assert value in possible, 'Value not understood by daynight plot: ' + value
@@ -127,7 +127,7 @@ def poke_resample_func(bin_, val, as_percent):
     else:
         output = (bin_==val).sum()
     return output
-     
+
 #---PLOT FUNCTIONS
 
 def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
@@ -547,8 +547,8 @@ def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
     
     return fig
     
-def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
-                  dn_show_indvl, *args, **kwargs):
+def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
+                  circ_show_indvl, *args, **kwargs):
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     for FED in FEDs:
@@ -570,22 +570,22 @@ def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
                 night_vals = []
                 for start, end in days:
                     day_slice = df[(df.index>start) & (df.index<end)].copy()
-                    day_vals.append(dn_get_yvals(dn_value,day_slice))
+                    day_vals.append(circ_get_yvals(day_slice,circ_value))
                 for start, end in nights:
                     night_slice = df[(df.index>start) & (df.index<end)].copy()
-                    night_vals.append(dn_get_yvals(dn_value,night_slice))
+                    night_vals.append(circ_get_yvals(night_slice,circ_value))
                 group_day_values.append(np.mean(day_vals))
                 group_night_values.append(np.mean(night_vals))
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
-        if dn_error == 'None':
-            dn_error = None
+        if circ_error == 'None':
+            circ_error = None
             error_bar_day = None
             error_bar_night = None
-        elif dn_error == 'SEM':
+        elif circ_error == 'SEM':
             error_bar_day = stats.sem(group_day_values)
             error_bar_night = stats.sem(group_night_values)
-        elif dn_error == 'STD':
+        elif circ_error == 'STD':
             error_bar_day = np.std(group_day_values)
             error_bar_night = np.std(group_night_values)       
         x1 = 1
@@ -603,8 +603,8 @@ def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
         ax.errorbar(x2+bar_offsets[i], y2, fmt='none', yerr=error_bar_night,
                     capsize=3,ecolor='gray',zorder=3)
         if error_bar_day != None:
-            ax.plot([],[],'',color='gray',label=i*'_' + dn_error)
-        if dn_show_indvl:
+            ax.plot([],[],'',color='gray',label=i*'_' + circ_error)
+        if circ_show_indvl:
             spread = .2 * bar_width
             dayx, dayy = raw_data_scatter(group_day_values,
                                           xcenter=x1+bar_offsets[i],
@@ -616,17 +616,101 @@ def daynight_plot(FEDs, groups, dn_value, lights_on, lights_off, dn_error,
             ax.scatter(nightx,nighty,s=10,color=colors[i],zorder=5)
     ax.set_xticks([np.mean(bar_offsets + x1),(np.mean(bar_offsets + x2))])
     ax.set_xticklabels(['Day', 'Night'])
-    ax.set_ylabel(dn_value.capitalize())
-    ax.set_title(dn_value.capitalize() + ' by Time of Day')
+    ax.set_ylabel(circ_value.capitalize())
+    ax.set_title(circ_value.capitalize() + ' by Time of Day')
     handles, labels = ax.get_legend_handles_labels()
-    if dn_error in labels:
-        handles.append(handles.pop(labels.index(dn_error)))
-        labels.append(labels.pop(labels.index(dn_error)))        
+    if circ_error in labels:
+        handles.append(handles.pop(labels.index(circ_error)))
+        labels.append(labels.pop(labels.index(circ_error)))        
     ax.legend(handles, labels, bbox_to_anchor=(1,1),loc='upper left')
     plt.tight_layout()
     
     return fig
 
+def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
+                    lights_on, lights_off, *args, **kwargs):
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for FED in FEDs:
+        assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
+    fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    for i, group in enumerate(groups):
+        group_vals = []
+        for FED in FEDs:
+            if group in FED.group:
+                df = FED.data
+                byhour = df.groupby([df.index.hour])
+                byhour = byhour.apply(circ_get_yvals,value=circ_value)
+                new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
+                reindexed = byhour.reindex(new_index)
+                reindexed.index.name = 'hour'
+                if circ_value in ['pellets', 'correct pokes','errors']:
+                    reindexed = reindexed.fillna(0)
+                y = reindexed
+                x = range(0,24)
+                if circ_show_indvl:
+                    ax.plot(x,y,color=colors[i],alpha=.3,linewidth=.8)
+                group_vals.append(y)
+        group_mean = np.nanmean(group_vals, axis=0)    
+        label = group       
+        error_shade = np.nan
+        if circ_error == "SEM":
+            error_shade = stats.sem(group_vals, axis=0)
+            label += ' (±' + circ_error + ')'
+        elif circ_error == 'STD':
+            error_shade = np.std(group_vals, axis=0)
+            label += ' (±' + circ_error + ')'
+        if circ_show_indvl:
+            error_shade = np.nan
+        x = range(24)
+        y = group_mean
+        ax.plot(x,y,color=colors[i], label=label)
+        ax.fill_between(x, y-error_shade, y+error_shade, color=colors[i],
+                        alpha=.3)
+    ax.set_xlabel('Hours (since start of light cycle)')
+    ax.set_xticks([0,6,12,18,24])
+    ax.set_ylabel(circ_value)
+    ax.set_title('Chronogram')
+    if shade_dark:
+        off = new_index.index(lights_off)
+        ax.axvspan(off,24,color='gray',alpha=.2,zorder=0,label='lights off')
+    ax.legend(bbox_to_anchor=(1,1),loc='upper left')
+    plt.tight_layout()
+        
+    return fig
+
+def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
+    fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    matrix = []
+    index = []
+    for FED in FEDs:       
+        df = FED.data
+        byhour = df.groupby([df.index.hour])
+        byhour = byhour.apply(circ_get_yvals,value=circ_value)
+        new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
+        reindexed = byhour.reindex(new_index)
+        if circ_value in ['pellets', 'correct pokes','errors']:
+            reindexed = reindexed.fillna(0)
+        matrix.append(reindexed)
+        index.append(FED.filename)
+    matrix = pd.DataFrame(matrix, index=index)
+    avg = matrix.mean(axis=0)
+    avg = avg.rename('Average')
+    matrix = matrix.append(avg)
+    im = ax.imshow(matrix, cmap='jet', aspect='auto')
+    ax.set_title('Chronogram of ' + circ_value.capitalize())
+    ax.set_ylabel('File')
+    ax.set_yticks(range(len(matrix.index)))
+    ax.set_yticklabels(matrix.index)
+    ax.get_yticklabels()[-1].set_weight('bold')
+    ax.set_xlabel('Hours (since start of light cycle)')
+    ax.set_xticks([0,6,12,18,])
+    plt.colorbar(im)
+    plt.tight_layout()
+    
+    return fig
+    
 def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_percent,
               shade_dark, lights_on, lights_off, *args, **kwargs):
     assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'

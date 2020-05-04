@@ -16,9 +16,9 @@ load_last_used,False
 average_align,False
 average_align_start,7 am
 average_align_days,3
-dn_value,pellets
-dn_error,SEM
-dn_show_indvl,True
+circ_value,pellets
+circ_error,SEM
+circ_show_indvl,True
 kde,True
 poke_bins,1
 poke_show_correct,True
