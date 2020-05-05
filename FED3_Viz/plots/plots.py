@@ -745,7 +745,7 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_percent,
     plt.tight_layout()
         
     return fig
-        
+
 def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
               lights_off, dynamic_color, *args, **kwargs):
     assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
