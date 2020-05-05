@@ -314,8 +314,7 @@ class FED3_Viz(tk.Tk):
             self.section_font = 'Segoe 14 bold'
         self.general_settings_label = tk.Label(self.general_settings_frame,
                                                text='General',
-                                               font=self.section_font)
-        
+                                               font=self.section_font)        
         self.pellet_settings_label   = tk.Label(self.pellet_settings_frame,
                                                 text='Individual Pellet Plots',
                                                 font=self.section_font)
@@ -950,8 +949,9 @@ class FED3_Viz(tk.Tk):
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
         fig = plots.line_chronogram(**args_dict)
-        plotdata = None
-        fig_name = self.create_plot_name('Chronogram (Line)')
+        plotdata = getdata.line_chronogram(**args_dict)
+        value = args_dict['circ_value'].capitalize()
+        fig_name = self.create_plot_name(value + ' Chronogram (Line)')
         new_plot_frame = ttk.Frame(self.plot_container)
         new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
                             figname=fig_name, plotfunc=plots.line_chronogram,
@@ -965,12 +965,14 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
-        fig_name = self.create_plot_name('Chronogram (Heatmap)')
+        value = arg_dict['circ_value'].capitalize()
+        fig_name = self.create_plot_name(value + ' Chronogram (Heatmap)')
         new_plot_frame = ttk.Frame(self.plot_container)
         figure = plots.heatmap_chronogram(**arg_dict)
+        plotdata = getdata.heatmap_chronogram(**arg_dict)
         new_plot = FED_Plot(frame=new_plot_frame, figure=figure,
                             figname=fig_name, plotfunc=plots.heatmap_chronogram, 
-                            arguments=arg_dict, plotdata=None)
+                            arguments=arg_dict, plotdata=plotdata)
         self.PLOTS[fig_name] = new_plot
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)

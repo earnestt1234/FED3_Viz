@@ -282,3 +282,57 @@ def poke_bias(FED, poke_bins, bias_style, *args, **kwargs):
     x = y.index
     output = pd.DataFrame(y, index=x)
     return output
+
+def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
+    matrix = []
+    index = []
+    for FED in FEDs:       
+        df = FED.data
+        byhour = df.groupby([df.index.hour])
+        byhour = byhour.apply(circ_get_yvals,value=circ_value)
+        new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
+        reindexed = byhour.reindex(new_index)
+        if circ_value in ['pellets', 'correct pokes','errors']:
+            reindexed = reindexed.fillna(0)
+        matrix.append(reindexed)
+        index.append(FED.filename)
+    matrix = pd.DataFrame(matrix, index=index)
+    avg = matrix.mean(axis=0)
+    avg = avg.rename('Average')
+    matrix = matrix.append(avg)
+    
+    return matrix
+
+def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
+                    lights_on, lights_off, *args, **kwargs):
+    output = pd.DataFrame()
+    avgs = pd.DataFrame()
+    for i, group in enumerate(groups):
+        group_vals = []
+        for FED in FEDs:
+            if group in FED.group:
+                df = FED.data
+                byhour = df.groupby([df.index.hour])
+                byhour = byhour.apply(circ_get_yvals,value=circ_value)
+                new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
+                reindexed = byhour.reindex(new_index)
+                if circ_value in ['pellets', 'correct pokes','errors']:
+                    reindexed = reindexed.fillna(0)
+                y = reindexed                
+                group_vals.append(y)
+                if FED.basename not in output.columns:
+                    temp = pd.DataFrame({FED.basename:reindexed}, index=new_index)
+                    output = output.join(temp, how='outer',)
+        x = list(range(0,24))
+        output.index = x
+        group_mean = np.nanmean(group_vals, axis=0)    
+        to_add = pd.DataFrame({group:group_mean})
+        if circ_error == "SEM":
+            to_add[group + " SEM"] = stats.sem(group_vals, axis=0)
+        elif circ_error == 'STD':
+            to_add[group + " STD"] = np.std(group_vals, axis=0)
+        avgs = avgs.join(to_add, how='outer')
+    output = output.join(avgs, how='outer')
+    output.index.name = "Hours"
+        
+    return output

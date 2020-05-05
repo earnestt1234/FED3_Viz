@@ -18,7 +18,7 @@ average_align_start,7 am
 average_align_days,3
 circ_value,pellets
 circ_error,SEM
-circ_show_indvl,True
+circ_show_indvl,False
 kde,True
 poke_bins,1
 poke_show_correct,True
