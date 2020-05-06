@@ -21,13 +21,16 @@ plotfuncs = {name:func for name, func in inspect.getmembers(mymod2)}
 
 string_arguments = ['pellet_color', 'pellet_bins', 'average_bins',
                     'average_error', 'circ_value', 'circ_error','bias_style',
-                    'poke_bins']
+                    'poke_bins','dependent']
 shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'pellet_plot_multi_unaligned',
                     'pellet_freq_multi_unaligned',
-                    'pellet_plot_average_ontime','pellet_plot_average_ondatetime',
+                    'average_plot_ontime','average_plot_ondatetime',
+                    'average_plot_onstart',
                     'diagnostic_plot','poke_plot','poke_bias']
-    
+avg_funcs = ['average_plot_ontime','average_plot_ondatetime',
+             'average_plot_onstart',]
+   
 def add_quotes(string):
     output = '"' + string + '"'
     return output
@@ -70,11 +73,14 @@ register_matplotlib_converters()
     
     bar_functions = '\n#HELPER FUNCTIONS (CIRCADIAN PLOTS)\n\n'
     bar_functions += inspect.getsource(mymod2.night_intervals) + '\n'
-    bar_functions += inspect.getsource(mymod2.circ_get_yvals) + '\n'
+    bar_functions += inspect.getsource(mymod2.resample_get_yvals) + '\n'
     bar_functions += inspect.getsource(mymod2.raw_data_scatter)
     
     poke_functions = '\n#HELPER FUNCTIONS (POKE PLOTS)\n\n'
     poke_functions += inspect.getsource(mymod2.poke_resample_func)
+    
+    avg_functions = '\n#HELPER FUNCTIONS (AVERAGE PLOTS)\n\n'
+    avg_functions += inspect.getsource(mymod2.resample_get_yvals)
     
     function_code ='\n#PLOTTING FUNCTION:\n\n'
     inspected = inspect.getsource(plotfunc).replace('plt.close()','')
@@ -127,6 +133,8 @@ register_matplotlib_converters()
         output += bar_functions
     if plotfunc.__name__ == 'poke_plot':
         output += poke_functions
+    if plotfunc.__name__ in avg_funcs:
+        output += avg_functions
     output += function_code
     output += arguments
     output += call

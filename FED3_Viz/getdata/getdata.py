@@ -13,7 +13,7 @@ import seaborn as sns
 
 from scipy import stats
 
-from plots.plots import circ_get_yvals, night_intervals, poke_resample_func
+from plots.plots import resample_get_yvals, night_intervals, poke_resample_func
 
 def pellet_plot_single(FED,*args, **kwargs):
     df = FED.data
@@ -89,8 +89,8 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, *args,**kwargs):
     output.index.name = 'Time'
     return output
 
-def pellet_plot_average_ondatetime(FEDs, groups, average_bins, 
-                                   average_error, *args, **kwargs):
+def average_plot_ondatetime(FEDs, groups, dependent, average_bins, 
+                            average_error, *args, **kwargs):
     output = pd.DataFrame()
     group_avg_df = pd.DataFrame()
     earliest_end = dt.datetime(2999,1,1,0,0,0)
@@ -105,16 +105,17 @@ def pellet_plot_average_ondatetime(FEDs, groups, average_bins,
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.resample(average_bins,base=0).sum()
-                df = df[(df.index > latest_start) &
-                        (df.index < earliest_end)].copy()
-                avg.append(df['Binary_Pellets'])
+                df = file.data.resample(average_bins,base=0)
+                y = df.apply(resample_get_yvals, dependent)
+                y = y[(y.index > latest_start) &
+                      (y.index < earliest_end)].copy()
+                avg.append(y)
                 if file.basename not in output.columns:
-                    indvl_line = pd.DataFrame({file.basename:df['Binary_Pellets']},
-                                              index=df.index)
+                    indvl_line = pd.DataFrame({file.basename:y},
+                                              index=y.index)
                     output = output.join(indvl_line, how='outer')                     
         group_avg = np.mean(avg, axis=0)
-        group_to_add = pd.DataFrame({group:group_avg}, index=df.index)
+        group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
             group_to_add[group + ' SEM'] = stats.sem(avg, axis=0)
         if average_error == 'STD':
@@ -124,9 +125,9 @@ def pellet_plot_average_ondatetime(FEDs, groups, average_bins,
     output.index.name = 'Time'
     return output
 
-def pellet_plot_average_ontime(FEDs, groups, average_bins, average_align_start,
-                               average_align_days, average_error, *args, 
-                               **kwargs):
+def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_start,
+                        average_align_days, average_error, *args, 
+                        **kwargs):
     output = pd.DataFrame()
     group_avg_df = pd.DataFrame()
     start_datetime = dt.datetime(year=1970,
@@ -139,21 +140,22 @@ def pellet_plot_average_ontime(FEDs, groups, average_bins, average_align_start,
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.resample(average_bins,base=average_align_start).sum()
-                first_entry = df.index[0]
+                df = file.data.resample(average_bins,base=average_align_start)
+                y = df.apply(resample_get_yvals, dependent)
+                first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)
                 alignment_shift = first_entry - aligned_first_entry
-                df.index = [i-alignment_shift for i in df.index]
-                df = df.reindex(date_range)
-                avg.append(df['Binary_Pellets'])
+                y.index = [i-alignment_shift for i in y.index]
+                y = y.reindex(date_range)
+                avg.append(y)
                 if file.basename not in output.columns:
-                    indvl_line = pd.DataFrame({file.basename:df['Binary_Pellets']},
-                                              index=df.index)
+                    indvl_line = pd.DataFrame({file.basename:y},
+                                              index=y.index)
                     output = output.join(indvl_line, how='outer')
                     
         group_avg = np.mean(avg, axis=0)
-        group_to_add = pd.DataFrame({group:group_avg}, index=df.index)
+        group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
             group_to_add[group + ' SEM'] = stats.sem(avg, axis=0)
         if average_error == 'STD':
@@ -163,6 +165,42 @@ def pellet_plot_average_ontime(FEDs, groups, average_bins, average_align_start,
     hours_since_start = [(i - output.index[0]).total_seconds()/3600
                          for i in output.index]
     output.index = hours_since_start
+    output.index.name = 'Elapsed Hours'
+    return output
+
+def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
+                         *args, **kwargs):
+    output = pd.DataFrame()
+    group_avgs = pd.DataFrame()
+    shortest_index = []
+    for file in FEDs:
+        df = file.data
+        resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
+        if len(shortest_index) == 0:
+            shortest_index = resampled.index
+        elif len(resampled.index) < len(shortest_index):
+            shortest_index = resampled.index
+    for i, group in enumerate(groups):
+        avg = []
+        for file in FEDs:
+            if group in file.group:
+                df = file.data.resample(average_bins,base=0, on='Elapsed_Time')
+                y = df.apply(resample_get_yvals, dependent)
+                y = y.reindex(shortest_index)           
+                y.index = [time.total_seconds()/3600 for time in y.index]
+                avg.append(y)
+                if file.basename not in output.columns:
+                    indvl = pd.DataFrame({file.basename:y},
+                                         index=y.index)
+                    output = output.join(indvl, how='outer')
+        group_avg = np.mean(avg, axis=0)
+        group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
+        if average_error == 'SEM':
+            group_to_add[group + ' SEM'] = stats.sem(avg, axis=0)
+        if average_error == 'STD':
+            group_to_add[group + ' STD'] = np.std(avg, axis=0)
+        group_avgs = group_avgs.join(group_to_add, how='outer')
+    output = output.join(group_avgs)
     output.index.name = 'Elapsed Hours'
     return output
 
@@ -228,10 +266,10 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 night_vals = []
                 for start, end in days:
                     day_slice = df[(df.index>start) & (df.index<end)].copy()
-                    day_vals.append(circ_get_yvals(day_slice, circ_value))
+                    day_vals.append(resample_get_yvals(day_slice, circ_value))
                 for start, end in nights:
                     night_slice = df[(df.index>start) & (df.index<end)].copy()
-                    night_vals.append(circ_get_yvals(night_slice, circ_value))
+                    night_vals.append(resample_get_yvals(night_slice, circ_value))
                 group_day_values.append(np.mean(day_vals))
                 group_night_values.append(np.mean(night_vals))
                 if fed.basename not in used:
@@ -289,7 +327,7 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
     for FED in FEDs:       
         df = FED.data
         byhour = df.groupby([df.index.hour])
-        byhour = byhour.apply(circ_get_yvals,value=circ_value)
+        byhour = byhour.apply(resample_get_yvals,value=circ_value)
         new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
         reindexed = byhour.reindex(new_index)
         if circ_value in ['pellets', 'correct pokes','errors']:
@@ -313,7 +351,7 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
             if group in FED.group:
                 df = FED.data
                 byhour = df.groupby([df.index.hour])
-                byhour = byhour.apply(circ_get_yvals,value=circ_value)
+                byhour = byhour.apply(resample_get_yvals,value=circ_value)
                 new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
                 reindexed = byhour.reindex(new_index)
                 if circ_value in ['pellets', 'correct pokes','errors']:

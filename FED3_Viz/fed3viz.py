@@ -93,7 +93,6 @@ class FED3_Viz(tk.Tk):
         
         #labels
         italic = 'Segoe 10 italic'
-        italicbold = 'Segoe 10 italic bold'
         self.home_buttons_help = tk.Label(self.fed_text, text='Welcome to FED3 Viz!',
                                           anchor='w')
         self.file_view_label    = tk.Label(self.home_sheets, text='File View',
@@ -119,12 +118,16 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.bind('<ButtonRelease-1>', self.update_buttons_home)
         self.files_spreadsheet.bind('<Double-Button-1>', lambda event, reverse=True: 
                                     self.sort_FEDs(event,reverse))
+        self.files_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.files_spreadsheet.yview,)
+        self.files_spreadsheet.configure(yscrollcommand=self.files_scrollbar.set)
         self.group_view = tk.Listbox(self.home_sheets,selectmode=tk.EXTENDED,
                                      activestyle=tk.NONE, height=5)
         self.group_view.bind('<ButtonRelease-1>', self.select_group)
+        self.group_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.group_view.yview)
+        self.group_view.configure(yscrollcommand=self.group_scrollbar.set)
         
         #plot selector:
-        self.plot_treeview = ttk.Treeview(self.plot_selector, selectmode = 'browse')
+        self.plot_treeview = ttk.Treeview(self.plot_selector, selectmode = 'browse',)
         self.plot_treeview.heading('#0', text='Plots')
         self.ps_pellet = self.plot_treeview.insert("", 1, text='Pellets')
         self.plot_treeview.insert(self.ps_pellet, 1, text='Single Pellet Plot')
@@ -133,15 +136,21 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_pellet, 4, text='Interpellet Interval')
         self.ps_poke = self.plot_treeview.insert("", 2, text='Pokes')
         self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
-        self.plot_treeview.insert(self.ps_poke, 2, text='Poke Bias Plot')
+        self.plot_treeview.insert(self.ps_poke, 2, text='Average Poke Plot (Correct)')
+        self.plot_treeview.insert(self.ps_poke, 3, text='Average Poke Plot (Error)')
+        self.plot_treeview.insert(self.ps_poke, 4, text='Poke Bias Plot')
+        self.plot_treeview.insert(self.ps_poke, 5, text='Average Poke Bias Plot')
         self.ps_circadian = self.plot_treeview.insert("", 3, text='Circadian')
         self.plot_treeview.insert(self.ps_circadian, 1, text='Day/Night Plot')
         self.plot_treeview.insert(self.ps_circadian, 2, text='Chronogram (Line)')
         self.plot_treeview.insert(self.ps_circadian, 3, text='Chronogram (Heatmap)')
         self.ps_other = self.plot_treeview.insert("", 4, text='Other')
         self.plot_treeview.insert(self.ps_other, 1, text='Diagnostic Plot')
-        self.plot_treeview.bind('<<TreeviewSelect>>', self.handle_plot_selelection)      
-
+        self.plot_treeview.bind('<<TreeviewSelect>>', self.handle_plot_selelection)
+        
+        self.plot_tree_scroll = ttk.Scrollbar(self.plot_selector, command=self.plot_treeview.yview)
+        self.plot_treeview.configure(yscrollcommand=self.plot_tree_scroll.set)
+        
         #buttons
         self.button_load   = tk.Button(self.fed_buttons, text='Load',
                                        command=lambda: 
@@ -195,7 +204,10 @@ class FED3_Viz(tk.Tk):
                                 'Average Pellet Plot':'Plot average pellets received for grouped devices (groups make individual curves)',
                                 'Interpellet Interval':'Plot histogram of intervals between pellet retrievals',
                                 'Single Poke Plot':'Plot the amount of correct or incorrect pokes',
+                                'Average Poke Plot (Correct)':'Plot average correct pokes for grouped devices (groups make individual curves)',
+                                'Average Poke Plot (Error)':'Plot average error pokes for grouped devices (groups make individual curves)',
                                 'Poke Bias Plot':'Plot the tendency to pick one poke over another',
+                                'Average Poke Bias Plot':'Plot the average group tendency to pick one poke over another (groups make individual curves)',
                                 'Day/Night Plot':'Plot group averages for day/night on a bar chart',
                                 'Diagnostic Plot':'Plot battery life and motor turns',
                                 'Chronogram (Line)':'Plot average 24-hour curves for groups',
@@ -205,12 +217,15 @@ class FED3_Viz(tk.Tk):
         #associate each plot_treeview entry with a plotting function
         self.plot_nodes_func = {'Single Pellet Plot':self.pellet_plot_single_TK,
                                 'Multi Pellet Plot':self.pellet_plot_multi_TK,
-                                'Average Pellet Plot':self.pellet_plot_avg_TK,
+                                'Average Pellet Plot':self.avg_plot_TK,
                                 'Interpellet Interval':self.interpellet_plot_TK,
                                 'Day/Night Plot':self.daynight_plot_TK,
                                 'Diagnostic Plot':self.diagnostic_plot_TK,
                                 'Single Poke Plot':self.poke_plot_single_TK,
+                                'Average Poke Plot (Correct)':self.avg_plot_TK,
+                                'Average Poke Plot (Error)':self.avg_plot_TK,
                                 'Poke Bias Plot':self.poke_bias_single_TK,
+                                'Average Poke Bias Plot':self.avg_plot_TK,
                                 'Chronogram (Line)':self.chronogram_line_TK,
                                 'Chronogram (Heatmap)':self.chronogram_heatmap_TK}   
                
@@ -225,16 +240,18 @@ class FED3_Viz(tk.Tk):
         
         #labels
         self.home_buttons_help.grid(row=0,column=0,sticky='w',padx=(0,20),
-                                    pady=(10,10))
-        
+                                    pady=(10,10))  
         #spreadsheets
         self.files_spreadsheet.grid(row=0,column=0,sticky='nsew')
+        self.files_scrollbar.grid(row=0,column=1,sticky='nsew')
         self.file_view_label.grid(row=1,column=0,sticky='w')
-        self.group_view.grid(row=2,column=0,sticky='nsew')     
+        self.group_view.grid(row=2,column=0,sticky='nsew') 
+        self.group_scrollbar.grid(row=2,column=1,sticky='nsew')
         self.group_view_label.grid(row=3,column=0,sticky='w')
         
         #plot selector
         self.plot_treeview.grid(row=0,column=0,sticky='nsew')
+        self.plot_tree_scroll.grid(row=0,column=1,sticky='nsew')
         self.button_create_plot.grid(row=1,column=0,sticky='nsew')
 
     #---INIT WIDGETS FOR PLOTS TAB
@@ -347,7 +364,7 @@ class FED3_Viz(tk.Tk):
                                            text='Interpellet Interval Plots',
                                            font=self.section_font)
         self.poke_settings_label = tk.Label(self.poke_settings_frame,
-                                            text='Poke Plots',
+                                            text='Individual Poke Plots',
                                             font=self.section_font)
         self.poke_binsize_label  = tk.Label(self.poke_settings_frame,
                                             text='Bin size for poke plots (hours)')
@@ -406,7 +423,7 @@ class FED3_Viz(tk.Tk):
                                              width=10)
         self.average_bin_menu.set(1)
         self.average_method_menu = ttk.Combobox(self.average_settings_frame,
-                                                values=['shared date & time','shared time', 'shared start'],)
+                                                values=['shared date & time','shared time', 'elapsed time'],)
         self.average_method_menu.set('shared date & time')
         self.average_method_menu.bind('<<ComboboxSelected>>', self.check_average_align)
         self.average_alignstart_menu = ttk.Combobox(self.average_settings_frame,
@@ -857,7 +874,7 @@ class FED3_Viz(tk.Tk):
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
            
-    def pellet_plot_avg_TK(self):
+    def avg_plot_TK(self):
         args_dict = self.get_current_settings_as_args()
         args_dict['FEDs'] = self.LOADED_FEDS
         if self.allgroups_val.get():
@@ -866,18 +883,28 @@ class FED3_Viz(tk.Tk):
             ints = [int(i) for i in self.group_view.curselection()]
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
+        selection = self.plot_treeview.selection()
+        text = self.plot_treeview.item(selection,'text')
+        choices = {'Average Pellet Plot':'pellets',
+                   'Average Poke Plot (Correct)':'correct pokes',
+                   'Average Poke Plot (Error)':'errors',
+                   'Average Poke Bias Plot':'poke bias (correct - error)'}
+        args_dict['dependent'] = choices[text]
         method = self.average_method_menu.get()
         if method == 'shared time':
-            plotfunc=plots.pellet_plot_average_ontime
-            plotdata=getdata.pellet_plot_average_ontime(**args_dict)
+            plotfunc=plots.average_plot_ontime
+            plotdata=getdata.average_plot_ontime(**args_dict)
         elif method == 'shared date & time':
-            plotfunc=plots.pellet_plot_average_ondatetime
-            plotdata=getdata.pellet_plot_average_ondatetime(**args_dict)
+            plotfunc=plots.average_plot_ondatetime
+            plotdata=getdata.average_plot_ondatetime(**args_dict)
+        elif method == 'elapsed time':
+            plotfunc=plots.average_plot_onstart
+            plotdata=getdata.average_plot_onstart
         fig = plotfunc(**args_dict)
         if fig == 'NO_OVERLAP ERROR':
             self.raise_average_warning()
             return
-        fig_name = self.create_plot_name('Average Pellet Plot')
+        fig_name = self.create_plot_name('Average Plot of ' + args_dict['dependent'].capitalize())
         new_plot_frame = ttk.Frame(self.plot_container)
         new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
                             figname=fig_name, plotfunc=plotfunc,
@@ -1075,7 +1102,9 @@ class FED3_Viz(tk.Tk):
                 self.button_create_plot.configure(state=tk.NORMAL)
             else:
                 self.button_create_plot.configure(state=tk.DISABLED)
-        elif text in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)']:
+        elif text in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)',
+                      'Average Poke Plot (Correct)','Average Poke Plot (Error)',
+                      'Average Poke Bias Plot']:
             #if the all groups box is checked
             if self.allgroups_val.get():
                 #if there are any groups
