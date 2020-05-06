@@ -337,8 +337,8 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, pellet_align, shade_dark,
     
     return fig
 
-def pellet_plot_average(FEDs, groups, average_bins, average_error, shade_dark,
-                        lights_on, lights_off,*args, **kwargs):
+def pellet_plot_average_ondatetime(FEDs, groups, average_bins, average_error, shade_dark,
+                                   lights_on, lights_off,*args, **kwargs):
     show_indvl=False
     if average_error == 'raw data':
         average_error = 'None'
@@ -403,10 +403,10 @@ def pellet_plot_average(FEDs, groups, average_bins, average_error, shade_dark,
     
     return fig
 
-def pellet_plot_aligned_average(FEDs, groups, average_bins, average_align_start,
-                                average_align_days, average_error,
-                                shade_dark, lights_on, lights_off,
-                                *args, **kwargs):
+def pellet_plot_average_ontime(FEDs, groups, average_bins, average_align_start,
+                               average_align_days, average_error,
+                               shade_dark, lights_on, lights_off,
+                               *args, **kwargs):
     show_indvl=False
     if average_error == 'raw data':
         average_error = 'None'
@@ -474,6 +474,11 @@ def pellet_plot_aligned_average(FEDs, groups, average_bins, average_align_start,
     plt.tight_layout() 
     
     return fig
+
+def pellet_plot_average_onstart(FEDs, groups, average_bins, average_error,
+                                shade_dark, lights_on, lights_off,
+                                *args, **kwargs):
+    pass
 
 def diagnostic_plot(FED, shade_dark, lights_on, lights_off, *args, **kwargs):
     assert isinstance(FED, FED3_File),'Non FED3_File passed to diagnostic_plot()'

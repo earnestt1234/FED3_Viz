@@ -89,8 +89,8 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, *args,**kwargs):
     output.index.name = 'Time'
     return output
 
-def pellet_plot_average(FEDs, groups, average_bins, 
-                        average_error, *args, **kwargs):
+def pellet_plot_average_ondatetime(FEDs, groups, average_bins, 
+                                   average_error, *args, **kwargs):
     output = pd.DataFrame()
     group_avg_df = pd.DataFrame()
     earliest_end = dt.datetime(2999,1,1,0,0,0)
@@ -124,9 +124,9 @@ def pellet_plot_average(FEDs, groups, average_bins,
     output.index.name = 'Time'
     return output
 
-def pellet_plot_aligned_average(FEDs, groups, average_bins, average_align_start,
-                                average_align_days, average_error, *args, 
-                                **kwargs):
+def pellet_plot_average_ontime(FEDs, groups, average_bins, average_align_start,
+                               average_align_days, average_error, *args, 
+                               **kwargs):
     output = pd.DataFrame()
     group_avg_df = pd.DataFrame()
     start_datetime = dt.datetime(year=1970,

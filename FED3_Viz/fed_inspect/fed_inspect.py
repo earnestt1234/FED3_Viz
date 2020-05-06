@@ -25,7 +25,7 @@ string_arguments = ['pellet_color', 'pellet_bins', 'average_bins',
 shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'pellet_plot_multi_unaligned',
                     'pellet_freq_multi_unaligned',
-                    'pellet_plot_average','pellet_plot_aligned_average',
+                    'pellet_plot_average_ontime','pellet_plot_average_ondatetime',
                     'diagnostic_plot','poke_plot','poke_bias']
     
 def add_quotes(string):

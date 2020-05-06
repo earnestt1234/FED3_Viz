@@ -287,11 +287,10 @@ class FED3_Viz(tk.Tk):
         self.general_settings_frame.grid(row=0,column=0, sticky='nsew')
         
         self.pellet_settings_frame = tk.Frame(self.settings_col1)
-        self.pellet_settings_frame.grid(row=1,column=0, sticky='nsew')
+        self.pellet_settings_frame.grid(row=2,column=0, sticky='nsew')
         
         self.average_settings_frame = tk.Frame(self.settings_col1)
-        self.average_settings_frame.grid(row=2,column=0,sticky='nsew',
-                                         pady=(0,50))
+        self.average_settings_frame.grid(row=1,column=0,sticky='nsew',)
         
         self.ipi_settings_frame = tk.Frame(self.settings_col2)
         self.ipi_settings_frame.grid(row=0,column=0, sticky='nsew',
@@ -327,12 +326,16 @@ class FED3_Viz(tk.Tk):
                                                 text='Default color (single pellet plots)')
         
         self.average_settings_label  = tk.Label(self.average_settings_frame,
-                                                text='Average Pellet Plots',
+                                                text='Averaging (Pellet & Poke Plots)',
                                                 font=self.section_font)
         self.average_error_label     = tk.Label(self.average_settings_frame,
                                                 text='Error value for average plots')
         self.average_bin_label       = tk.Label(self.average_settings_frame,
                                                 text='Bin size for averaging (hours)')
+        self.average_method_label    = tk.Label(self.average_settings_frame,
+                                                text='Alignment method for averaging')
+        self.average_align_ontime_label = tk.Label(self.average_settings_frame,
+                                                   text='Start time & length of average (time/days)')
         self.daynight_settings_label = tk.Label(self.daynight_settings_frame,
                                                 text='Circadian Plots',
                                                 font=self.section_font)
@@ -392,6 +395,30 @@ class FED3_Viz(tk.Tk):
         self.weirdfed_warning = ttk.Checkbutton(self.general_settings_frame,
                                                text='Show missing column warning when loading',
                                                var=self.weirdfed_warning_val)
+        #   average
+        self.average_error_menu = ttk.Combobox(self.average_settings_frame,
+                                               values=['SEM','STD','raw data','None'],
+                                               width=10)
+        self.average_error_menu.set('SEM')
+        
+        self.average_bin_menu = ttk.Combobox(self.average_settings_frame,
+                                             values=list(range(1,25)),
+                                             width=10)
+        self.average_bin_menu.set(1)
+        self.average_method_menu = ttk.Combobox(self.average_settings_frame,
+                                                values=['shared date & time','shared time', 'shared start'],)
+        self.average_method_menu.set('shared date & time')
+        self.average_method_menu.bind('<<ComboboxSelected>>', self.check_average_align)
+        self.average_alignstart_menu = ttk.Combobox(self.average_settings_frame,
+                                                    values=times,
+                                                    width=10,
+                                                    state=tk.DISABLED)
+        self.average_alignstart_menu.set('7 am')
+        self.average_aligndays_menu = ttk.Combobox(self.average_settings_frame,
+                                                  values=list(range(1,8)),
+                                                  width=10,
+                                                  state=tk.DISABLED)
+        self.average_aligndays_menu.set(3)      
         #   pellet plot
         self.pelletplottype_menu = ttk.Combobox(self.pellet_settings_frame,
                                                 values=['Cumulative',
@@ -410,33 +437,7 @@ class FED3_Viz(tk.Tk):
         self.pelletplotalign_checkbox = ttk.Checkbutton(self.pellet_settings_frame,
                                                        text='Align multi pellet plots to the same start time',
                                                        var=self.pelletplotalign_checkbox_val)
-        #   average
-        self.average_error_menu = ttk.Combobox(self.average_settings_frame,
-                                               values=['SEM','STD','raw data','None'],
-                                               width=10)
-        self.average_error_menu.set('SEM')
         
-        self.average_bin_menu = ttk.Combobox(self.average_settings_frame,
-                                             values=list(range(1,25)),
-                                             width=10)
-        self.average_bin_menu.set(1)
-        
-        self.average_align_checkbox_val = tk.BooleanVar()
-        self.average_align_checkbox_val.set(True)
-        self.average_align_checkbox = ttk.Checkbutton(self.average_settings_frame,
-                                                     text='Align average plots to the same start time (start time/no. days)',
-                                                     command=self.check_average_align,
-                                                     variable=self.average_align_checkbox_val)
-        self.average_alignstart_menu = ttk.Combobox(self.average_settings_frame,
-                                                    values=times,
-                                                    width=10,
-                                                    state=tk.DISABLED)
-        self.average_alignstart_menu.set('7 am')
-        self.average_aligndays_menu = ttk.Combobox(self.average_settings_frame,
-                                                  values=list(range(1,8)),
-                                                  width=10,
-                                                  state=tk.DISABLED)
-        self.average_aligndays_menu.set(3)
         #   day/night
         dn_options = ['pellets','retrieval time','interpellet intervals',
                       'correct pokes','errors','correct pokes (%)','errors (%)']
@@ -509,6 +510,17 @@ class FED3_Viz(tk.Tk):
         self.overwrite_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
         self.weirdfed_warning.grid(row=5,column=0,padx=(20,0),sticky='w')
         
+        self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
+        self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
+        self.average_error_menu.grid(row=1,column=1,sticky='nw')
+        self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
+        self.average_bin_menu.grid(row=2,column=1,sticky='w')
+        self.average_method_label.grid(row=3, column=0, sticky='w', padx=(20,0))
+        self.average_method_menu.grid(row=3,column=1,sticky='ew', columnspan=2)
+        self.average_align_ontime_label.grid(row=4,column=0,sticky='w',padx=(30,0))
+        self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
+        self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
+        
         self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))       
         self.pelletplottype_label.grid(row=1,column=0,padx=(20,100),sticky='w')
         self.pelletplottype_menu.grid(row=1,column=1,sticky='nw')
@@ -518,16 +530,6 @@ class FED3_Viz(tk.Tk):
         self.pelletplotcolor_menu.grid(row=3,column=1,sticky='nw')
         self.pelletplotalign_checkbox.grid(row=4,column=0,padx=(20,100),
                                            sticky='nw')
-        
-        self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
-        self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
-        self.average_error_menu.grid(row=1,column=1,sticky='nw')
-        self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
-        self.average_bin_menu.grid(row=2,column=1,sticky='w')
-        self.average_align_checkbox.grid(row=4,column=0,padx=(20,0),
-                                         sticky='nw')
-        self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
-        self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
         
         self.daynight_settings_label.grid(row=0,column=0,sticky='w')
         self.daynight_values_label.grid(row=1,column=0,sticky='w',padx=(20,175))
@@ -864,12 +866,13 @@ class FED3_Viz(tk.Tk):
             ints = [int(i) for i in self.group_view.curselection()]
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
-        if self.average_align_checkbox_val.get():
-            plotfunc=plots.pellet_plot_aligned_average
-            plotdata=getdata.pellet_plot_aligned_average(**args_dict)
-        else:
-            plotfunc=plots.pellet_plot_average
-            plotdata=getdata.pellet_plot_average(**args_dict)
+        method = self.average_method_menu.get()
+        if method == 'shared time':
+            plotfunc=plots.pellet_plot_average_ontime
+            plotdata=getdata.pellet_plot_average_ontime(**args_dict)
+        elif method == 'shared date & time':
+            plotfunc=plots.pellet_plot_average_ondatetime
+            plotdata=getdata.pellet_plot_average_ondatetime(**args_dict)
         fig = plotfunc(**args_dict)
         if fig == 'NO_OVERLAP ERROR':
             self.raise_average_warning()
@@ -1411,11 +1414,13 @@ class FED3_Viz(tk.Tk):
             self.pelletplotcumu_label.configure(fg='gray')
             self.pelletplotcumu_menu.configure(state=tk.DISABLED)
             
-    def check_average_align(self):
-        if self.average_align_checkbox_val.get():
+    def check_average_align(self, *event):
+        if self.average_method_menu.get() == 'shared time':
+            self.average_align_ontime_label.configure(fg='black')
             self.average_alignstart_menu.configure(state=tk.NORMAL)
             self.average_aligndays_menu.configure(state=tk.NORMAL)
         else:
+            self.average_align_ontime_label.configure(fg='gray')
             self.average_alignstart_menu.configure(state=tk.DISABLED)
             self.average_aligndays_menu.configure(state=tk.DISABLED)
             
@@ -1454,7 +1459,7 @@ class FED3_Viz(tk.Tk):
             self.pelletplotalign_checkbox_val.set(settings_df.loc['pellet_align','Values'])
             self.average_error_menu.set(settings_df.loc['average_error','Values'])
             self.average_bin_menu.set(settings_df.loc['average_bins','Values'])
-            self.average_align_checkbox_val.set(settings_df.loc['average_align','Values'])
+            self.average_method_menu.set(settings_df.loc['average_method','Values'])
             self.average_alignstart_menu.set(settings_df.loc['average_align_start','Values'])
             self.average_aligndays_menu.set(settings_df.loc['average_align_days','Values'])
             self.daynight_values.set(settings_df.loc['circ_value','Values'])
@@ -1495,7 +1500,7 @@ class FED3_Viz(tk.Tk):
                              average_error      =self.average_error_menu.get(),
                              average_bins       =self.average_bin_menu.get(),
                              load_last_used     =self.settings_lastused_val.get(),
-                             average_align      =self.average_align_checkbox_val.get(),
+                             average_method     =self.average_method_menu.get(),
                              average_align_start=self.average_alignstart_menu.get(),
                              average_align_days =self.average_aligndays_menu.get(),
                              circ_value           =self.daynight_values.get(),
@@ -1528,8 +1533,8 @@ class FED3_Viz(tk.Tk):
         if not platform.system() == 'Darwin':
             warn_window.iconbitmap('img/exclam.ico')
         text = ("There are no intervals where the selected FEDs all overlap." +
-                '\n\nYou can still make an average pellet plot by checking' +  
-                '\n"Align average plots to the same start time" in the settings tab.')
+                '\n\nYou can still make an average pellet plot by changing the' +  
+                '\nalignment method for averaging from the settings tab.')
                 
         warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
         warning.pack(padx=(20,20),pady=(20,20))
