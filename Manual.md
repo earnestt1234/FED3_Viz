@@ -7,10 +7,9 @@
 </p>
 
 
+**Written for version**: v0.1.0 (beta)
 
-**Written for version**: v0.0.2 (beta)
-
-**Date of creation**: April 27th, 2020
+**Date of creation**: May 8th, 2020
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
@@ -104,13 +103,12 @@ The **Home Tab** is the tab that is open when FED3 Viz starts up.  On this tab, 
 </p>
 Elements of the Home Tab:
 
-1. The **Info Bar** shows text describing button functions on the Home Tab.  Hover the mouse over a button and the Info Bar will give a brief description of that button's function.
+1. The **Info Bar** shows helpful text for the Home Tab.  Hover over a button or select a plot to show a brief description.
 2. The top row of buttons, which are tools for loading and managing data files within FED3 Viz.
 3. The **File View** is the largest element of the Home Tab.  When a FED data file is loaded, it will appear as a row in the File View.  Each column will show data associated with that data file.
 4. The **Group View** lists all the currently loaded "groups," used for combining data from multiple FEDs (see the "Groups" section below).
-5. The bottom row of buttons, which correspond to buttons used to create plots.
-
-Whether or not a button is active depends on what data have been loaded into the application; for example, most plotting buttons must have some files selected in order to be active.
+5. The **Plot Selector** pane, where you can choose which plots to make for the loaded devices.
+6. The **Create Plot Button**, which creates a plot based on the loaded device files and the selection in the Plot Selector.  Whether or not this button is active depends on what data have been loaded into the application; for example, most plotting buttons must have some files selected in order to be active.
 
 ### Plots Tab
 
@@ -189,7 +187,7 @@ An error message pop-up may be raised if there are any issues encountered during
 - Unrecognized: the file(s) was not recognized as FED3 data.  This error means that the program failed to load the data.  This can occur from attempts to read non `.csv` or `.xlsx` files, or from correct file types that differ significantly from the standard FED3 file format.  This error can not be suppressed.
 - Missing Data: the file(s) is missing at least one of the default columns.  This means that the file was loaded, but it may be missing some columns which are used by FED3 Viz for plotting; it is meant to serve as a warning that some plots may be unavailable or may produce unexpected results.  This error can occur when the raw data has been edited to remove or rename columns, or when using an earlier version of FED3 Arduino code.  This error can be suppressed by unticking **Settings > General > Show missing column warning when loading.**
 
-Further discussion of problems with loading may be brought up in the [FAQ](#FAQ) as the application develops.  Additionally, the description of each plot in the "Plots" section below will list the data columns required by each plot.
+Further discussion of problems with loading may be brought up in the [FAQ](#FAQ) as the application develops.  Additionally, the dependent columns of each plot can be viewed in the Appendix.
 
 ### File View
 
@@ -262,8 +260,9 @@ Group files associated **file names** with **Group names**.  In this way, files 
 The general steps to create a plot are:
 
 - Select the desired settings from the Settings Tab (if applicable)
-- Select the FED files to include in the plot
-- Press a plot button from the bottom row of the Home Tab
+- Select the FED files to include in the plot, either by clicking or by Grouping
+- Highlight the desired plotting function from the Plot Selector
+- Hit the Create Plot Button
 
 This section will go through the plot buttons currently available in the Home Tab and describe the plots they create.
 
@@ -271,7 +270,14 @@ There are a couple settings which apply to multiple plots:
 
 - *Shading dark periods*:  When enabled, applicable plots will have a light gray shading during periods when the lights are off - this can help for detecting circadian patterns of activity.  This setting can be toggled from **Settings > General > Shade dark periods (lights on/off)**.  The start and and time of the dark period can be selected using the dropdown menus next to this setting. Plots which make use of this feature will include a :new_moon_with_face: symbol in their description
 - *Using Groups*: Some plots aggregate data and rely on Groups.  By default, plots which rely on Groups will **plot all Groups present in the Group View**; you can instead use the Group View to select which Groups to include by unticking **Settings > General > For plots using groups, include all loaded groups rather than those selected**.  Plots that utilize groups will be tagged with a :paperclip: symbol in their description.
-- *Handling multiple selections*: For plots that don't use Groups, the data to plot depends on which loaded FED data are highlighted.  More than one file can be highlighted at once, and there are two main ways the program deals with this.  Buttons that combine the highlighted files into one graph are marked by :bar_chart:, while buttons that create multiple plots (one for each highlighted file) are marked by :bar_chart::bar_chart::bar_chart:.  
+- *Handling multiple selections*: For plots that don't use Groups, the data to plot depends on which loaded FED data are highlighted.  More than one file can be highlighted at once, and there are two main ways the program deals with this.  Buttons that combine the highlighted files into one graph are marked by :bar_chart:, while buttons that create multiple plots (one for each highlighted file) are marked by :bar_chart::bar_chart::bar_chart:.
+- *Pellet & Poke Averaging:*  Several plots that average data on pellet retrieval and pokes rely on specific settings for determining the method of averaging across a time series.  These settings occur under the heading **Averaging (Pellet & Poke Plots)**, and plots that use them will include a 🧮 symbol in their description.  These settings include:
+  - **Error value for average plots:**  How to show the spread of data.  Options are SEM (standard error of the mean), STD (standard deviation), raw data (data for each device shown around the average), or None.
+  - **Bin size for averaging (hours):** how frequently to average data (must be done as pellets are logged to the second)
+  - **Alignment method for averaging:**  How to deal with alignment of time series.  The three options are:
+    - **shared date & time**: The program only averages over *absolute date & time*; i.e. only FEDs that were active at the same time can be averaged, and averaging can only be done for the window of time where **all** FEDs in the Groups are active (a warning will be raised if there is no such window for the selected devices).  This option makes sense for experiments where devices were started and ended at the same time.
+    - **shared time**: The program averages over time of day but disregards the date; i.e., the program aligns the files to the first occurrence of a selected time, and then creates an average.  This setting requires you to specify the **Start time & length of averaging (time/days)** (what time of day to align the data to and how many days to try and average).  This option makes sense for experiments where devices were recording on different days or from different cohorts of mice, but you want circadian patterns to be preserved.
+    - **elapsed time**: The program disregards both time of day and data and instead averages over the elapsed recording time.  This options makes sense for experiments where you want to visualize mice activity relative to the start of each recording, and you want to disregard the time of day when the recording was created.
 
 ### Single Pellet Plot
 
@@ -330,7 +336,7 @@ Settings specific to these plots are under **Settings > Average Pellet Plots > A
 
 - **Bin size for averaging (hours):** how frequently to average data (must be done as pellets are logged to the second)
 
-- **Align average plots to the same start time:**  When unticked (default), the program only average  over *absolute date & time*; i.e. only FEDs that were active at the same time can be averaged, and averaging can only be done for the window of time where **all** FEDs in the Groups are active.  When ticked, the data are aligned such that the same hours of the day are averaged for each Group.  This opens up two more options:
+- **Align average plots to the same start time:**  When unticked (default), the program only averages  over *absolute date & time*; i.e. only FEDs that were active at the same time can be averaged, and averaging can only be done for the window of time where **all** FEDs in the Groups are active.  When ticked, the data are aligned such that the same hours of the day are averaged for each Group.  This opens up two more options:
 
   - **Start time**: the time of day to start taking an average - data before this time on the first day of recording will be ignored
   - **No. days**: how many days to try and average data for, since the **Start time** on the first day.

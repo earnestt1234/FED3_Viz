@@ -81,11 +81,8 @@ Moreover, we will certainly consider and try to meet any requests for additional
 
 Some features that I aim to integrate:
 
-- more plots for active/inactive pokes (also errors)
 - recognition of recording mode
 - progressive ratio breakpoint
-- 24 hour circadian plots
-- additional group averaging plots (e.g. for interpellet intervals)
 
 Things that would be great to get feedback on:
  - If you encounter any issue while using the program, like crashes or errors

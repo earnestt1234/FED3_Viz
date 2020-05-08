@@ -371,6 +371,41 @@ def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
     
     return fig
 
+def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for FED in FEDs:
+        assert isinstance(FED, FED3_File),'Non FED3_File passed to interpellet_interval_plot()'
+        
+    fig, ax = plt.subplots(figsize=(4,5), dpi=125)
+    lowest = -2
+    highest = 5
+    ylabel = 'Density Estimation' if kde else 'Count'
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel('minutes between pellets')
+    ax.set_xticks(range(lowest,highest))
+    ax.set_xticklabels([10**num for num in range(-2,5)])
+    ax.set_title('Interpellet Interval Plot')
+    c=0
+    bins = []
+    while c <= highest:
+        bins.append(lowest+c)
+        c+=0.1
+    for group in groups:
+        all_vals = []
+        for FED in FEDs:
+            if group in FED.group:
+                df = FED.data
+                y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
+                y = [np.log10(val) for val in y if not pd.isna(val)]
+                all_vals += y
+        sns.distplot(all_vals,bins=bins,label=group,ax=ax,norm_hist=False,
+                     kde=kde)
+        ax.legend(fontsize=8)
+        plt.tight_layout()
+    
+    return fig
+
 #---Average Pellet Plots
 
 def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error, shade_dark,
@@ -473,6 +508,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
             if group in file.group:
                 df = file.data.resample(average_bins,base=average_align_start)
                 y = df.apply(resample_get_yvals, dependent)
+                return y
                 first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)

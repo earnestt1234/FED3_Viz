@@ -134,6 +134,7 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_pellet, 2, text='Multi Pellet Plot')
         self.plot_treeview.insert(self.ps_pellet, 3, text='Average Pellet Plot')
         self.plot_treeview.insert(self.ps_pellet, 4, text='Interpellet Interval')
+        self.plot_treeview.insert(self.ps_pellet, 5, text='Group Interpellet Interval')
         self.ps_poke = self.plot_treeview.insert("", 2, text='Pokes')
         self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
         self.plot_treeview.insert(self.ps_poke, 2, text='Average Poke Plot (Correct)')
@@ -203,6 +204,7 @@ class FED3_Viz(tk.Tk):
                                 'Multi Pellet Plot':'Plot pellets received for multiple devices (no averaging)',
                                 'Average Pellet Plot':'Plot average pellets received for grouped devices (groups make individual curves)',
                                 'Interpellet Interval':'Plot histogram of intervals between pellet retrievals',
+                                'Group Interpellet Interval':'Plot histogram of intervals between pellet retrievals for groups',
                                 'Single Poke Plot':'Plot the amount of correct or incorrect pokes',
                                 'Average Poke Plot (Correct)':'Plot average correct pokes for grouped devices (groups make individual curves)',
                                 'Average Poke Plot (Error)':'Plot average error pokes for grouped devices (groups make individual curves)',
@@ -219,6 +221,7 @@ class FED3_Viz(tk.Tk):
                                 'Multi Pellet Plot':self.pellet_plot_multi_TK,
                                 'Average Pellet Plot':self.avg_plot_TK,
                                 'Interpellet Interval':self.interpellet_plot_TK,
+                                'Group Interpellet Interval':self.group_ipi_TK,
                                 'Day/Night Plot':self.daynight_plot_TK,
                                 'Diagnostic Plot':self.diagnostic_plot_TK,
                                 'Single Poke Plot':self.poke_plot_single_TK,
@@ -930,6 +933,26 @@ class FED3_Viz(tk.Tk):
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
 
+    def group_ipi_TK(self):
+        args_dict = self.get_current_settings_as_args()
+        args_dict['FEDs'] = self.LOADED_FEDS
+        if self.allgroups_val.get():
+            groups = self.GROUPS
+        else:
+            ints = [int(i) for i in self.group_view.curselection()]
+            groups = [self.GROUPS[i] for i in ints]
+        args_dict['groups'] = groups
+        fig = plots.group_interpellet_interval_plot(**args_dic)
+        plotdata = getdata.group_interpellet_interval_plot(**args_dict)
+        fig_name = self.create_plot_name('Group Interpellet Interval Plot')
+        new_plot_frame = ttk.Frame(self.plot_container)
+        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
+                            figname=fig_name, plotfunc=plots.group_interpellet_interval_plot,
+                            arguments=args_dict, plotdata=plotdata,)
+        self.PLOTS[fig_name] = new_plot
+        self.draw_figure(new_plot)
+        self.raise_figure(fig_name)
+
     def diagnostic_plot_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
@@ -1104,7 +1127,7 @@ class FED3_Viz(tk.Tk):
                 self.button_create_plot.configure(state=tk.DISABLED)
         elif text in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)',
                       'Average Poke Plot (Correct)','Average Poke Plot (Error)',
-                      'Average Poke Bias Plot']:
+                      'Average Poke Bias Plot', 'Group Interpellet Interval']:
             #if the all groups box is checked
             if self.allgroups_val.get():
                 #if there are any groups

@@ -246,6 +246,44 @@ def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
     bar_output.index.name = 'log10(minutes)'
     return kde_output, bar_output       
 
+def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
+    kde_output = pd.DataFrame()
+    bar_output = pd.DataFrame()
+    lowest = -2
+    highest = 5
+    c=0
+    bins = []
+    while c <= highest:
+        bins.append(lowest+c)
+        c+=0.1
+    for group in groups:
+        #made to not disrupt fig in app            
+        fig = plt.figure()
+        plt.clf()
+        all_vals = []
+        for FED in FEDs:
+            if group in FED.group:             
+                df = FED.data
+                y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
+                y = [np.log10(val) for val in y if not pd.isna(val)]
+                all_vals += y
+        plot = sns.distplot(all_vals,bins=bins,label=group,kde=kde,
+                            norm_hist=False)
+        if kde:
+            kde = plot.get_lines()[0].get_data()
+            kde_dic = {group:kde[1]}
+            kde_df = pd.DataFrame(kde_dic, index=kde[0])
+            kde_output = kde_output.join(kde_df, how='outer')
+        bar_x = [v.get_x() for v in plot.patches]
+        bar_h = [v.get_height() for v in plot.patches]
+        bar_dic = {group:bar_h}
+        bar_df = pd.DataFrame(bar_dic, index=bar_x)
+        bar_output = bar_output.join(bar_df, how='outer')
+        plt.close()      
+    kde_output.index.name = 'log10(minutes)'
+    bar_output.index.name = 'log10(minutes)'
+    return kde_output, bar_output       
+
 def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                   *args, **kwargs):
     output = pd.DataFrame()
