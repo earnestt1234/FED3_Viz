@@ -19,9 +19,11 @@
 
 Welcome to FED3 Viz, a Python GUI for graphing data from FED3 devices.  This manual will describe the basic functionalities of FED3 Viz and how to use them.  It will also try to address any common confusions/errors that may pop up.
 
-You can find the FED3 Viz landing page at [GitHub](https://github.com/earnestt1234/FED3_Viz); all changes to the program will be made and logged though GitHub.
+You can find the FED3 Viz landing page at [GitHub](https://github.com/earnestt1234/FED3_Viz); all changes to the program will be made and logged though GitHub.  I wrote this application while working as a research technician in the Kravitz Lab (with input from Dr. Kravitz and the rest of the lab!).
 
 If you do notice any inaccuracies, typos, misinformation, or missed content in this manual, please report the issue through GitHub - thanks!
+
+-Tom Earnest ([@earnestt1234](https://github.com/earnestt1234))
 
 ### Installation
 
@@ -59,7 +61,14 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Multi Pellet Plot](#multi-pellet-plot)
   - [Average Pellet Plot](#average-pellet-plot)
   - [Interpellet Interval Plot](#interpellet-interval-plot)
+  - Group Interpellet Interval Plot
+  - Single Poke Plot
+  - Average Poke Plot
+  - Poke Bias Plot
+  - Average Poke Bias Plot
   - [Day/Night Plot](#daynight-plot)
+  - Chronogram (Line)
+  - Chronogram (Heatmap)
   - [Diagnostic Plot](#diagnostic-plot)
   
 - [Managing Plots](#managing-plots)
@@ -80,6 +89,8 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Last Used Settings](#last-used-settings)
 
 - [FAQ](#faq)
+
+- [Appendix](#appendix)
 
   
 
@@ -272,12 +283,15 @@ There are a couple settings which apply to multiple plots:
 - *Using Groups*: Some plots aggregate data and rely on Groups.  By default, plots which rely on Groups will **plot all Groups present in the Group View**; you can instead use the Group View to select which Groups to include by unticking **Settings > General > For plots using groups, include all loaded groups rather than those selected**.  Plots that utilize groups will be tagged with a :paperclip: symbol in their description.
 - *Handling multiple selections*: For plots that don't use Groups, the data to plot depends on which loaded FED data are highlighted.  More than one file can be highlighted at once, and there are two main ways the program deals with this.  Buttons that combine the highlighted files into one graph are marked by :bar_chart:, while buttons that create multiple plots (one for each highlighted file) are marked by :bar_chart::bar_chart::bar_chart:.
 - *Pellet & Poke Averaging:*  Several plots that average data on pellet retrieval and pokes rely on specific settings for determining the method of averaging across a time series.  These settings occur under the heading **Averaging (Pellet & Poke Plots)**, and plots that use them will include a 🧮 symbol in their description.  These settings include:
+  
   - **Error value for average plots:**  How to show the spread of data.  Options are SEM (standard error of the mean), STD (standard deviation), raw data (data for each device shown around the average), or None.
   - **Bin size for averaging (hours):** how frequently to average data (must be done as pellets are logged to the second)
   - **Alignment method for averaging:**  How to deal with alignment of time series.  The three options are:
-    - **shared date & time**: The program only averages over *absolute date & time*; i.e. only FEDs that were active at the same time can be averaged, and averaging can only be done for the window of time where **all** FEDs in the Groups are active (a warning will be raised if there is no such window for the selected devices).  This option makes sense for experiments where devices were started and ended at the same time.
+    - **shared date & time**: The program only averages over *absolute date & time*; i.e. only FEDs that were active at the same time can be averaged, and averaging can only be done for the window of time where **all** FEDs in the Groups are active.  This option makes sense for experiments where devices were started and ended at the same time.
     - **shared time**: The program averages over time of day but disregards the date; i.e., the program aligns the files to the first occurrence of a selected time, and then creates an average.  This setting requires you to specify the **Start time & length of averaging (time/days)** (what time of day to align the data to and how many days to try and average).  This option makes sense for experiments where devices were recording on different days or from different cohorts of mice, but you want circadian patterns to be preserved.
     - **elapsed time**: The program disregards both time of day and data and instead averages over the elapsed recording time.  This options makes sense for experiments where you want to visualize mice activity relative to the start of each recording, and you want to disregard the time of day when the recording was created.
+    
+    A diagram illustrating these different types of averaging can be found in the [Appendix](#averaging-methods-diagram).  Note the a warning may be raised, or an empty plot may be created, if there are no times when the selected files can be averaged.
 
 ### Single Pellet Plot
 
@@ -324,28 +338,15 @@ The only additional setting is **Settings > Individual Pellet Plots > Align mult
 
 *Uses groups* :paperclip:
 
+*Uses averaging methods* 🧮
+
 <p align="center">
 	<img src="img/examples/average.png" width="500">
 </p>
 
-Average Pellet Plots average the pellets retrieved for each file in a Group.  Each group in the plot is plotted as a separate line.  Average Pellet Plots can only be plotted using a binned frequency of pellet retrieval.
-
-Settings specific to these plots are under **Settings > Average Pellet Plots > Average Pellet Plots:**
-
-- **Error value for average plots**: how to show the spread of data within each group.  Options are standard error of the mean (SEM), standard deviation (STD), raw data (each file shown as a lighter line surrounding the mean line), or None.
-
-- **Bin size for averaging (hours):** how frequently to average data (must be done as pellets are logged to the second)
-
-- **Align average plots to the same start time:**  When unticked (default), the program only averages  over *absolute date & time*; i.e. only FEDs that were active at the same time can be averaged, and averaging can only be done for the window of time where **all** FEDs in the Groups are active.  When ticked, the data are aligned such that the same hours of the day are averaged for each Group.  This opens up two more options:
-
-  - **Start time**: the time of day to start taking an average - data before this time on the first day of recording will be ignored
-  - **No. days**: how many days to try and average data for, since the **Start time** on the first day.
-
-  If the box is unticked, and the Groups selected have no periods when all their members are active, a warning will be raised, directing the user to try making the aligned version of the plot.
+Average Pellet Plots average the pellets retrieved for each file in a Group.  Each group in the plot is plotted as a separate line.
 
 ### Interpellet Interval Plot
-
-**NOTE: These plots only use the KDE version in v0.0.2; future updates will allow the KDE curve to be removed (see below)**
 
 *Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count*
 
@@ -363,6 +364,35 @@ This plot is a fairly unaltered use of [`seaborn.distplot`](https://seaborn.pyda
 - When unticked, a raw histogram is parted, the KDE line is removed, and the y-axis represents counts in each bin.
 
 Note that Interpellet Interval Plots use logarithmically spaced x-axes (in minutes).
+
+### Group Interpellet Interval Plot
+
+*Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count*
+
+*Uses groups* :paperclip:
+
+<p align="center">
+	<img src="img/manual/group_ipi.png" width="500">
+</p>
+
+Same as the Interpellet Interval Plot (see above), except this version plots groups as separate curves.  The Interpellet Intervals from the files of every group are appended to one array, and then plotted.  The KDE line can also be turned on or off.
+
+### Single Poke Plot
+
+*Can use night shading* :new_moon_with_face:
+
+*Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
+
+<p align="center">
+	<img src="img/manual/pokeplot.png" width="600">
+</p>
+
+The Poke Plot shows the amount of pokes overtime for a single file.  The file is binned at a user-specified frequency, and the amount of pokes within each bin is plotted.  Settings for tweaking this plot are under **Settings > Individual Poke Plots**:
+
+- **Bin size for poke plots (hours)**: The size of bins for resampling
+- **Show correct pokes**: Shows the amount of correct pokes when ticked
+- **Show incorrect pokes**: Shows the amount of errors when ticked
+- **Show pokes as percent (%)**: Change the y-axis from the number of pokes to the percentage of pokes within each bin.  Note that this may leave gaps if there are bins when no pokes occurred.
 
 ### Day/Night Plot
 
@@ -503,9 +533,15 @@ This section will mainly cover troubleshooting and issues; please also check the
 
 - **I downloaded the executable but it won't run.**   Unfortunately, I am fairly unaware of the exact system requirements for FED3 Viz (it was built with `PyInstaller`, which is largely a black box to me).  If on Windows, one thing you can try is running the `.exe` from the command line (`cd` into the directory and then enter `fed3viz.exe`).  This will leave the console open and may provide an error message which can be shared.  On Mac, the Terminal can similarly be inspected.  
 
-  If the error persists, I would instead recommend trying to run FED3 Viz from the Python script (Method 2 of the Installation instructions).  This is more likely to be troubleshooted successfully. 
+  If the error persists, I would instead recommend trying to run FED3 Viz from the Python script (Method 2 of the Installation instructions).  This is more likely to be troubleshooted successfully.
+  
+- **The program slows down, doesn't respond, or crashes.**  The two major times I have experienced slowdown are when many FED files are loaded in one go (especially with long files) or when a plot is created with many devices shown as separate curves.  In my experience, the program will recover and finish the loading/plotting after a few seconds.  To avoid these issues, I'd recommend selecting 10 or less devices when loading (i.e. per push of the Load Button) or plotting devices.  If the problems on your device result in frequent crashes or persistent slow downs, even when using small amounts of data, please report this.  I have taken a relatively minimal approach to optimizing speed, and there may be ways to improve.
 
 - **I can't load some of my FED data, or I can load but some plots don't work**.  The most likely cause is that you have a previous version of FED output data, or that there have been edits to raw data.  FED3 Viz tries to handle old formats of the data, but there may be cases which cannot be caught.  Some examples of current data are included on GitHub in the `example_data` folder.  You can compare your data to these to see if there might be any obvious differences; you can also test that the example data load correctly.  Please share any specific issues on GitHub.
+
+- **One of the plots I made looks weird.**  By "looks weird" I mean things like broken lines, empty areas of the plot, lines during off periods, smooshed axes text, or completely empty plots.  "Issues" like this may occur given some specific cases of data; I put issues in quotes because some peculiarities may actually accurately reflect the data (say if they have missing values or are temporally distant from each other).  Hopefully, this manual can give you an intuition of the processing that goes into creating a specific plot.
+
+  On the other hand, if "looks weird" means you think the plot isn't actually representing the data, or the plot doesn't match one you have created, this could reflect a code error, or an unclear description of what the plots are doing.  Regardless of what "looks weird" means, I would be happy discuss and sort out any specific cases.
 
 - **I'm seeing errors & warning when starting up or running the program.**  Some of these are to be expected, and you shouldn't worry about them if the program continues to work as expected.  If there are functional issues, please report these errors.
 
@@ -527,4 +563,23 @@ This section will mainly cover troubleshooting and issues; please also check the
   That being said, I would enjoy discussing (on GitHub) and possibly including any proposed changes which significantly contribute to the readable or speed of the code.  Aside from that, sharing code may be useful for other users.
 
 - **I can't load some settings, or my settings look weird.**  This could be an issue with altered setting files, or settings files with which have entries that don't match the application.  Please redownload the `DEFAULT.CSV` and `LAST_USED.CSV` files from GitHub and replace them in your FED3 Viz folder.  Alternatively, try to save new settings from the application to overwrite the `DEFAULT.CSV` file.
+
 - **I have an issue that I have shared and I haven't heard back from anyone.**  Please be aware that FED3 Viz and FEDs are developed and maintained by a small group of researchers as a means to meet our research goals.  We will do our best to respond prudently to questions shared online, but bear with us!
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
+# Appendix
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
+### Averaging Methods Diagram
+
+See in higher resolution at `FED3_Viz/img/manual/average_illustration.png`.
+
+<p align="center">
+	<img src="img/manual/average_illustration.png" width="800">
+</p>
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
+### Plot Column Dependencies

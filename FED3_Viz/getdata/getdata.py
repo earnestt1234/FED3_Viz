@@ -105,7 +105,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.resample(average_bins,base=0)
+                df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
                 y = df.apply(resample_get_yvals, dependent)
                 y = y[(y.index > latest_start) &
                       (y.index < earliest_end)].copy()
@@ -140,7 +140,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.resample(average_bins,base=average_align_start)
+                df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
                 y = df.apply(resample_get_yvals, dependent)
                 first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
@@ -184,7 +184,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.resample(average_bins,base=0, on='Elapsed_Time')
+                df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,base=0))
                 y = df.apply(resample_get_yvals, dependent)
                 y = y.reindex(shortest_index)           
                 y.index = [time.total_seconds()/3600 for time in y.index]
@@ -328,22 +328,41 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
     output = output.merge(group_avg_df, left_index=True, right_index=True)
     return output
 
-def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_percent,
+def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_style,
               *args, **kwargs):
     output=pd.DataFrame()
-    resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
-    if poke_show_correct:
-        y = resampled.apply(poke_resample_func, val=True, as_percent=poke_percent)
-        y = y.rename('Correct Pokes')
-        x = y.index
-        temp = pd.DataFrame(y, index=x,)
-        output = output.join(temp, how='outer')
-    if poke_show_error:
-        y = resampled.apply(poke_resample_func, val=False, as_percent=poke_percent)
-        y = y.rename('Incorrect Pokes')
-        x = y.index
-        temp = pd.DataFrame(y, index=x,)
-        output = output.join(temp, how='outer')
+    if poke_style == 'Cumulative':
+        pokes = FED.data['Correct_Poke']
+        if poke_show_correct:
+            y = pd.Series([1 if i==True else np.nan for i in pokes]).cumsum()
+            y = y.rename('Correct Pokes')
+            y.index = FED.data.index
+            y = y.dropna()
+            x = y.index
+            temp = pd.DataFrame(y, index=x,)
+            output = output.join(temp, how='outer')
+        if poke_show_error:
+            y = pd.Series([1 if i==False else np.nan for i in pokes]).cumsum()
+            y = y.rename('Incorrect Pokes')
+            y.index = FED.data.index
+            y = y.dropna()
+            x = y.index
+            temp = pd.DataFrame(y, index=x,)
+            output = output.join(temp, how='outer')
+    else:
+        resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+        if poke_show_correct:
+            y = resampled.apply(poke_resample_func, val=True, style=poke_style)
+            y = y.rename('Correct Pokes')
+            x = y.index
+            temp = pd.DataFrame(y, index=x,)
+            output = output.join(temp, how='outer')
+        if poke_show_error:
+            y = resampled.apply(poke_resample_func, val=False, style=poke_style)
+            y = y.rename('Incorrect Pokes')
+            x = y.index
+            temp = pd.DataFrame(y, index=x,)
+            output = output.join(temp, how='outer')
     return output
 
 def poke_bias(FED, poke_bins, bias_style, *args, **kwargs):

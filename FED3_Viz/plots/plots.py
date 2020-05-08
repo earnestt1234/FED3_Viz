@@ -124,10 +124,10 @@ def raw_data_scatter(array, xcenter, spread):
     x += xcenter
     return x,y
 
-def poke_resample_func(bin_, val, as_percent):
-    if as_percent: 
+def poke_resample_func(bin_, val, style):
+    if style == 'Percentage':
         output = (bin_==val).sum()/len(bin_)*100 if len(bin_) else np.nan
-    else:
+    elif style == 'Frequency':
         output = (bin_==val).sum()
     return output
 
@@ -432,7 +432,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.resample(average_bins,base=0)
+                df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
                 y = df.apply(resample_get_yvals,dependent)
                 y = y[(y.index > latest_start) &
                         (y.index < earliest_end)].copy()
@@ -506,9 +506,8 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.resample(average_bins,base=average_align_start)
+                df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
                 y = df.apply(resample_get_yvals, dependent)
-                return y
                 first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)
@@ -545,7 +544,9 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                        lights_on=lights_on,
                        lights_off=lights_off,
                        convert=False)
-    hours_start = start_datetime.strftime('%I%p').replace('0','')
+    hours_start = start_datetime.strftime('%I%p')
+    if hours_start[0] == '0':
+        hours_start = hours_start[1:]
     ax.set_xlabel('Hours since ' + hours_start + ' on first day')
     ticks = pd.date_range(start_datetime,end_datetime,freq='12H')
     tick_labels = [i*12 for i in range(len(ticks))]
@@ -586,8 +587,8 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.resample(average_bins,base=0,
-                                        on='Elapsed_Time')
+                df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
+                                                  base=0))
                 y = df.apply(resample_get_yvals, dependent)
                 y = y.reindex(shortest_index)          
                 y.index = [time.total_seconds()/3600 for time in y.index]
@@ -635,19 +636,34 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
 
 #---Single Poke Plots
 
-def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_percent,
+def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_style,
               shade_dark, lights_on, lights_off, *args, **kwargs):
     assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
     fig, ax = plt.subplots(figsize=(7, 3.5), dpi=150)
-    resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
-    if poke_show_correct:
-        y = resampled.apply(poke_resample_func, val=True, as_percent=poke_percent)
-        x = y.index
-        ax.plot(x, y, color='mediumseagreen', label = 'correct pokes')
-    if poke_show_error:
-        y = resampled.apply(poke_resample_func, val=False, as_percent=poke_percent)
-        x = y.index
-        ax.plot(x, y, color='indianred', label = 'error pokes')
+    if poke_style == 'Cumulative':
+        pokes = FED.data['Correct_Poke']
+        if poke_show_correct:
+            y = pd.Series([1 if i==True else np.nan for i in pokes]).cumsum()
+            y.index = FED.data.index
+            y = y.dropna()
+            x = y.index
+            ax.plot(x, y, color='mediumseagreen', label = 'correct pokes')
+        if poke_show_error:
+            y = pd.Series([1 if i==False else np.nan for i in pokes]).cumsum()
+            y.index = FED.data.index
+            y = y.dropna()
+            x = y.index
+            ax.plot(x, y, color='indianred', label = 'error pokes')
+    else:
+        resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+        if poke_show_correct:
+            y = resampled.apply(poke_resample_func, val=True, style=poke_style)
+            x = y.index
+            ax.plot(x, y, color='mediumseagreen', label = 'correct pokes')
+        if poke_show_error:
+            y = resampled.apply(poke_resample_func, val=False, style=poke_style)
+            x = y.index
+            ax.plot(x, y, color='indianred', label = 'error pokes')
     days = mdates.DayLocator()
     hours = mdates.HourLocator(byhour=[0,6,12,18])
     xfmt = mdates.DateFormatter('%b %d')
@@ -656,13 +672,13 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_percent,
     ax.xaxis.set_minor_locator(hours)
     ax.set_xlabel('Time')
     ylabel = 'Pokes'
-    if poke_percent:
+    if poke_style == "Percentage":
         ylabel += ' (%)'
     ax.set_ylabel(ylabel)
     title = ('Pokes for ' + FED.filename)
     ax.set_title(title)
     if shade_dark:
-        shade_darkness(ax, min(x), max(x),
+        shade_darkness(ax, min(FED.data.index), max(FED.data.index),
                        lights_on=lights_on,
                        lights_off=lights_off)
     ax.legend(bbox_to_anchor=(1,1), loc='upper left')   

@@ -21,7 +21,7 @@ plotfuncs = {name:func for name, func in inspect.getmembers(mymod2)}
 
 string_arguments = ['pellet_color', 'pellet_bins', 'average_bins',
                     'average_error', 'circ_value', 'circ_error','bias_style',
-                    'poke_bins','dependent']
+                    'poke_bins','dependent','poke_style']
 shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'pellet_plot_multi_unaligned',
                     'pellet_freq_multi_unaligned',

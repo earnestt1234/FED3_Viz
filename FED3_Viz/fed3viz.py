@@ -100,10 +100,11 @@ class FED3_Viz(tk.Tk):
         self.group_view_label    = tk.Label(self.home_sheets, text='Group View',
                                           font=italic)     
         #spreadsheets
-        treeview_columns = ['Name','# events','start time',
+        treeview_columns = ['','Name','# events','start time',
                             'end time','duration','groups']
         self.files_spreadsheet = ttk.Treeview(self.home_sheets, 
                                               columns=treeview_columns)
+        self.files_spreadsheet.column('', width=20)
         self.files_spreadsheet.column('Name', width=200)
         self.files_spreadsheet.column('# events', width=100)
         self.files_spreadsheet.column('start time', width=125)
@@ -369,6 +370,8 @@ class FED3_Viz(tk.Tk):
         self.poke_settings_label = tk.Label(self.poke_settings_frame,
                                             text='Individual Poke Plots',
                                             font=self.section_font)
+        self.poke_style_label = tk.Label(self.poke_settings_frame,
+                                         text='Values to plot')
         self.poke_binsize_label  = tk.Label(self.poke_settings_frame,
                                             text='Bin size for poke plots (hours)')
         self.poke_biasstyle_label = tk.Label(self.poke_settings_frame,
@@ -479,6 +482,10 @@ class FED3_Viz(tk.Tk):
                                                 text='Use kernel density estimation',
                                                 var=self.ipi_kde_val)
         #   poke
+        self.poke_style_menu = ttk.Combobox(self.poke_settings_frame,
+                                            values=['Cumulative','Frequency','Percentage'])
+        self.poke_style_menu.set('Cumulative')
+        self.poke_style_menu.bind('<<ComboboxSelected>>',self.check_poke_type)
         self.poke_bins_menu = ttk.Combobox(self.poke_settings_frame,
                                            values=list(range(1,25)),
                                            width=10)
@@ -487,17 +494,14 @@ class FED3_Viz(tk.Tk):
         self.poke_correct_val.set(True)
         self.poke_correct_box = ttk.Checkbutton(self.poke_settings_frame,
                                                 text='Show correct pokes',
-                                                var=self.poke_correct_val)
+                                                var=self.poke_correct_val,
+                                                command=self.update_buttons_home)
         self.poke_error_val = tk.BooleanVar()
         self.poke_error_val.set(True)
         self.poke_error_box = ttk.Checkbutton(self.poke_settings_frame,
                                               text='Show incorrect pokes',
-                                              var=self.poke_error_val)
-        self.poke_percent_val = tk.BooleanVar()
-        self.poke_percent_val.set(False)
-        self.poke_percent_box = ttk.Checkbutton(self.poke_settings_frame,
-                                                text='Show pokes as percent (%)',
-                                                var=self.poke_percent_val)
+                                              var=self.poke_error_val,
+                                              command=self.update_buttons_home)
         self.poke_dynamiccolor_val = tk.BooleanVar()
         self.poke_dynamiccolor_val.set(True)
         self.poke_dynamiccolor_box = ttk.Checkbutton(self.poke_settings_frame,
@@ -562,11 +566,12 @@ class FED3_Viz(tk.Tk):
         self.ipi_kde_checkbox.grid(row=1,column=0,sticky='w',padx=(20,0))
         
         self.poke_settings_label.grid(row=0,column=0,sticky='w')
-        self.poke_binsize_label.grid(row=1,column=0,sticky='w', padx=(20,95))
-        self.poke_bins_menu.grid(row=1,column=1,sticky='w')
-        self.poke_correct_box.grid(row=2,column=0,sticky='w',padx=(20))
-        self.poke_error_box.grid(row=3,column=0,sticky='w',padx=20)
-        self.poke_percent_box.grid(row=4,column=0,sticky='w',padx=20)
+        self.poke_style_label.grid(row=1,column=0,sticky='w',padx=(20,0))
+        self.poke_style_menu.grid(row=1,column=1,sticky='ew',)
+        self.poke_binsize_label.grid(row=2,column=0,sticky='w', padx=(20,95))
+        self.poke_bins_menu.grid(row=2,column=1,sticky='w')
+        self.poke_correct_box.grid(row=3,column=0,sticky='w',padx=(20))
+        self.poke_error_box.grid(row=4,column=0,sticky='w',padx=20)
         self.poke_biasstyle_label.grid(row=5,column=0,sticky='w',padx=20,pady=(10,0))
         self.poke_biasstyle_menu.grid(row=5,column=1,sticky='w', pady=(10,0))
         self.poke_dynamiccolor_box.grid(row=6,column=0,sticky='w',padx=20)
@@ -942,7 +947,7 @@ class FED3_Viz(tk.Tk):
             ints = [int(i) for i in self.group_view.curselection()]
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
-        fig = plots.group_interpellet_interval_plot(**args_dic)
+        fig = plots.group_interpellet_interval_plot(**args_dict)
         plotdata = getdata.group_interpellet_interval_plot(**args_dict)
         fig_name = self.create_plot_name('Group Interpellet Interval Plot')
         new_plot_frame = ttk.Frame(self.plot_container)
@@ -1067,7 +1072,11 @@ class FED3_Viz(tk.Tk):
     def update_file_view(self):
         self.files_spreadsheet.delete(*self.files_spreadsheet.get_children())
         for i,fed in enumerate(self.LOADED_FEDS):
-            values = (fed.basename, fed.events, fed.start_time.strftime('%b %d %Y, %H:%M'),
+            if fed.missing_columns:
+                tag = '⚠'
+            else:
+                tag = ''
+            values = (tag, fed.basename, fed.events, fed.start_time.strftime('%b %d %Y, %H:%M'),
                       fed.end_time.strftime('%b %d %Y, %H:%M'),
                       str(fed.duration), ', '.join(fed.group))
             self.files_spreadsheet.insert('', i, str(i), values=values)
@@ -1118,11 +1127,17 @@ class FED3_Viz(tk.Tk):
         selection = self.plot_treeview.selection()
         text = self.plot_treeview.item(selection,'text')
         if text in ['Single Pellet Plot', 'Multi Pellet Plot', 'Diagnostic Plot',
-                    'Interpellet Interval','Single Poke Plot', 'Poke Bias Plot',
+                    'Interpellet Interval', 'Poke Bias Plot',
                     'Chronogram (Heatmap)']:
             #if there are feds selected
             if self.files_spreadsheet.selection():
                 self.button_create_plot.configure(state=tk.NORMAL)
+            else:
+                self.button_create_plot.configure(state=tk.DISABLED)
+        elif text == 'Single Poke Plot':
+            if self.files_spreadsheet.selection():
+                if self.poke_correct_val.get() or self.poke_error_val.get():
+                    self.button_create_plot.configure(state=tk.NORMAL)
             else:
                 self.button_create_plot.configure(state=tk.DISABLED)
         elif text in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)',
@@ -1475,6 +1490,14 @@ class FED3_Viz(tk.Tk):
             self.average_align_ontime_label.configure(fg='gray')
             self.average_alignstart_menu.configure(state=tk.DISABLED)
             self.average_aligndays_menu.configure(state=tk.DISABLED)
+     
+    def check_poke_type(self, *event):
+        if self.poke_style_menu.get() == 'Cumulative':
+            self.poke_bins_menu.configure(state=tk.DISABLED)
+            self.poke_binsize_label.configure(fg='gray')
+        else:
+            self.poke_bins_menu.configure(state=tk.NORMAL)
+            self.poke_binsize_label.configure(fg='black')
             
     def save_settings(self, dialog=True, savepath='', return_df=False):
         settings_dict = self.get_current_settings()
@@ -1519,15 +1542,16 @@ class FED3_Viz(tk.Tk):
             self.daynight_show_indvl_val.set(settings_df.loc['circ_show_indvl','Values'])
             self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.ipi_kde_val.set(settings_df.loc['kde','Values'])
+            self.poke_style_menu.set(settings_df.loc['poke_style','Values'])
             self.poke_bins_menu.set(settings_df.loc['poke_bins','Values'])
             self.poke_correct_val.set(settings_df.loc['poke_show_correct','Values'])
             self.poke_error_val.set(settings_df.loc['poke_show_error','Values'])
-            self.poke_percent_val.set(settings_df.loc['poke_percent','Values'])
             self.poke_biasstyle_menu.set(settings_df.loc['bias_style','Values'])
             self.poke_dynamiccolor_val.set(settings_df.loc['dynamic_color','Values'])
             self.check_average_align()
             self.check_nightshade()
             self.check_pellet_type()
+            self.check_poke_type()
                 
     def save_last_used(self):
         settingsdir = 'settings'
@@ -1555,14 +1579,14 @@ class FED3_Viz(tk.Tk):
                              average_method     =self.average_method_menu.get(),
                              average_align_start=self.average_alignstart_menu.get(),
                              average_align_days =self.average_aligndays_menu.get(),
-                             circ_value           =self.daynight_values.get(),
-                             circ_error           =self.daynight_error_menu.get(),
-                             circ_show_indvl      =self.daynight_show_indvl_val.get(),
+                             circ_value         =self.daynight_values.get(),
+                             circ_error         =self.daynight_error_menu.get(),
+                             circ_show_indvl    =self.daynight_show_indvl_val.get(),
                              kde                =self.ipi_kde_val.get(),
+                             poke_style         =self.poke_style_menu.get(),
                              poke_bins          =self.poke_bins_menu.get(),
                              poke_show_correct  =self.poke_correct_val.get(),
                              poke_show_error    =self.poke_error_val.get(),
-                             poke_percent       =self.poke_percent_val.get(),
                              bias_style         =self.poke_biasstyle_menu.get(),
                              dynamic_color      =self.poke_dynamiccolor_val.get())
         return settings_dict
