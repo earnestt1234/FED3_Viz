@@ -674,6 +674,7 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_style,
     ylabel = 'Pokes'
     if poke_style == "Percentage":
         ylabel += ' (%)'
+        ax.set_ylim(0,100)
     ax.set_ylabel(ylabel)
     title = ('Pokes for ' + FED.filename)
     ax.set_title(title)
@@ -688,6 +689,7 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_style,
 
 def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
               lights_off, dynamic_color, *args, **kwargs):
+    DENSITY = 10000
     assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
     fig, ax = plt.subplots(figsize=(7, 3.5), dpi=150)
     if bias_style == 'correct - error':
@@ -703,7 +705,7 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
     if not dynamic_color:
         ax.plot(x, y, color = 'magenta', zorder=3)
     else:
-        xnew = pd.date_range(min(x),max(x),periods=10000)
+        xnew = pd.date_range(min(x),max(x),periods=DENSITY)
         ynew = np.interp(xnew, x, y)
         ax.scatter(xnew, ynew, s=1, c=ynew,
                    cmap='bwr', vmin=-maxy, vmax=maxy, zorder=1)
@@ -801,6 +803,8 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
     ax.set_xticklabels(['Day', 'Night'])
     ax.set_ylabel(circ_value.capitalize())
     ax.set_title(circ_value.capitalize() + ' by Time of Day')
+    if "%" in circ_value:
+            ax.set_ylim(0,100)
     handles, labels = ax.get_legend_handles_labels()
     if circ_error in labels:
         handles.append(handles.pop(labels.index(circ_error)))
@@ -816,6 +820,8 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
+    if circ_show_indvl:
+        circ_error = "None"
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     for i, group in enumerate(groups):
@@ -846,6 +852,8 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
             label += ' (±' + circ_error + ')'
         if circ_show_indvl:
             error_shade = np.nan
+        if "%" in circ_value:
+            ax.set_ylim(0,100)
         x = range(24)
         y = group_mean
         ax.plot(x,y,color=colors[i], label=label)

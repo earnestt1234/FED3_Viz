@@ -4,6 +4,7 @@ FED3 Viz: A tkinter program for visualizing FED3 Data
 
 @author: https://github.com/earnestt1234
 """
+import emoji
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
@@ -104,7 +105,7 @@ class FED3_Viz(tk.Tk):
                             'end time','duration','groups']
         self.files_spreadsheet = ttk.Treeview(self.home_sheets, 
                                               columns=treeview_columns)
-        self.files_spreadsheet.column('', width=20)
+        self.files_spreadsheet.column('', width=25, stretch=False)
         self.files_spreadsheet.column('Name', width=200)
         self.files_spreadsheet.column('# events', width=100)
         self.files_spreadsheet.column('start time', width=125)
@@ -119,6 +120,7 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.bind('<ButtonRelease-1>', self.update_buttons_home)
         self.files_spreadsheet.bind('<Double-Button-1>', lambda event, reverse=True: 
                                     self.sort_FEDs(event,reverse))
+        self.files_spreadsheet.bind('<Control-a>',self.select_all_FEDs)
         self.files_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.files_spreadsheet.yview,)
         self.files_spreadsheet.configure(yscrollcommand=self.files_scrollbar.set)
         self.group_view = tk.Listbox(self.home_sheets,selectmode=tk.EXTENDED,
@@ -152,6 +154,13 @@ class FED3_Viz(tk.Tk):
         
         self.plot_tree_scroll = ttk.Scrollbar(self.plot_selector, command=self.plot_treeview.yview)
         self.plot_treeview.configure(yscrollcommand=self.plot_tree_scroll.set)
+        
+        #progessbar
+        self.progressbar = ttk.Progressbar(self.fed_text, orient='horizontal',
+                                           mode='determinate', length=500)
+        self.progresstextvar = tk.StringVar()
+        self.progresstextvar.set('')
+        self.progresstext = tk.Label(self.fed_text, textvariable=self.progresstextvar)
         
         #buttons
         self.button_load   = tk.Button(self.fed_buttons, text='Load',
@@ -243,8 +252,8 @@ class FED3_Viz(tk.Tk):
         self.button_load_groups.grid(row=0,column=5,sticky='sew')
         
         #labels
-        self.home_buttons_help.grid(row=0,column=0,sticky='w',padx=(0,20),
-                                    pady=(10,10))  
+        self.home_buttons_help.grid(row=0,column=0,sticky='nsw',padx=(0,20),
+                                    pady=(12))  
         #spreadsheets
         self.files_spreadsheet.grid(row=0,column=0,sticky='nsew')
         self.files_scrollbar.grid(row=0,column=1,sticky='nsew')
@@ -252,6 +261,8 @@ class FED3_Viz(tk.Tk):
         self.group_view.grid(row=2,column=0,sticky='nsew') 
         self.group_scrollbar.grid(row=2,column=1,sticky='nsew')
         self.group_view_label.grid(row=3,column=0,sticky='w')
+        # self.progressbar.grid(row=4,column=0,sticky='ew',)
+        # self.progresstext.grid(row=5,column=0,sticky='w')
         
         #plot selector
         self.plot_treeview.grid(row=0,column=0,sticky='nsew')
@@ -363,7 +374,7 @@ class FED3_Viz(tk.Tk):
         self.daynight_values_label = tk.Label(self.daynight_settings_frame,
                                               text='Values to plot')
         self.daynight_error_label  = tk.Label(self.daynight_settings_frame,
-                                              text='Error bar value')
+                                              text='Error value')
         self.ipi_settings_label = tk.Label(self.ipi_settings_frame,
                                            text='Interpellet Interval Plots',
                                            font=self.section_font)
@@ -389,8 +400,7 @@ class FED3_Viz(tk.Tk):
         self.nightshade_checkbox_val.set(True)
         self.nightshade_checkbox = ttk.Checkbutton(self.general_settings_frame,
                                                   text='Shade dark periods (lights on/off)',
-                                                  var=self.nightshade_checkbox_val,
-                                                  command=self.check_nightshade)
+                                                  var=self.nightshade_checkbox_val,)
         self.nightshade_lightson = ttk.Combobox(self.general_settings_frame,
                                                 values=times, width=10)
         self.nightshade_lightsoff = ttk.Combobox(self.general_settings_frame,
@@ -485,7 +495,6 @@ class FED3_Viz(tk.Tk):
         self.poke_style_menu = ttk.Combobox(self.poke_settings_frame,
                                             values=['Cumulative','Frequency','Percentage'])
         self.poke_style_menu.set('Cumulative')
-        self.poke_style_menu.bind('<<ComboboxSelected>>',self.check_poke_type)
         self.poke_bins_menu = ttk.Combobox(self.poke_settings_frame,
                                            values=list(range(1,25)),
                                            width=10)
@@ -633,6 +642,13 @@ class FED3_Viz(tk.Tk):
                                   fg='blue',cursor='hand2')
         self.googlegr2.bind('<ButtonRelease-1>', 
                             lambda event: self.open_url(googlegr_url))
+        self.help_link1 = tk.Label(self.precolon_text,text='HELP (MANUAL): ',
+                                   font=bold)
+        manual_url='https://github.com/earnestt1234/FED3_Viz/blob/master/Manual.md'
+        self.help_link2 = tk.Label(self.postcolon_text,text=manual_url,
+                                   fg='blue',cursor='hand2')
+        self.help_link2.bind('<ButtonRelease-1>',
+                             lambda event: self.open_url(manual_url))
         spaces = 100
         if platform.system() == 'Darwin':
             spaces = 60
@@ -655,18 +671,20 @@ class FED3_Viz(tk.Tk):
         self.fed_subtitle.grid(row=1,column=0,sticky='nsew')
         self.sep1.grid(row=2,column=0,sticky='ew', padx=20, pady=20)
         self.graphic_frame.grid_columnconfigure(0,weight=1)
-        self.version1.grid(row=0,column=0,sticky='w')
-        self.version2.grid(row=0,column=1,sticky='w')
-        self.vdate1.grid(row=1,column=0,sticky='w')
-        self.vdate2.grid(row=1,column=1,sticky='w')
-        self.kravitzlab1.grid(row=2,column=0,sticky='w')
-        self.kravitzlab2.grid(row=2,column=1,sticky='w')
-        self.fedhack1.grid(row=3,column=0,sticky='w')
-        self.fedhack2.grid(row=3,column=1,sticky='w')
-        self.github1.grid(row=4,column=0,sticky='w')
-        self.github2.grid(row=4,column=1,sticky='w')
-        self.googlegr1.grid(row=5,column=0,sticky='w')
-        self.googlegr2.grid(row=5,column=1,sticky='w')
+        self.help_link1.grid(row=0,column=0,sticky='w',pady=(0,30))
+        self.help_link2.grid(row=0,column=1,sticky='w',pady=(0,30))
+        self.version1.grid(row=1,column=0,sticky='w')
+        self.version2.grid(row=1,column=1,sticky='w')
+        self.vdate1.grid(row=2,column=0,sticky='w')
+        self.vdate2.grid(row=2,column=1,sticky='w')
+        self.kravitzlab1.grid(row=3,column=0,sticky='w')
+        self.kravitzlab2.grid(row=3,column=1,sticky='w')
+        self.fedhack1.grid(row=4,column=0,sticky='w')
+        self.fedhack2.grid(row=4,column=1,sticky='w')
+        self.github1.grid(row=5,column=0,sticky='w')
+        self.github2.grid(row=5,column=1,sticky='w')
+        self.googlegr1.grid(row=6,column=0,sticky='w')
+        self.googlegr2.grid(row=6,column=1,sticky='w')
         self.caveat.grid(row=1, column=0, pady=40, columnspan=2)
         
     #---LOAD SETTINGS ON START
@@ -722,12 +740,15 @@ class FED3_Viz(tk.Tk):
         failed_FEDs = []
         weird_FEDs = []
         if files:
+            self.home_buttons_help.grid_remove()
+            self.progressbar.grid(row=0,column=0,sticky='nsew',padx=(0,20),pady=(12))
+            self.progresstext.grid(row=0,column=1,sticky='nsw')
             if overwrite:
                 self.LOADED_FEDS = []
             for file in files:
                 if skip_duplicates:
-                    file_name = os.path.splitext(os.path.basename(file))
-                    if file_name[0] not in loaded_filenames:
+                    file_name = os.path.basename(file)
+                    if file_name not in loaded_filenames:
                         try:
                             pass_FEDs.append(FED3_File(file))
                         except:
@@ -737,6 +758,13 @@ class FED3_Viz(tk.Tk):
                         pass_FEDs.append(FED3_File(file))
                     except:
                         failed_FEDs.append(file_name[0]+file_name[1])
+                self.progresstextvar.set(os.path.basename(file) + '...')
+                self.progressbar.step(1/len(files)*100)
+                self.update()
+        self.progressbar.grid_remove()
+        self.progresstext.grid_remove()
+        self.home_buttons_help.grid(row=0,column=0,sticky='nsw',padx=(0,20),
+                                    pady=(10,10))  
         for file in pass_FEDs:
             if file.missing_columns:
                 weird_FEDs.append(os.path.basename(file.directory))
@@ -855,6 +883,7 @@ class FED3_Viz(tk.Tk):
             self.PLOTS[fig_name] = new_plot
             self.draw_figure(new_plot)
             self.raise_figure(fig_name)
+            self.update()
             
     def pellet_plot_multi_TK(self):
         arg_dict = self.get_current_settings_as_args()
@@ -975,6 +1004,7 @@ class FED3_Viz(tk.Tk):
             self.PLOTS[fig_name] = new_plot
             self.draw_figure(new_plot)
             self.raise_figure(fig_name)
+            self.update()
         
     def daynight_plot_TK(self):
         args_dict = self.get_current_settings_as_args()
@@ -1050,6 +1080,7 @@ class FED3_Viz(tk.Tk):
             self.PLOTS[fig_name] = new_plot
             self.draw_figure(new_plot)
             self.raise_figure(fig_name)
+            self.update()
     
     def poke_bias_single_TK(self):
             to_plot = [int(i) for i in self.files_spreadsheet.selection()]
@@ -1067,13 +1098,14 @@ class FED3_Viz(tk.Tk):
                 self.PLOTS[fig_name] = new_plot
                 self.draw_figure(new_plot)
                 self.raise_figure(fig_name)
+                self.update()
         
     #---HOME HELPER FUNCTIONS
     def update_file_view(self):
         self.files_spreadsheet.delete(*self.files_spreadsheet.get_children())
         for i,fed in enumerate(self.LOADED_FEDS):
             if fed.missing_columns:
-                tag = '⚠'
+                tag = emoji.emojize(':warning:')
             else:
                 tag = ''
             values = (tag, fed.basename, fed.events, fed.start_time.strftime('%b %d %Y, %H:%M'),
@@ -1234,6 +1266,11 @@ class FED3_Viz(tk.Tk):
     def handle_plot_selelection(self, event):
         self.show_plot_help()
         self.update_buttons_home()
+     
+    def select_all_FEDs(self, *event):
+        items = len(self.LOADED_FEDS)
+        self.files_spreadsheet.selection_set(list(range(items)))
+        self.update_all_buttons()
         
     #---PLOT TAB BUTTON FUNCTIONS
     def rename_plot(self):
@@ -1443,6 +1480,7 @@ class FED3_Viz(tk.Tk):
         self.plot_listbox.delete(new_position)
         self.plot_listbox.insert(new_position,new_name)
         self.rename_window.destroy()
+        self.update_buttons_plot()
         
     def rename_check(self,*args):
         new_name = self.rename_var.get()
@@ -1464,15 +1502,7 @@ class FED3_Viz(tk.Tk):
                 file.write(text)
                 file.close()    
         
-    #---SETTINGS TAB FUNCTIONS
-    def check_nightshade(self):
-        if self.nightshade_checkbox_val.get():
-            self.nightshade_lightson.configure(state=tk.NORMAL)
-            self.nightshade_lightsoff.configure(state=tk.NORMAL)
-        else:
-            self.nightshade_lightson.configure(state=tk.DISABLED)
-            self.nightshade_lightsoff.configure(state=tk.DISABLED)
-            
+    #---SETTINGS TAB FUNCTIONS           
     def check_pellet_type(self, *event):
         if self.pelletplottype_menu.get() == 'Frequency':
             self.pelletplotcumu_label.configure(fg='black')
@@ -1490,15 +1520,7 @@ class FED3_Viz(tk.Tk):
             self.average_align_ontime_label.configure(fg='gray')
             self.average_alignstart_menu.configure(state=tk.DISABLED)
             self.average_aligndays_menu.configure(state=tk.DISABLED)
-     
-    def check_poke_type(self, *event):
-        if self.poke_style_menu.get() == 'Cumulative':
-            self.poke_bins_menu.configure(state=tk.DISABLED)
-            self.poke_binsize_label.configure(fg='gray')
-        else:
-            self.poke_bins_menu.configure(state=tk.NORMAL)
-            self.poke_binsize_label.configure(fg='black')
-            
+    
     def save_settings(self, dialog=True, savepath='', return_df=False):
         settings_dict = self.get_current_settings()
         df = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])     
@@ -1549,9 +1571,7 @@ class FED3_Viz(tk.Tk):
             self.poke_biasstyle_menu.set(settings_df.loc['bias_style','Values'])
             self.poke_dynamiccolor_val.set(settings_df.loc['dynamic_color','Values'])
             self.check_average_align()
-            self.check_nightshade()
             self.check_pellet_type()
-            self.check_poke_type()
                 
     def save_last_used(self):
         settingsdir = 'settings'

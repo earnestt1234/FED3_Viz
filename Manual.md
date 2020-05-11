@@ -9,7 +9,7 @@
 
 **Written for version**: v0.1.0 (beta)
 
-**Date of creation**: May 8th, 2020
+**Date of creation**: May 11th, 2020
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
@@ -21,9 +21,11 @@ Welcome to FED3 Viz, a Python GUI for graphing data from FED3 devices.  This man
 
 You can find the FED3 Viz landing page at [GitHub](https://github.com/earnestt1234/FED3_Viz); all changes to the program will be made and logged though GitHub.  I wrote this application while working as a research technician in the Kravitz Lab (with input from Dr. Kravitz and the rest of the lab!).
 
-If you do notice any inaccuracies, typos, misinformation, or missed content in this manual, please report the issue through GitHub - thanks!
+If you do notice any inaccuracies, typos, misinformation, or missed content in this manual, please report the issue through GitHub.  You can also find this manual as a PDF under `FED3_Viz/pdfs`.
 
--Tom Earnest ([@earnestt1234](https://github.com/earnestt1234))
+Thanks!
+
+Tom Earnest ([@earnestt1234](https://github.com/earnestt1234))
 
 ### Installation
 
@@ -39,7 +41,6 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Plots Tab](#plots-tab)
   - [Settings Tab](#settings-tab)
   - [About Tab](#about-tab)
-
 - [Loading Data](#loading-data)
 
   - [Loading FEDs](#loading-feds)
@@ -47,30 +48,26 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
     - [Loading Errors](#loading-errors)
   - [File View](#file-view)
   - [Deleting FEDs](#deleting-feds)
-  
 - [Groups](#groups)
   
   - [Creating Groups](#creating-groups)
   - [Deleting Groups](#deleting-groups)
-  
 - [Saving Groups](#saving-groups)
-  
 - [Plots](#plots)
   
   - [Single Pellet Plot](#single-pellet-plot)
   - [Multi Pellet Plot](#multi-pellet-plot)
   - [Average Pellet Plot](#average-pellet-plot)
   - [Interpellet Interval Plot](#interpellet-interval-plot)
-  - Group Interpellet Interval Plot
-  - Single Poke Plot
-  - Average Poke Plot
-  - Poke Bias Plot
-  - Average Poke Bias Plot
+  - [Group Interpellet Interval Plot](#group-interpellet-interval-plot)
+  - [Single Poke Plot](#single-poke-plot)
+  - [Average Poke Plot](#average-poke-plot)
+  - [Poke Bias Plot](#poke-bias-plot)
+  - [Average Poke Bias Plot](#average-poke-bias-plot)
   - [Day/Night Plot](#daynight-plot)
-  - Chronogram (Line)
-  - Chronogram (Heatmap)
+  - [Chronogram (Line)](#chronogram-line)
+  - [Chronogram (Heatmap)](#chronogram-heatmap)
   - [Diagnostic Plot](#diagnostic-plot)
-  
 - [Managing Plots](#managing-plots)
   
   - [Renaming Plots](#renaming-plots)
@@ -81,18 +78,15 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
     - [Saving Data](#saving-data)
     - [Saving Code](#saving-code)
   - [Deleting Plots](#deleting-plots)
-  
 - [Settings](#settings)
 
   - [Saving Settings](#saving-settings)
   - [Default Settings](#default-settings)
   - [Last Used Settings](#last-used-settings)
-
 - [FAQ](#faq)
-
 - [Appendix](#appendix)
-
-  
+- [Averaging Methods Diagram](#averaging-methods-diagram)
+  - [Plot Column Dependencies](#plot-column-dependencies)
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
@@ -114,7 +108,7 @@ The **Home Tab** is the tab that is open when FED3 Viz starts up.  On this tab, 
 </p>
 Elements of the Home Tab:
 
-1. The **Info Bar** shows helpful text for the Home Tab.  Hover over a button or select a plot to show a brief description.
+1. The **Info Bar** shows helpful text for the Home Tab.  Hover over a button or select a plot to show a brief description.  A progress bar will also display here when loading FEDs.
 2. The top row of buttons, which are tools for loading and managing data files within FED3 Viz.
 3. The **File View** is the largest element of the Home Tab.  When a FED data file is loaded, it will appear as a row in the File View.  Each column will show data associated with that data file.
 4. The **Group View** lists all the currently loaded "groups," used for combining data from multiple FEDs (see the "Groups" section below).
@@ -295,8 +289,6 @@ There are a couple settings which apply to multiple plots:
 
 ### Single Pellet Plot
 
-*Dependent columns =  MM:DD:YYYY hh:mm:ss, Pellet_Count*
-
 *Can use night shading* :new_moon_with_face:
 
 *Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
@@ -316,8 +308,6 @@ The color of these plots can be set, also (**Settings > Individual Pellet Plots 
 
 ### Multi Pellet Plot
 
-*Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count*
-
 *Can use night shading* :new_moon_with_face:
 
 *Combines all highlighted files into a single plot* :bar_chart:
@@ -332,8 +322,6 @@ The only additional setting is **Settings > Individual Pellet Plots > Align mult
 
 ### Average Pellet Plot
 
-*Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count*
-
 *Can use night shading* :new_moon_with_face:
 
 *Uses groups* :paperclip:
@@ -347,8 +335,6 @@ The only additional setting is **Settings > Individual Pellet Plots > Align mult
 Average Pellet Plots average the pellets retrieved for each file in a Group.  Each group in the plot is plotted as a separate line.
 
 ### Interpellet Interval Plot
-
-*Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count*
 
 *Combines all highlighted files into a single plot* :bar_chart:
 
@@ -367,8 +353,6 @@ Note that Interpellet Interval Plots use logarithmically spaced x-axes (in minut
 
 ### Group Interpellet Interval Plot
 
-*Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count*
-
 *Uses groups* :paperclip:
 
 <p align="center">
@@ -386,24 +370,89 @@ Same as the Interpellet Interval Plot (see above), except this version plots gro
 <p align="center">
 	<img src="img/manual/pokeplot.png" width="600">
 </p>
-
 The Poke Plot shows the amount of pokes overtime for a single file.  The file is binned at a user-specified frequency, and the amount of pokes within each bin is plotted.  Settings for tweaking this plot are under **Settings > Individual Poke Plots**:
+
+- **Values to plot**: How to represent the pokes plotted (cumulative, frequency per bin, or percent per bin)
 
 - **Bin size for poke plots (hours)**: The size of bins for resampling
 - **Show correct pokes**: Shows the amount of correct pokes when ticked
 - **Show incorrect pokes**: Shows the amount of errors when ticked
-- **Show pokes as percent (%)**: Change the y-axis from the number of pokes to the percentage of pokes within each bin.  Note that this may leave gaps if there are bins when no pokes occurred.
+
+### Average Poke Plot
+
+*Can use night shading* :new_moon_with_face:
+
+*Uses groups* :paperclip:
+
+*Uses averaging methods* 🧮
+
+<p align="center">
+	<img src="img/manual/avg_correctpokes.png" width="700">
+</p>
+
+The Average Poke Plot creates a Group average of either correct or incorrect pokes (depending on the selection from the Plot Selector).  Currently, the frequency of pokes per bin (rather than the cumulative total or percentage) must be plotted.
+
+### Poke Bias Plot
+
+*Can use night shading* :new_moon_with_face:
+
+*Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
+
+<p align="center">
+	<img src="img/manual/pokebias.png" width="700">
+</p>
+
+The Poke Bias Plot visualizes the preference for one poke versus another over time.  The program bins the data (at a frequency set by **Settings > Individual Poke Plots > Bin size of poke plots (hours)**), and for each bin computes the difference in the amount of one type of poke versus another.  Either the difference between correct & incorrect pokes, or left & right poke (regardless of correctness) can be visualized (**Settings > Individual Poke Plots > Comparison for poke bias plots **).  By default, the program will use a red-white-blue color map to highlight the bias; it can be changed to a single solid color by unticking **Use dynamic color for bias plots***.
+
+*Note that the dynamic coloring of the line plots is actually made by creating a scatter plot of thousands of points, rather than a true line plot (this is easier given options provided by `matplotlib`).  In some cases, the dots may be visible rather than a complete line; a work around for this would need to increase the density of points created in the source code (the `DENSITY` argument in the `poke_bias` function of `plots/plots.py`).
+
+### Average Poke Bias Plot
+
+*Can use night shading* :new_moon_with_face:
+
+*Uses groups* :paperclip:
+
+*Uses averaging methods* 🧮
+
+<p align="center">
+	<img src="img/manual/avg_pokebias.png" width="700">
+</p>
+
+Average Poke Bias plots average the poke bias (see above) for Grouped devices.  Note that the dynamic coloring style cannot be used here.
+
+### Chronograms (Line)
+
+*Can use night shading* :new_moon_with_face:
+
+*Uses groups* :paperclip:
+
+<p align="center">
+	<img src="img/manual/chronoline.png" width="700">
+</p>
+
+The "Chronogram" is one way of visualizing circadian activity in FED3 Viz.  The line plot shows the average 24-hour pattern of a variable for a Group of devices.  The data are resampled to hour-long bins, and matching hours across multiple days are averaged for each device to create 24 points (one for each hour of the day).  The individual files within each Group are then averaged and plotted.
+
+There are a few settings which affect these plots, as well as the other Circadian Plots ([Chronogram (Heatmap)](#chronogram-heatmap) and [Day/Night](#daynight-plot)]):
+
+- **Values to plot**: What values are being plotted on the y-axis.  Options are pellets, interpellet intervals, retrieval time (of pellets), correct pokes, and errors; the latter two can also be expressed as a percent.
+- **Error value**: What values to use to create error bars; options are SEM (standard error of the mean), STD (standard deviation), or None.
+- **Show individual FED data points**: When ticked, values for individual recordings are superimposed over the bars to show the values contributing to the average.  For Chronogram (Line) plots, ticking this will override the **Error value**.
+
+These plots all refer to the light/dark cycle, which is set under **Settings > General > Shade dark periods (lights on/lights off)**.
+
+### Chronogram (Heatmap)
+
+*Combines all highlighted files into a single plot* :bar_chart:
+
+<p align="center">
+	<img src="img/manual/chronoheat.png" width="700">
+</p>
+
+The Heatmap version of the Chronogram is simply a different representation of the data from the Chonogram (Line) Plot (see above).  Rather than an average line, each file is shown as a row in a heatmap, where the colors correspond to the selected variable value over the averaged 24-hour period.
+
+Note that this plot type does not use Groups; it plots what is selected in the File View, and provides an average of them in the final row of the heatmap.
 
 ### Day/Night Plot
-
-*Dependent Columns are different for each value to plot :*
-
-| **Value**             | **Dependent Columns**                                        |
-| --------------------- | ------------------------------------------------------------ |
-| pellets               | *DD:MM:YY hh:mm:ss, Pellet_Count*                            |
-| retrieval time        | *DD:MM:YY hh:mm:ss, Retrieval_Time*                          |
-| interpellet intervals | *DD:MM:YY hh:mm:ss, Pellet_Count*                            |
-| correct pokes/errors  | *DD:MM:YY hh:mm:ss, Pellet_Count, Left_Poke_Count, Right_Poke_Count, Active_Poke* |
 
 *Uses groups* :paperclip:
 
@@ -411,17 +460,9 @@ The Poke Plot shows the amount of pokes overtime for a single file.  The file is
 	<img src="img/examples/daynightplot.png" width="500">
 </p>
 
-Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  The options to edit this graph are:
-
-- **Values to plot**: What values are being plotted on the y-axis.  Options are pellets, interpellet intervals, retrieval time (of pellets), correct pokes, and errors; the latter two can also be expressed as a percent.
-- **Error bar value**: What values to use to create error bars; options are SEM (standard error of the mean), STD (standard deviation), or None.
-- **Show individual FED data points**: When ticked, values for individual recordings are superimposed over the bars to show the values contributing to the average.
-
-Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods; those values represent the individual FED data points, and they are averaged to create the value for the bar.
+Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods; those values represent the individual FED data points, and they are averaged to create the value for the bar.  Note that both individual values and error bars can be shown for these plots.
 
 ### Diagnostic Plot
-
-*Dependent Columns = MM:DD:YYYY hh:mm:ss, Pellet_Count, Battery_Voltage, Motor_Turns*
 
 *Can use night shading* :new_moon_with_face:
 
@@ -535,7 +576,7 @@ This section will mainly cover troubleshooting and issues; please also check the
 
   If the error persists, I would instead recommend trying to run FED3 Viz from the Python script (Method 2 of the Installation instructions).  This is more likely to be troubleshooted successfully.
   
-- **The program slows down, doesn't respond, or crashes.**  The two major times I have experienced slowdown are when many FED files are loaded in one go (especially with long files) or when a plot is created with many devices shown as separate curves.  In my experience, the program will recover and finish the loading/plotting after a few seconds.  To avoid these issues, I'd recommend selecting 10 or less devices when loading (i.e. per push of the Load Button) or plotting devices.  If the problems on your device result in frequent crashes or persistent slow downs, even when using small amounts of data, please report this.  I have taken a relatively minimal approach to optimizing speed, and there may be ways to improve.
+- **The program slows down, doesn't respond, or crashes.**  In previous iterations of the code, I experienced slowdown when many FED files were loaded in one go (especially with long files) or when a plot was created with many devices shown as separate curves.  In my experience, the program recovered and finished the loading/plotting after a few seconds.  To avoid these issues, I had to select fewer (10 or less) devices when loading (i.e. per push of the Load Button) or plotting devices.  However, changes since then have cleared up some of these issues (on my end; the program now "checks in" in between each device load or plot creation).  If the problems on your device result in frequent crashes or persistent slow downs, even when using small amounts of data, please report this.  I have taken a relatively minimal approach to optimizing speed, and there may be ways to improve.
 
 - **I can't load some of my FED data, or I can load but some plots don't work**.  The most likely cause is that you have a previous version of FED output data, or that there have been edits to raw data.  FED3 Viz tries to handle old formats of the data, but there may be cases which cannot be caught.  Some examples of current data are included on GitHub in the `example_data` folder.  You can compare your data to these to see if there might be any obvious differences; you can also test that the example data load correctly.  Please share any specific issues on GitHub.
 
@@ -543,7 +584,7 @@ This section will mainly cover troubleshooting and issues; please also check the
 
   On the other hand, if "looks weird" means you think the plot isn't actually representing the data, or the plot doesn't match one you have created, this could reflect a code error, or an unclear description of what the plots are doing.  Regardless of what "looks weird" means, I would be happy discuss and sort out any specific cases.
 
-- **I'm seeing errors & warning when starting up or running the program.**  Some of these are to be expected, and you shouldn't worry about them if the program continues to work as expected.  If there are functional issues, please report these errors.
+- **I'm seeing console errors & warning when starting up or running the program.**  Some of these are to be expected, and you shouldn't worry about them if the program continues to work as expected.  If there are functional issues, please report these errors.
 
 - **On Mac, I don't get the option to select some files when loading.**  This is a bug right now; try to change the file types searched for from "All" to another option, and then back to "All".
 
@@ -564,7 +605,7 @@ This section will mainly cover troubleshooting and issues; please also check the
 
 - **I can't load some settings, or my settings look weird.**  This could be an issue with altered setting files, or settings files with which have entries that don't match the application.  Please redownload the `DEFAULT.CSV` and `LAST_USED.CSV` files from GitHub and replace them in your FED3 Viz folder.  Alternatively, try to save new settings from the application to overwrite the `DEFAULT.CSV` file.
 
-- **I have an issue that I have shared and I haven't heard back from anyone.**  Please be aware that FED3 Viz and FEDs are developed and maintained by a small group of researchers as a means to meet our research goals.  We will do our best to respond prudently to questions shared online, but bear with us!
+- **I have an issue that I have shared and I haven't heard back from anyone.**  Please be aware that FEDs are being worked on by a small group of researchers, and FED3 Viz is only really maintained by me :sunglasses:.  We will do our best to respond prudently to questions shared online, but bear with us!
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
@@ -583,3 +624,21 @@ See in higher resolution at `FED3_Viz/img/manual/average_illustration.png`.
 <div style="page-break-after: always; break-after: page;"></div> 
 
 ### Plot Column Dependencies
+
+This table shows which columns of a FED3 data file are used by FED3 Viz to create each plot.  If a file is missing a column, or contains changes in a column, associated plots may not be able to be created.
+
+| **Plot**                     | **MM:DD:YYYY hh:mm:ss** | **Pellet_Count**   | **Left_Poke_Count** | **Right_Poke_Count** | **Active_Poke**    | Retrieval_Time     | **Battery_Voltage** | **Motor_Turns**    |
+| ---------------------------- | ----------------------- | ------------------ | ------------------- | -------------------- | ------------------ | ------------------ | ------------------- | ------------------ |
+| Single Pellet Plot           | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                     |                    |
+| Multi Pellet Plot            | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                     |                    |
+| Average Pellet Plot          | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                     |                    |
+| Inter Pellet  Interval Plots | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                     |                    |
+| Single Poke Plot             | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: |                    |                     |                    |
+| Average Poke Plot            | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: |                    |                     |                    |
+| Poke Bias Plot               | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: |                    |                     |                    |
+| Average Poke Bias Plot       | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: |                    |                     |                    |
+| Circadian (Pellets or IPI)   | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                     |                    |
+| Circadian (Pokes)            | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: |                    |                     |                    |
+| Circadian (Retrieval Time)   | :heavy_check_mark:      |                    |                     |                      |                    | :heavy_check_mark: |                     |                    |
+| Diagnostic Plot              | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    | :heavy_check_mark:  | :heavy_check_mark: |
+
