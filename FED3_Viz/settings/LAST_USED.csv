@@ -5,20 +5,20 @@ lights_off,7 pm
 allgroups,True
 skip_duplicates,True
 overwrite,False
-weirdwarn,True
-pellet_values,Cumulative
-pellet_bins,1
+weirdwarn,False
+pellet_values,Frequency
+pellet_bins,3
 pellet_color,blue
-pellet_align,True
+pellet_align,False
 average_error,SEM
-average_bins,4
+average_bins,2
 load_last_used,True
-average_method,shared time
+average_method,shared date & time
 average_align_start,5 pm
 average_align_days,2
 circ_value,correct pokes (%)
 circ_error,SEM
-circ_show_indvl,True
+circ_show_indvl,False
 kde,True
 poke_style,Cumulative
 poke_bins,1

@@ -30,6 +30,13 @@ shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'diagnostic_plot','poke_plot','poke_bias']
 avg_funcs = ['average_plot_ontime','average_plot_ondatetime',
              'average_plot_onstart',]
+circ_funcs = ['daynight_plot', 'line_chronogram', 'heatmap_chronogram']
+date_format_funcs = ['pellet_plot_single','pellet_freq_single',
+                     'average_plot_ondatetime','poke_plot','poke_bias',
+                     'diagnostic plot']
+date_format_multi_funcs = ['pellet_plot_multi_unaligned',
+                           'pellet_freq_multi_unaligned',]
+
    
 def add_quotes(string):
     output = '"' + string + '"'
@@ -65,22 +72,27 @@ register_matplotlib_converters()
     load_code = '\n\n#CODE TO LOAD FED DATA FROM A DIRECTORY\n\n'
     load_code += inspect.getsource(mymod1.FED3_File)
     
-    shade_functions = '\n#HELPER FUNCTIONS (SHADING DARK)\n\n'
-    shade_functions += inspect.getsource(mymod2.convert_dt64_to_dt) + '\n'
-    shade_functions += inspect.getsource(mymod2.hours_between) + '\n'
-    shade_functions += inspect.getsource(mymod2.night_intervals) + '\n'
-    shade_functions += inspect.getsource(mymod2.shade_darkness)
+    shade_helpers = '\n#HELPER FUNCTIONS (SHADING DARK)\n\n'
+    shade_helpers += inspect.getsource(mymod2.convert_dt64_to_dt) + '\n'
+    shade_helpers += inspect.getsource(mymod2.hours_between) + '\n'
+    shade_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
+    shade_helpers += inspect.getsource(mymod2.shade_darkness)
     
-    bar_functions = '\n#HELPER FUNCTIONS (CIRCADIAN PLOTS)\n\n'
-    bar_functions += inspect.getsource(mymod2.night_intervals) + '\n'
-    bar_functions += inspect.getsource(mymod2.resample_get_yvals) + '\n'
-    bar_functions += inspect.getsource(mymod2.raw_data_scatter)
+    bar_helpers = '\n#HELPER FUNCTIONS (DAY/NIGHT PLOTS)\n\n'
+    bar_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
+    bar_helpers += inspect.getsource(mymod2.raw_data_scatter)
     
-    poke_functions = '\n#HELPER FUNCTIONS (POKE PLOTS)\n\n'
-    poke_functions += inspect.getsource(mymod2.poke_resample_func)
+    circ_helpers = '\n#HELPER FUNCTIONS (CIRCADIAN PLOTS)\n\n'
+    circ_helpers += inspect.getsource(mymod2.resample_get_yvals) + '\n'
     
-    avg_functions = '\n#HELPER FUNCTIONS (AVERAGE PLOTS)\n\n'
-    avg_functions += inspect.getsource(mymod2.resample_get_yvals)
+    poke_helpers = '\n#HELPER FUNCTIONS (POKE PLOTS)\n\n'
+    poke_helpers += inspect.getsource(mymod2.poke_resample_func)
+    
+    avg_helpers = '\n#HELPER FUNCTIONS (AVERAGE PLOTS)\n\n'
+    avg_helpers += inspect.getsource(mymod2.resample_get_yvals)
+    
+    date_helpers = '\n#HELPER FUNCTIONS (DATE FORMATTING)\n\n'
+    date_helpers += inspect.getsource(mymod2.date_format_x)
     
     function_code ='\n#PLOTTING FUNCTION:\n\n'
     inspected = inspect.getsource(plotfunc).replace('plt.close()','')
@@ -128,13 +140,20 @@ register_matplotlib_converters()
     output += load_code
     if plotfunc.__name__ in shade_dark_funcs:
         if used_args['shade_dark'] == True:
-            output += shade_functions
+            output += shade_helpers
     if plotfunc.__name__ == 'daynight_plot':
-        output += bar_functions
+        output += bar_helpers
+    if plotfunc.__name__ in circ_funcs:
+        output += circ_helpers
     if plotfunc.__name__ == 'poke_plot':
-        output += poke_functions
+        output += poke_helpers
     if plotfunc.__name__ in avg_funcs:
-        output += avg_functions
+        output += avg_helpers
+    if plotfunc.__name__ in avg_funcs:
+        output += date_helpers
+    elif plotfunc.__name__ in date_format_multi_funcs:
+        if used_args['pellet_align'] == False:
+            output += date_helpers
     output += function_code
     output += arguments
     output += call

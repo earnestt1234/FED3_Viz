@@ -75,15 +75,17 @@ def shade_darkness(ax, min_date,max_date,lights_on,lights_off,
     hours_list = hours_between(min_date, max_date,convert=convert)
     nights = night_intervals(hours_list, lights_on=lights_on,
                              lights_off=lights_off)
-    for i, interval in enumerate(nights):
-        start = interval[0]
-        end = interval[1]
-        ax.axvspan(start,
-                   end,
-                   color='gray',
-                   alpha=.2,
-                   label='_'*i + 'lights off',
-                   zorder=0)
+    if nights:
+        for i, interval in enumerate(nights):
+            start = interval[0]
+            end = interval[1]
+            if start != end:
+                ax.axvspan(start,
+                           end,
+                           color='gray',
+                           alpha=.2,
+                           label='_'*i + 'lights off',
+                           zorder=0)
 
 def resample_get_yvals(df, value):
     possible = ['pellets','retrieval time','interpellet intervals',
@@ -131,6 +133,45 @@ def poke_resample_func(bin_, val, style):
         output = (bin_==val).sum()
     return output
 
+def date_format_x(ax, start, end):
+    quarter_hours = mdates.MinuteLocator(byminute=[0,15,30,45])
+    all_hours = mdates.HourLocator()
+    quarter_days = mdates.HourLocator(byhour=[0,6,12,18])
+    days = mdates.DayLocator()
+    two_days = mdates.DayLocator(interval=2)
+    three_days = mdates.DayLocator(interval=3)
+    months = mdates.MonthLocator()
+    d8_span = end - start
+    if d8_span < dt.timedelta(hours=12):
+        xfmt = mdates.DateFormatter('%H:%M')
+        major = all_hours
+        minor = quarter_hours
+    elif (d8_span >= dt.timedelta(hours=12)) and (d8_span < dt.timedelta(hours=24)):
+        xfmt = mdates.DateFormatter('%b %d %H:%M')
+        major = quarter_days
+        minor = all_hours
+    elif (d8_span >= dt.timedelta(hours=24)) and (d8_span < dt.timedelta(days=3)):
+        xfmt = mdates.DateFormatter('%b %d %H:%M')
+        major = days
+        minor = quarter_days
+    elif d8_span >= dt.timedelta(days=3) and (d8_span < dt.timedelta(days=6)):
+        xfmt = mdates.DateFormatter('%b %d %H:%M')
+        major = two_days
+        minor = days
+    elif (d8_span >= dt.timedelta(days=6)) and (d8_span < dt.timedelta(days=20)):
+        xfmt = mdates.DateFormatter('%b %d')
+        major = three_days
+        minor = days
+    elif d8_span >= dt.timedelta(days=20):
+        xfmt = mdates.DateFormatter('%b %y')
+        major = months
+        minor = three_days
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    ax.xaxis.set_major_locator(major)
+    ax.xaxis.set_major_formatter(xfmt)
+    ax.xaxis.set_minor_locator(minor)   
+    
+
 #---Single Pellet Plots
 
 def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
@@ -138,15 +179,10 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
     assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_plot_single()'   
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     df = FED.data
-    x = df.index.values
+    x = df.index
     y = df['Pellet_Count']
     ax.plot(x, y,color=pellet_color)
-    days = mdates.DayLocator()
-    hours = mdates.HourLocator(byhour=[0,6,12,18])
-    xfmt = mdates.DateFormatter('%b %d')
-    ax.xaxis.set_major_locator(days)
-    ax.xaxis.set_major_formatter(xfmt)
-    ax.xaxis.set_minor_locator(hours)
+    date_format_x(ax, x[0], x[-1])
     ax.set_xlabel('Time')
     ax.set_ylabel('Cumulative Pellets')    
     title = ('Pellets Retrieved for ' + FED.filename)
@@ -164,22 +200,17 @@ def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
     assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_freq_single()'
     df = FED.data.resample(pellet_bins).sum()
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
-    x = df.index.values
+    x = df.index
     y = df['Binary_Pellets']    
     ax.bar(x, y,width=(x[1]-x[0]),
            align='edge', alpha=.8, color=pellet_color)
     ax.set_xlabel('Time')
-    days = mdates.DayLocator()
-    hours = mdates.HourLocator(byhour=[0,6,12,18])
-    xfmt = mdates.DateFormatter('%b %d')
-    ax.xaxis.set_major_locator(days)
-    ax.xaxis.set_major_formatter(xfmt)
-    ax.xaxis.set_minor_locator(hours)
+    date_format_x(ax, x[0], x[-1])
     ax.set_ylabel('Pellets') 
     title = ('Pellets Retrieved for FED ' + FED.filename)
     ax.set_title(title)
     if shade_dark:
-        shade_darkness(ax, min(x), max(x),
+        shade_darkness(ax, x[0], x[-1],
                        lights_on=lights_on,
                        lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')   
@@ -227,12 +258,11 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_multi()'
     days = mdates.DayLocator()
     min_date = np.datetime64('2100')
-    max_date = np.datetime64('1970')
-    
+    max_date = np.datetime64('1970')    
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     for file in FEDs:
         df = file.data
-        x = df.index.values
+        x = df.index
         y = df['Pellet_Count']
         ax.plot(x, y, label=file.filename)
         if max(x) > max_date:
@@ -240,16 +270,7 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
         if min(x) < min_date:
             min_date = min(x)
     ax.set_xlabel('Time (h)')
-    xfmt = mdates.DateFormatter('%b %d')
-    ax.xaxis.set_major_locator(days)
-    ax.xaxis.set_major_formatter(xfmt)
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
-    fontsize = 20/len(ax.xaxis.get_majorticklabels())
-    if fontsize < 6:
-        fontsize=6
-    plt.setp(ax.xaxis.get_majorticklabels(), 
-             fontsize=fontsize)
-    plt.setp(ax.xaxis.get_majorticklabels(), ha='right')
+    date_format_x(ax, min_date, max_date)
     ax.set_ylabel('Cumulative Pellets')  
     title = ('Pellets Retrieved for Multiple FEDs')
     ax.set_title(title)   
@@ -273,8 +294,8 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, *args, **kwargs):
     for file in FEDs:
         df = file.data.resample(pellet_bins,base=0).sum()         
         times = []
-        for i, date in enumerate(df.index.values):
-            times.append(date - df.index.values[0])
+        for i, date in enumerate(df.index):
+            times.append(date - df.index[0])
         times = [(time/np.timedelta64(1,'h')) for time in times]      
         x = times
         y = df['Binary_Pellets'] 
@@ -309,7 +330,7 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, pellet_align, shade_dark,
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     for file in FEDs:
         df = file.data.resample(pellet_bins,base=0).sum()
-        x = df.index.values
+        x = df.index
         y = df['Binary_Pellets']
         ax.bar(x, y, label=file.filename,
                alpha=.8,align='edge',width=(x[1]-x[0]))           
@@ -318,16 +339,7 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, pellet_align, shade_dark,
         if min(x) < min_date:
             min_date = min(x)      
     ax.set_xlabel('Time')
-    xfmt = mdates.DateFormatter('%b %d')
-    ax.xaxis.set_major_locator(days)
-    ax.xaxis.set_major_formatter(xfmt)
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
-    fontsize = 20/len(ax.xaxis.get_majorticklabels())
-    if fontsize < 6:
-        fontsize=6
-    plt.setp(ax.xaxis.get_majorticklabels(), 
-             fontsize=fontsize)
-    plt.setp(ax.xaxis.get_majorticklabels(), ha='right')
+    date_format_x(ax, min_date, max_date)
     ax.set_ylabel('Pellets')
     title = ('Pellets Retrieved for Multiple FEDs')
     ax.set_title(title)
@@ -462,11 +474,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
         if np.nanmax(np.abs(group_avg) + error_shade) > maxy:
             maxy = np.nanmax(np.abs(group_avg) + error_shade)
     ax.set_xlabel('Time')
-    days = mdates.DayLocator()
-    xfmt = mdates.DateFormatter('%b %d')
-    ax.xaxis.set_major_locator(days)
-    ax.xaxis.set_major_formatter(xfmt)
-    ax.set_ylabel(dependent.capitalize())
+    date_format_x(ax, latest_start, earliest_end)
     if "%" in dependent:
         ax.set_ylim(0,100)
     if 'bias' in dependent:
@@ -667,12 +675,7 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_style,
             y = resampled.apply(poke_resample_func, val=False, style=poke_style)
             x = y.index
             ax.plot(x, y, color='indianred', label = 'error pokes')
-    days = mdates.DayLocator()
-    hours = mdates.HourLocator(byhour=[0,6,12,18])
-    xfmt = mdates.DateFormatter('%b %d')
-    ax.xaxis.set_major_locator(days)
-    ax.xaxis.set_major_formatter(xfmt)
-    ax.xaxis.set_minor_locator(hours)
+    date_format_x(ax, x[0], x[-1])
     ax.set_xlabel('Time')
     ylabel = 'Pokes'
     if poke_style == "Percentage":
@@ -712,14 +715,7 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
         ynew = np.interp(xnew, x, y)
         ax.scatter(xnew, ynew, s=1, c=ynew,
                    cmap='bwr', vmin=-maxy, vmax=maxy, zorder=1)
-    days = mdates.DayLocator()
-    hours = mdates.HourLocator(byhour=[0,6,12,18])
-    xfmt = mdates.DateFormatter('%b %d')
-    ax.xaxis.set_major_locator(days)
-    ax.xaxis.set_major_formatter(xfmt)
-    ax.xaxis.set_minor_locator(hours)
-    ax.set_xlabel('Time') 
-    ax.set_ylim(-maxy, maxy)
+    date_format_x(ax, x[0], x[-1])
     ax.set_xlim(min(x)-xoffset, max(x)+xoffset)
     ax.set_ylabel('poke bias (' + bias_style + ')')
     ax.set_title('Poke Bias for ' + FED.filename)
@@ -825,7 +821,7 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
     if circ_show_indvl:
         circ_error = "None"
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     for i, group in enumerate(groups):
         group_vals = []
@@ -875,7 +871,7 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
     return fig
 
 def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     matrix = []
     index = []
     for FED in FEDs:       
@@ -892,7 +888,11 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
     avg = matrix.mean(axis=0)
     avg = avg.rename('Average')
     matrix = matrix.append(avg)
-    im = ax.imshow(matrix, cmap='jet', aspect='auto')
+    if '%' in circ_value:
+        vmin, vmax = 0, 100
+    else:
+        vmin, vmax = None, None
+    im = ax.imshow(matrix, cmap='jet', aspect='auto', vmin=vmin, vmax=vmax)
     ax.set_title('Chronogram of ' + circ_value.capitalize())
     ax.set_ylabel('File')
     ax.set_yticks(range(len(matrix.index)))
@@ -910,33 +910,27 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
 def diagnostic_plot(FED, shade_dark, lights_on, lights_off, *args, **kwargs):
     assert isinstance(FED, FED3_File),'Non FED3_File passed to diagnostic_plot()'
     df = FED.data
-    hours = mdates.HourLocator(byhour=[0,6,12,18])
-    days  = mdates.DayLocator()
-    xfmt = mdates.DateFormatter('%b %d')
     
     fig, (ax1,ax2,ax3) = plt.subplots(3,1,figsize=(7,5),sharex=True, dpi=125)
     plt.subplots_adjust(hspace=.1)
-    x = df.index.values
+    x = df.index
     y = df['Pellet_Count']
     ax1.scatter(x,y,s=1,c='green')
     ax1.set_ylabel('Cumulative Pellets')
     
-    x = df.index.values
+    x = df.index
     y = df['Motor_Turns']
     ax2.scatter(x,y,s=3,c=y,cmap='cool',vmax=100)
     ax2.set_ylabel('Motor Turns')
     if max(y) < 100:
         ax2.set_ylim(0,100)
     
-    x = df.index.values
+    x = df.index
     y = df['Battery_Voltage']
     ax3.plot(x,y,c='orange')
     ax3.set_ylabel('Battery (V)')  
     ax3.set_ylim(0,4.5)
-    ax3.set_xlim(min(x),max(x))
-    ax3.xaxis.set_major_locator(days)
-    ax3.xaxis.set_major_formatter(xfmt)
-    ax3.xaxis.set_minor_locator(hours)
+    date_format_x(ax3, x[0], x[-1])
     ax3.set_xlabel('Date')
     plt.suptitle('Pellets Received, Motor Turns, and Battery Life\n' +
                  'for ' + FED.filename, y=.96)
