@@ -262,8 +262,7 @@ class FED3_Viz(tk.Tk):
         self.group_view.grid(row=2,column=0,sticky='nsew') 
         self.group_scrollbar.grid(row=2,column=1,sticky='nsew')
         self.group_view_label.grid(row=3,column=0,sticky='w')
-        # self.progressbar.grid(row=0,column=0,sticky='ew',)
-        # self.progresstext.grid(row=0,column=1,sticky='w')
+        self.progresstext.grid(row=0,column=1,sticky='w')
         self.home_buttons_help.lift()
         
         #plot selector

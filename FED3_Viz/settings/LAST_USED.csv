@@ -16,7 +16,7 @@ load_last_used,True
 average_method,shared date & time
 average_align_start,5 pm
 average_align_days,2
-circ_value,correct pokes (%)
+circ_value,pellets
 circ_error,SEM
 circ_show_indvl,False
 kde,False
