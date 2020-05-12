@@ -9,14 +9,14 @@ weirdwarn,True
 pellet_values,Cumulative
 pellet_bins,1
 pellet_color,blue
-pellet_align,False
+pellet_align,True
 average_error,SEM
-average_bins,1
-load_last_used,False
-average_method,shared date & time
-average_align_start,7 am
-average_align_days,3
-circ_value,pellets
+average_bins,4
+load_last_used,True
+average_method,shared time
+average_align_start,5 pm
+average_align_days,2
+circ_value,correct pokes (%)
 circ_error,SEM
 circ_show_indvl,True
 kde,True

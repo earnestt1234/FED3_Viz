@@ -121,6 +121,7 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.bind('<Double-Button-1>', lambda event, reverse=True: 
                                     self.sort_FEDs(event,reverse))
         self.files_spreadsheet.bind('<Control-a>',self.select_all_FEDs)
+        self.files_spreadsheet.bind('<Control-A>',self.select_all_FEDs)
         self.files_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.files_spreadsheet.yview,)
         self.files_spreadsheet.configure(yscrollcommand=self.files_scrollbar.set)
         self.group_view = tk.Listbox(self.home_sheets,selectmode=tk.EXTENDED,
@@ -253,7 +254,7 @@ class FED3_Viz(tk.Tk):
         
         #labels
         self.home_buttons_help.grid(row=0,column=0,sticky='nsw',padx=(0,20),
-                                    pady=(12))  
+                                    pady=(20))  
         #spreadsheets
         self.files_spreadsheet.grid(row=0,column=0,sticky='nsew')
         self.files_scrollbar.grid(row=0,column=1,sticky='nsew')
@@ -261,8 +262,9 @@ class FED3_Viz(tk.Tk):
         self.group_view.grid(row=2,column=0,sticky='nsew') 
         self.group_scrollbar.grid(row=2,column=1,sticky='nsew')
         self.group_view_label.grid(row=3,column=0,sticky='w')
-        # self.progressbar.grid(row=4,column=0,sticky='ew',)
-        # self.progresstext.grid(row=5,column=0,sticky='w')
+        # self.progressbar.grid(row=0,column=0,sticky='ew',)
+        # self.progresstext.grid(row=0,column=1,sticky='w')
+        self.home_buttons_help.lift()
         
         #plot selector
         self.plot_treeview.grid(row=0,column=0,sticky='nsew')
@@ -740,8 +742,9 @@ class FED3_Viz(tk.Tk):
         failed_FEDs = []
         weird_FEDs = []
         if files:
-            self.home_buttons_help.grid_remove()
-            self.progressbar.grid(row=0,column=0,sticky='nsew',padx=(0,20),pady=(12))
+            self.home_buttons_help.configure(text='')
+            self.progressbar.grid(row=0,column=0,sticky='ew',padx=(0,20),pady=(12))
+            self.progressbar.lift()
             self.progresstext.grid(row=0,column=1,sticky='nsw')
             if overwrite:
                 self.LOADED_FEDS = []
@@ -763,8 +766,6 @@ class FED3_Viz(tk.Tk):
                 self.update()
         self.progressbar.grid_remove()
         self.progresstext.grid_remove()
-        self.home_buttons_help.grid(row=0,column=0,sticky='nsw',padx=(0,20),
-                                    pady=(10,10))  
         for file in pass_FEDs:
             if file.missing_columns:
                 weird_FEDs.append(os.path.basename(file.directory))
@@ -1668,7 +1669,6 @@ class FED3_Viz(tk.Tk):
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.save_last_used)
 root.bind('<Escape>', root.update_all_buttons)
-root.maxsize(1500,1000)
 root.minsize(1050,20)
 if __name__=="__main__":
     root.lift()

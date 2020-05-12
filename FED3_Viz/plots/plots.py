@@ -583,6 +583,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     maxy=0
+    maxx=0
     for i, group in enumerate(groups):
         avg = []
         for file in FEDs:
@@ -592,6 +593,8 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                 y = df.apply(resample_get_yvals, dependent)
                 y = y.reindex(shortest_index)          
                 y.index = [time.total_seconds()/3600 for time in y.index]
+                if np.nanmax(y.index) > maxx:
+                    maxx=np.nanmax(y.index)
                 avg.append(y)
                 if show_indvl:
                     x = y.index
@@ -617,7 +620,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
             if np.nanmax(np.abs(group_avg) + error_shade) > maxy:
                 maxy = np.nanmax(np.abs(group_avg) + error_shade)
     ax.set_xlabel('Time (h since recording start)')
-    number_of_days = int(max(x)//24)
+    number_of_days = int(maxx//24)
     days_in_hours = [24*day for day in range(number_of_days+1)]
     ax.set_xticks(days_in_hours)
     ax.xaxis.set_minor_locator(AutoMinorLocator()) 
