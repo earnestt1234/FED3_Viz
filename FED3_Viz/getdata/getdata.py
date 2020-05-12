@@ -19,6 +19,7 @@ def pellet_plot_single(FED,*args, **kwargs):
     df = FED.data
     x = df.index.values
     y = df['Pellet_Count']
+    y = y.rename('Pellets')
     output = pd.DataFrame(y, index=x)
     return output
 
@@ -26,6 +27,7 @@ def pellet_freq_single(FED, pellet_bins,*args, **kwargs):
     df = FED.data.resample(pellet_bins).sum()
     x = df.index.values
     y = df['Binary_Pellets']
+    y = y.rename('Pellets')
     output=pd.DataFrame(y,index=x)
     output.index.name = 'Time'
     return output

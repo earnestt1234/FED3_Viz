@@ -32,11 +32,12 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
 ## Current Features
 
 - Various graphs to visualize:
-  - individual pellet retrieval
-  - group average pellet retrieval
+  - pellet retrieval
+  - correct and incorrect pokes
   - intervals between pellet retrieval
+  - circadian patterns of activity
+  - grouped averages for multiple devices
   - motor turns & battery life
-  - day vs. night activity
   
 - Toolbar for live plot editing (from [`matplotlib`](https://matplotlib.org/3.1.1/users/navigation_toolbar.html))
 

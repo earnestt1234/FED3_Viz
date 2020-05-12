@@ -149,7 +149,7 @@ register_matplotlib_converters()
         output += poke_helpers
     if plotfunc.__name__ in avg_funcs:
         output += avg_helpers
-    if plotfunc.__name__ in avg_funcs:
+    if plotfunc.__name__ in date_format_funcs:
         output += date_helpers
     elif plotfunc.__name__ in date_format_multi_funcs:
         if used_args['pellet_align'] == False:

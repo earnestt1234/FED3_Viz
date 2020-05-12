@@ -108,10 +108,10 @@ The **Home Tab** is the tab that is open when FED3 Viz starts up.  On this tab, 
 </p>
 Elements of the Home Tab:
 
-1. The **Info Bar** shows helpful text for the Home Tab.  Hover over a button or select a plot to show a brief description.  A progress bar will also display here when loading FEDs.
+1. The **Info Bar** shows helpful text for the Home Tab.  Hover over a button or select a plot to show a brief description.  A progress bar will also display here when loading FED data.
 2. The top row of buttons, which are tools for loading and managing data files within FED3 Viz.
 3. The **File View** is the largest element of the Home Tab.  When a FED data file is loaded, it will appear as a row in the File View.  Each column will show data associated with that data file.
-4. The **Group View** lists all the currently loaded "groups," used for combining data from multiple FEDs (see the "Groups" section below).
+4. The **Group View** lists all the currently loaded Groups, used for combining data from multiple FEDs (see the Groups section below).
 5. The **Plot Selector** pane, where you can choose which plots to make for the loaded devices.
 6. The **Create Plot Button**, which creates a plot based on the loaded device files and the selection in the Plot Selector.  Whether or not this button is active depends on what data have been loaded into the application; for example, most plotting buttons must have some files selected in order to be active.
 
@@ -208,6 +208,8 @@ Loaded FED data can be inspected on the File View of the Home Tab.  Each loaded 
 - end time: the date and time of the end of the recording
 - duration: the amount of time between the first and last logged event
 - groups: any user-defined groups associated with the recording
+
+Additionally, FEDs with missing columns will be labeled with a :warning: symbol.
 
 When more than one file is loaded, the files can be sorted by clicking on the column headers of the File View.  A single click will sort the column in order (alphabetical/smallest>largest/shortest>longest), while a double-click will reverse the order.
 
@@ -508,7 +510,7 @@ Note that by default, FED3 Viz will not overwrite images or data saved with conf
 
 ##### Saving Images
 
-To save plots, highlight one or more plots from the Plot List and click the **Save Plots Button**.  This will bring up a file dialogue, and prompt the user to select a folder to save the images in.   Plots are saved in `.png` format at 300 DPI.  The name of the file will be the same as the plot's name in the Plot List.  Note that the Navigation Toolbar also has a button that can save plots, but using it (in this case) will limit the DPI to 150.
+To save plots, highlight one or more plots from the Plot List and click the **Save Plots Button**.  This will bring up a file dialogue, and prompt the user to select a folder to save the images in.   Plots are saved in `.png` format at 300 DPI.  The name of the file will be the same as the plot's name in the Plot List.  Note that the Navigation Toolbar also has a button that can save plots, but using it (in this case) will limit the DPI (to 125 or 150, depending on the plot).
 
 ##### Saving Code
 
@@ -518,7 +520,7 @@ To save plots, highlight one or more plots from the Plot List and click the **Sa
 
 FED3 Viz can return the code used to create each plot through the **Plot Code Button**.  The aim of this feature is to allow users to be able to tweak graphs (with Python) in ways not possible from FED3 Viz. 
 
-Each plot button in FED3 Viz is associated with one or more plotting functions defined in Python; settings from the Settings Tab translate into arguments passed to these functions.  The Plot Code Button uses Python's `inspect` library to return the source code of these plotting functions.  The program formats this code with additional lines that are specific to each plot, like the data source and the settings used.
+Each plot type in FED3 Viz is associated with one or more plotting functions defined in Python; settings from the Settings Tab translate into arguments passed to these functions.  The Plot Code Button uses Python's `inspect` library to return the source code of these plotting functions.  The program formats this code with additional lines that are specific to each plot, like the data source and the settings used.
 
 **The Plot Code output should be a functional script**; that is, running the script in a separate Python session should recreate the plot (given the appropriate packages and package versions in that environment).  To achieve this, the output script has to include the following:
 

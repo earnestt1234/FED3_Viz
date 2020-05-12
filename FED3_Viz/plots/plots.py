@@ -163,7 +163,7 @@ def date_format_x(ax, start, end):
         major = three_days
         minor = days
     elif d8_span >= dt.timedelta(days=20):
-        xfmt = mdates.DateFormatter('%b %y')
+        xfmt = mdates.DateFormatter("%b '%y")
         major = months
         minor = three_days
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
@@ -718,6 +718,7 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
     date_format_x(ax, x[0], x[-1])
     ax.set_xlim(min(x)-xoffset, max(x)+xoffset)
     ax.set_ylabel('poke bias (' + bias_style + ')')
+    ax.set_ylim(-maxy, maxy)
     ax.set_title('Poke Bias for ' + FED.filename)
     ax.axhline(y=0, linestyle='--', color='gray', zorder=2)
     if shade_dark:

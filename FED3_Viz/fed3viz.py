@@ -101,17 +101,17 @@ class FED3_Viz(tk.Tk):
         self.group_view_label    = tk.Label(self.home_sheets, text='Group View',
                                           font=italic)     
         #spreadsheets
-        treeview_columns = ['','Name','# events','start time',
-                            'end time','duration','groups']
+        treeview_columns = ['','Name','# Events','Start Time',
+                            'End Time','Duration','Groups']
         self.files_spreadsheet = ttk.Treeview(self.home_sheets, 
                                               columns=treeview_columns)
         self.files_spreadsheet.column('', width=25, stretch=False)
         self.files_spreadsheet.column('Name', width=200)
-        self.files_spreadsheet.column('# events', width=100)
-        self.files_spreadsheet.column('start time', width=125)
-        self.files_spreadsheet.column('end time', width=125)
-        self.files_spreadsheet.column('duration', width=100)
-        self.files_spreadsheet.column('groups', width=100)     
+        self.files_spreadsheet.column('# Events', width=100)
+        self.files_spreadsheet.column('Start Time', width=125)
+        self.files_spreadsheet.column('End Time', width=125)
+        self.files_spreadsheet.column('Duration', width=100)
+        self.files_spreadsheet.column('Groups', width=100)     
         for i,val in enumerate(treeview_columns):
             self.files_spreadsheet.heading(i, text=val)
         self.files_spreadsheet['show'] = 'headings'
@@ -1143,16 +1143,18 @@ class FED3_Viz(tk.Tk):
             column_name = self.files_spreadsheet.column(column)['id']
             if column_name == "Name":
                 self.LOADED_FEDS.sort(key=lambda x:x.basename, reverse=reverse)
-            if column_name == "start time":
+            if column_name == "Start Time":
                 self.LOADED_FEDS.sort(key=lambda x:x.start_time, reverse=reverse)
-            if column_name == "end time":
+            if column_name == "End Time":
                 self.LOADED_FEDS.sort(key=lambda x:x.end_time, reverse=reverse)
-            if column_name == "# events":
+            if column_name == "# Events":
                 self.LOADED_FEDS.sort(key=lambda x:x.events, reverse=reverse)
-            if column_name == "duration":
+            if column_name == "Duration":
                 self.LOADED_FEDS.sort(key=lambda x:x.duration, reverse=reverse)
-            if column_name == "groups":
+            if column_name == "Groups":
                 self.LOADED_FEDS.sort(key=lambda x:len(x.group), reverse=reverse)
+            if column_name == '':
+                self.LOADED_FEDS.sort(key=lambda x:len(x.missing_columns), reverse=reverse)
             self.update_file_view()
             
     def update_buttons_home(self,*event):
@@ -1371,7 +1373,8 @@ class FED3_Viz(tk.Tk):
                     plot = self.PLOTS[graph_name]
                     df = plot.plotdata
                     overwrite = self.overwrite_checkbox_val.get()
-                    if plot.plotfunc == plots.interpellet_interval_plot:
+                    if plot.plotfunc in [plots.interpellet_interval_plot,
+                                         plots.group_interpellet_interval_plot]:
                         if not df[0].empty:
                             kde_name = graph_name + ' KDE'
                             kde_save = self.create_file_name(savepath, kde_name,
