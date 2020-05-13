@@ -101,17 +101,18 @@ class FED3_Viz(tk.Tk):
         self.group_view_label    = tk.Label(self.home_sheets, text='Group View',
                                           font=italic)     
         #spreadsheets
-        treeview_columns = ['','Name','# Events','Start Time',
+        treeview_columns = ['','Name','Mode','# Events','Start Time',
                             'End Time','Duration','Groups']
         self.files_spreadsheet = ttk.Treeview(self.home_sheets, 
                                               columns=treeview_columns)
         self.files_spreadsheet.column('', width=25, stretch=False)
         self.files_spreadsheet.column('Name', width=200)
-        self.files_spreadsheet.column('# Events', width=100)
+        self.files_spreadsheet.column('Mode', width=125)
+        self.files_spreadsheet.column('# Events', width=75)
         self.files_spreadsheet.column('Start Time', width=125)
         self.files_spreadsheet.column('End Time', width=125)
         self.files_spreadsheet.column('Duration', width=100)
-        self.files_spreadsheet.column('Groups', width=100)     
+        self.files_spreadsheet.column('Groups', width=150)     
         for i,val in enumerate(treeview_columns):
             self.files_spreadsheet.heading(i, text=val)
         self.files_spreadsheet['show'] = 'headings'
@@ -1108,7 +1109,8 @@ class FED3_Viz(tk.Tk):
                 tag = emoji.emojize(':warning:')
             else:
                 tag = ''
-            values = (tag, fed.basename, fed.events, fed.start_time.strftime('%b %d %Y, %H:%M'),
+            values = (tag, fed.basename, fed.mode, fed.events, 
+                      fed.start_time.strftime('%b %d %Y, %H:%M'),
                       fed.end_time.strftime('%b %d %Y, %H:%M'),
                       str(fed.duration), ', '.join(fed.group))
             self.files_spreadsheet.insert('', i, str(i), values=values)
@@ -1142,6 +1144,8 @@ class FED3_Viz(tk.Tk):
             column_name = self.files_spreadsheet.column(column)['id']
             if column_name == "Name":
                 self.LOADED_FEDS.sort(key=lambda x:x.basename, reverse=reverse)
+            if column_name == "Mode":
+                self.LOADED_FEDS.sort(key=lambda x:x.mode, reverse=reverse)
             if column_name == "Start Time":
                 self.LOADED_FEDS.sort(key=lambda x:x.start_time, reverse=reverse)
             if column_name == "End Time":

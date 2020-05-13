@@ -56,6 +56,7 @@ class FED3_File():
         self.add_interpellet_intervals()
         self.add_correct_pokes()
         self.group = []
+        self.mode = self.determine_mode()
 
     def __repr__(self):
         return 'FED3_File("' + self.directory + '")'
@@ -98,3 +99,24 @@ class FED3_File():
                 return np.nan
         except:
             return np.nan
+    
+    def determine_mode(self):
+        mode = 'Unknown'
+        if 'FR_Ratio' in self.data.columns:
+            mode = 'FR' + str(self.data['FR_Ratio'][0])
+        if ' FR_Ratio' in self.data.columns:
+            mode = 'FR' + str(self.data[' FR_Ratio'][0])
+        if 'Session_Type' in self.data.columns:
+            sesh = self.data['Session_Type']
+            if all(isinstance(i,int) for i in sesh):
+                if len(set(sesh)) == 1:
+                    mode = 'FR' + str(sesh[0])
+                else:
+                    mode = 'PR'
+            elif 'PR' in sesh[0]:
+                mode = 'PR'
+            else:
+                mode = str(sesh[0])
+        return mode
+                    
+                
