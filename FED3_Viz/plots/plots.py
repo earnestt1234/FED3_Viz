@@ -730,6 +730,106 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
     
     return fig   
 
+#---Progressive Ratio Plots
+import matplotlib as mpl
+
+def pr_plot(FEDs, break_hours, break_mins, break_style, *args, **kwargs):
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for FED in FEDs:
+        assert isinstance(FED, FED3_File), 'Non FED3_File passed to pr_plot()'
+    delta = dt.timedelta(hours=break_hours, minutes=break_mins)
+    ys = []
+    color_gradient_divisions = [(1/len(FEDs))*i for i in range(len(FEDs))]
+    cmap = mpl.cm.get_cmap('spring')
+    color_gradients = cmap(color_gradient_divisions)
+    for FED in FEDs:
+        df = FED.data
+        index = df.index
+        nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
+        try:
+            break_index = next(i for i, val in enumerate(nextaction) if val > delta)
+        except StopIteration:
+            break_index = len(nextaction)
+        if break_style == 'pellets':
+            out = df.loc[df.index[break_index],'Pellet_Count']
+        elif break_style == 'pokes':
+            cum_correct = pd.Series([1 if i==True else np.nan for i in df['Correct_Poke']]).cumsum()
+            cum_correct.index = df.index
+            cum_correct = cum_correct[cum_correct.index <= df.index[break_index]].copy()
+            out = np.nanmax(cum_correct)
+        ys.append(out)
+    fig_len = min([max([len(FEDs), 2]), 8])
+    fig, ax = plt.subplots(figsize=(fig_len, 4.5))
+    xs = range(len(FEDs))
+    xticklabels = [x.filename for x in FEDs]
+    ax.bar(xs, ys, color=color_gradients)
+    ax.set_xlabel('File')
+    ax.set_xticks(xs)
+    ax.set_xticklabels(xticklabels, rotation=45, ha='right')
+    labels = {'pellets':'Pellets', 'pokes':'Correct Pokes',}
+    ax.set_ylabel(labels[break_style])
+    ax.set_title("Breakpoint")
+    plt.tight_layout()
+    
+    return fig
+   
+def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
+                  break_error, break_show_indvl, *args, **kwargs):
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for FED in FEDs:
+        assert isinstance(FED, FED3_File), 'Non FED3_File passed to group_pr_plot()'
+    fig, ax = plt.subplots(figsize=(3.5,5), dpi=125)
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color'] 
+    xs = range(len(groups))
+    delta = dt.timedelta(hours=break_hours, minutes=break_mins)
+    title = 'Breakpoint'
+    for i, group in enumerate(groups):
+        group_vals = []
+        for FED in FEDs:
+            if group in FED.group:
+                df = FED.data
+                index = df.index
+                nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
+                try:
+                    break_index = next(i for i, val in enumerate(nextaction) if val > delta)
+                except StopIteration:
+                    break_index = len(nextaction)
+                if break_style == 'pellets':
+                    out = df.loc[df.index[break_index],'Pellet_Count']
+                elif break_style == 'pokes':
+                    cum_correct = pd.Series([1 if i==True else np.nan for i in df['Correct_Poke']]).cumsum()
+                    cum_correct.index = df.index
+                    cum_correct = cum_correct[cum_correct.index <= df.index[break_index]].copy()
+                    out = np.nanmax(cum_correct)
+                group_vals.append(out)
+        y = np.nanmean(group_vals,)
+        error_val = None
+        if break_error == 'SEM':
+            error_val = stats.sem(group_vals)
+            title = 'Break Point\n(error = SEM)'
+        elif break_error == 'STD':
+            error_val = np.std(group_vals)
+            title = 'Break Point\n(error = STD)'
+        ax.bar(xs[i], y, color=colors[i], yerr=error_val,
+               capsize=3,alpha=.5,ecolor='gray')
+        if break_show_indvl:
+            spread = .16
+            x, y = raw_data_scatter(group_vals,
+                                    xcenter=xs[i],
+                                    spread=spread)
+            ax.scatter(x,y,s=10,color=colors[i],zorder=5)            
+    ax.set_xlabel('Group')
+    ax.set_xticklabels(groups)
+    ax.set_xticks(range(len(groups)))
+    labels = {'pellets':'Pellets', 'pokes':'Correct Pokes',}
+    ax.set_ylabel(labels[break_style]) 
+    ax.set_title(title)
+    plt.tight_layout()
+    
+    return fig
+
 #---Circadian Plots
     
 def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
