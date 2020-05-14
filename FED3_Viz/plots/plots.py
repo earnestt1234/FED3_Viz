@@ -463,9 +463,9 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
         ax.plot(x, y, label=label, color=colors[i])
         if average_error != 'None':
             if average_error == 'STD':
-                error_shade = np.std(avg, axis=0)
+                error_shade = np.nanstd(avg, axis=0)
             elif average_error == 'SEM':
-                error_shade = stats.sem(avg, axis=0)         
+                error_shade = stats.sem(avg, axis=0, nan_policy='omit')         
             ax.fill_between(x,
                             group_avg+error_shade,
                             group_avg-error_shade,
@@ -527,7 +527,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                     x = y.index
                     ax.plot(x, y, color=colors[i], alpha=.3, linewidth=.8)
                     
-        group_avg = np.mean(avg, axis=0)
+        group_avg = np.nanmean(avg, axis=0)
         if average_error == 'None':
             label = group
         else:
@@ -537,9 +537,9 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
         ax.plot(x, y, label=label, color=colors[i])
         if average_error != 'None':
             if average_error == 'STD':
-                error_shade = np.std(avg, axis=0)
+                error_shade = np.nanstd(avg, axis=0)
             elif average_error == 'SEM':
-                error_shade = stats.sem(avg, axis=0)         
+                error_shade = stats.sem(avg, axis=0, nan_policy='omit')         
             ax.fill_between(x,
                             group_avg+error_shade,
                             group_avg-error_shade,
@@ -617,9 +617,9 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         ax.plot(x, y, label=label, color=colors[i])
         if average_error != 'None':
             if average_error == 'STD':
-                error_shade = np.std(avg, axis=0)
+                error_shade = np.nanstd(avg, axis=0)
             elif average_error == 'SEM':
-                error_shade = stats.sem(avg, axis=0)  
+                error_shade = stats.sem(avg, axis=0, nan_policy='omit')  
             ax.fill_between(x,
                             group_avg+error_shade,
                             group_avg-error_shade,
@@ -807,10 +807,10 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         y = np.nanmean(group_vals,)
         error_val = None
         if break_error == 'SEM':
-            error_val = stats.sem(group_vals)
+            error_val = stats.sem(group_vals,nan_policy='omit')
             title = 'Breakpoint\n(error = SEM)'
         elif break_error == 'STD':
-            error_val = np.std(group_vals)
+            error_val = np.nanstd(group_vals)
             title = 'Breakpoint\n(error = STD)'
         ax.bar(xs[i], y, color=colors[i], yerr=error_val,
                capsize=3,alpha=.5,ecolor='gray')
@@ -868,11 +868,11 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
             error_bar_day = None
             error_bar_night = None
         elif circ_error == 'SEM':
-            error_bar_day = stats.sem(group_day_values)
-            error_bar_night = stats.sem(group_night_values)
+            error_bar_day = stats.sem(group_day_values,nan_policy='omit')
+            error_bar_night = stats.sem(group_night_values,nan_policy='omit')
         elif circ_error == 'STD':
-            error_bar_day = np.std(group_day_values)
-            error_bar_night = np.std(group_night_values)       
+            error_bar_day = np.nanstd(group_day_values)
+            error_bar_night = np.nanstd(group_night_values)       
         x1 = 1
         x2 = 2
         y1 = group_day_mean
@@ -945,10 +945,10 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         label = group       
         error_shade = np.nan
         if circ_error == "SEM":
-            error_shade = stats.sem(group_vals, axis=0)
+            error_shade = stats.sem(group_vals, axis=0,nan_policy='omit')
             label += ' (±' + circ_error + ')'
         elif circ_error == 'STD':
-            error_shade = np.std(group_vals, axis=0)
+            error_shade = np.nanstd(group_vals, axis=0)
             label += ' (±' + circ_error + ')'
         if circ_show_indvl:
             error_shade = np.nan

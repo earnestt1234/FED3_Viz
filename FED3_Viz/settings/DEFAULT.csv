@@ -3,6 +3,7 @@ shade_dark,True
 lights_on,7 am
 lights_off,7 pm
 allgroups,True
+abs_group,True
 skip_duplicates,True
 overwrite,False
 weirdwarn,True

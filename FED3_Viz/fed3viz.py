@@ -168,11 +168,17 @@ class FED3_Viz(tk.Tk):
         self.progresstext = tk.Label(self.fed_text, textvariable=self.progresstextvar)
         
         #buttons
-        self.button_load   = tk.Button(self.fed_buttons, text='Load',
+        self.button_load   = tk.Button(self.fed_buttons, text='Load Files',
                                        command=lambda: 
                                        self.load_FEDs(overwrite=False,
                                                       skip_duplicates=self.loadduplicates_checkbox_val.get()),
                                        width=8)
+        self.button_load_folder = tk.Button(self.fed_buttons, text='Load Folder',
+                                       command=lambda: 
+                                       self.load_FEDs(overwrite=False,
+                                                      skip_duplicates=self.loadduplicates_checkbox_val.get(),
+                                                      from_folder=True),
+                                       width=10)
         self.button_delete = tk.Button(self.fed_buttons, text='Delete',
                                        command=self.delete_FEDs,
                                        state=tk.DISABLED,
@@ -200,6 +206,7 @@ class FED3_Viz(tk.Tk):
     #---HOVER TEXT DICTIONARY          
         #dictionary mapping widgets to hover text
         self.hover_text_one_dict = {self.button_load : 'Load FED3 files',
+                                    self.button_load_folder: 'Load all FED3 files in a folder',
                                     self.button_delete: 'Unload highlighted FED3 files',
                                     self.button_create_group:
                                         'Add selected devices to a group',
@@ -254,11 +261,12 @@ class FED3_Viz(tk.Tk):
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
         self.button_load.grid(row=0,column=0,sticky='sew')
-        self.button_delete.grid(row=0,column=1,sticky='nsew')
-        self.button_create_group.grid(row=0,column=2,sticky='sew')
-        self.button_delete_group.grid(row=0,column=3,sticky='sew')
-        self.button_save_groups.grid(row=0,column=4,sticky='sew')
-        self.button_load_groups.grid(row=0,column=5,sticky='sew')
+        self.button_load_folder.grid(row=0,column=1,sticky='sew')
+        self.button_delete.grid(row=0,column=2,sticky='nsew')
+        self.button_create_group.grid(row=0,column=3,sticky='sew')
+        self.button_delete_group.grid(row=0,column=4,sticky='sew')
+        self.button_save_groups.grid(row=0,column=5,sticky='sew')
+        self.button_load_groups.grid(row=0,column=6,sticky='sew')
         
         #labels
         self.home_buttons_help.grid(row=0,column=0,sticky='nsw',padx=(0,20),
@@ -434,6 +442,11 @@ class FED3_Viz(tk.Tk):
                                         text='For plots using groups, include all loaded groups\nrather than those selected',
                                         var=self.allgroups_val, 
                                         command=self.update_buttons_home)
+        self.abs_groups_val = tk.BooleanVar()
+        self.abs_groups_val.set(True)
+        self.abs_groups_box = ttk.Checkbutton(self.general_settings_frame,
+                                              text='When loading groups, check for the absolute path (rather than file name)',
+                                              var=self.abs_groups_val)
         self.loadduplicates_checkbox_val = tk.BooleanVar()
         self.loadduplicates_checkbox_val.set(True)
         self.loadduplicates_checkbox = ttk.Checkbutton(self.general_settings_frame,
@@ -584,9 +597,10 @@ class FED3_Viz(tk.Tk):
         self.nightshade_lightson.grid(row=1,column=1,sticky='w')
         self.nightshade_lightsoff.grid(row=1,column=2,sticky='w')
         self.allgroups.grid(row=2,column=0,padx=(20,0),sticky='w')
-        self.loadduplicates_checkbox.grid(row=3,column=0,padx=(20,0),sticky='w')
-        self.overwrite_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
-        self.weirdfed_warning.grid(row=5,column=0,padx=(20,0),sticky='w')
+        self.abs_groups_box.grid(row=3,column=0,padx=(20,0),sticky='w')
+        self.loadduplicates_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
+        self.overwrite_checkbox.grid(row=5,column=0,padx=(20,0),sticky='w')
+        self.weirdfed_warning.grid(row=6,column=0,padx=(20,0),sticky='w')
         
         self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
         self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
@@ -784,12 +798,16 @@ class FED3_Viz(tk.Tk):
                             self.settings_tab, self.about_tab]:
                 config_color_mac(widget)
     #---HOME TAB BUTTON FUNCTIONS
-    def load_FEDs(self, overwrite=True, skip_duplicates=True):
-        file_types = [('All', '*.*'),
-                      ('Comma-Separated Values', '*.csv'),
-                      ('Excel', '*.xls, *.xslx'),]
-        files = tk.filedialog.askopenfilenames(title='Select FED3 Data',
-                                               filetypes=file_types)
+    def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False):
+        if from_folder:
+            folder = tk.filedialog.askdirectory(title='Select folder to search for FEDs')
+            files = self.walk_filenames(folder)
+        else:
+            file_types = [('All', '*.*'),
+                          ('Comma-Separated Values', '*.csv'),
+                          ('Excel', '*.xls, *.xslx'),]
+            files = tk.filedialog.askopenfilenames(title='Select FED3 Data',
+                                                   filetypes=file_types)
         loaded_filenames = [fed.basename for fed in self.LOADED_FEDS]
         pass_FEDs = []
         failed_FEDs = []
@@ -808,12 +826,12 @@ class FED3_Viz(tk.Tk):
                         try:
                             pass_FEDs.append(FED3_File(file))
                         except:
-                            failed_FEDs.append(file_name[0]+file_name[1])                     
+                            failed_FEDs.append(file_name)                     
                 else:
                     try:
                         pass_FEDs.append(FED3_File(file))
                     except:
-                        failed_FEDs.append(file_name[0]+file_name[1])
+                        failed_FEDs.append(file_name)
                 self.progresstextvar.set(os.path.basename(file) + '...')
                 self.progressbar.step(1/len(files)*100)
                 self.update()
@@ -879,7 +897,7 @@ class FED3_Viz(tk.Tk):
             self.update_buttons_home()
         
     def save_groups(self):
-        group_dict = {fed.basename : fed.group for fed in self.LOADED_FEDS
+        group_dict = {fed.directory : fed.group for fed in self.LOADED_FEDS
                       if fed.group}
         savepath = tk.filedialog.asksaveasfilename(title='Select where to save group labels',
                                                        defaultextension='.csv',
@@ -898,10 +916,14 @@ class FED3_Viz(tk.Tk):
         if settings_file:
             df = pd.read_csv(settings_file[0],index_col=0,dtype=str)
             for fed in self.LOADED_FEDS:
-                filename = fed.basename
-                if filename in df.columns:
+                if self.abs_groups_val.get():
+                    lookfor = fed.directory
+                else:
+                    lookfor = fed.basename
+                    df.columns = [os.path.basename(col) for col in df.columns]
+                if lookfor in df.columns:
                     fed.group = []
-                    for grp in df[filename]:
+                    for grp in df[lookfor]:
                         if not pd.isna(grp):
                             fed.group.append(str(grp))
         self.update_file_view()
@@ -1211,6 +1233,18 @@ class FED3_Viz(tk.Tk):
         for group in self.GROUPS:
             self.group_view.insert(tk.END,group)
   
+    def walk_filenames(self, folder):
+        output = []
+        dirs = list(os.walk(folder))      
+        for directory in dirs:
+            dirname = directory[0]
+            filelist = directory[-1]
+            if filelist:
+                for file in filelist:
+                    path_to_file = os.path.join(dirname, file)
+                    output.append(path_to_file)
+        return output
+    
     def hover_text_one(self, event):
         widget = event.widget
         self.home_buttons_help.configure(text=self.hover_text_one_dict[widget])
@@ -1368,6 +1402,9 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.selection_set(list(range(items)))
         self.update_all_buttons()
         
+    def escape(self, *event):
+        self.update_all_buttons()
+
     #---PLOT TAB BUTTON FUNCTIONS
     def rename_plot(self):
         clicked = self.plot_listbox.curselection()[0]
@@ -1643,6 +1680,7 @@ class FED3_Viz(tk.Tk):
             self.nightshade_checkbox_val.set(settings_df.loc['shade_dark','Values'])
             self.nightshade_lightson.set(settings_df.loc['lights_on','Values'])
             self.nightshade_lightsoff.set(settings_df.loc['lights_off','Values'])
+            self.abs_groups_val.set(settings_df.loc['abs_group','Values'])
             self.allgroups_val.set(settings_df.loc['allgroups','Values'])
             self.loadduplicates_checkbox_val.set(settings_df.loc['skip_duplicates','Values'])
             self.overwrite_checkbox_val.set(settings_df.loc['overwrite','Values'])
@@ -1688,6 +1726,7 @@ class FED3_Viz(tk.Tk):
                              lights_on          =self.nightshade_lightson.get(),
                              lights_off         =self.nightshade_lightsoff.get(),
                              allgroups          =self.allgroups_val.get(),
+                             abs_group          =self.abs_groups_val.get(),
                              skip_duplicates    =self.loadduplicates_checkbox_val.get(),
                              overwrite          =self.overwrite_checkbox_val.get(),
                              weirdwarn          =self.weirdfed_warning_val.get(),
@@ -1743,19 +1782,26 @@ class FED3_Viz(tk.Tk):
         warning.pack(padx=(20,20),pady=(20,20))
         
     def raise_load_errors(self,failed_names, weird_names=None):
-        warn_window = tk.Toplevel(self)
+        warn_window = tk.Toplevel(self,)
+        warn_window.geometry('{}x{}'.format(600, 300))
         warn_window.grab_set()
         warn_window.title('Load Error')
+        warn_window.grid_columnconfigure(0,weight=1)
         if not platform.system() == 'Darwin':
             warn_window.iconbitmap('img/exclam.ico')
+        self.warn_canvas = tk.Canvas(warn_window)
+        scrollbar = ttk.Scrollbar(warn_window, orient="vertical",
+                                  command=self.warn_canvas.yview)
+        warn_frame = tk.Frame(self.warn_canvas)
+        self.warn_canvas.configure(yscrollcommand=scrollbar.set)
+        self.warn_canvas.create_window((0,0),window=warn_frame,anchor='nw')
         intro1 = ("The following files were not recognized as FED3 data, " +
                  "and weren't loaded:\n")
         body1 = ''
         for name in failed_names:
             body1 += ('\n - ' + name)
-        # outro1 = """\n\nPlease see the documentation to resolve this issue"""
         all_text1 = intro1+body1
-        warning1 = tk.Label(warn_window, text=all_text1,
+        warning1 = tk.Label(warn_frame, text=all_text1,
                            justify=tk.LEFT, wraplength=500)
         intro2 = ("The following files do not contain all the expected " +
                   "FED3 column names; some plots may not work or produce " +
@@ -1765,16 +1811,22 @@ class FED3_Viz(tk.Tk):
         for name in weird_names:
             body2 += ('\n - ' + name)
         all_text2 = intro2+body2
-        warning2 = tk.Label(warn_window, text=all_text2,
+        warning2 = tk.Label(warn_frame, text=all_text2,
                            justify=tk.LEFT, wraplength=500)
         if failed_names:
             warning1.grid(row=0,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
         if weird_names:
             warning2.grid(row=1,column=0,padx=(20,20),pady=(20,20),sticky='nsew')
+        self.warn_canvas.grid(row=0,column=0,sticky='nsew')
+        scrollbar.grid(row=0,column=1,sticky='nse')
+        warn_frame.bind('<Configure>', self.canvas_config)
+
+    def canvas_config(self, event):
+        self.warn_canvas.configure(scrollregion=self.warn_canvas.bbox("all"),)
             
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.save_last_used)
-root.bind('<Escape>', root.update_all_buttons)
+root.bind('<Escape>', root.escape)
 root.minsize(1050,20)
 if __name__=="__main__":
     root.lift()

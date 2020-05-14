@@ -119,9 +119,9 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
         group_avg = np.mean(avg, axis=0)
         group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
-            group_to_add[group + ' SEM'] = stats.sem(avg, axis=0)
+            group_to_add[group + ' SEM'] = stats.sem(avg, axis=0,nan_policy='omit')
         if average_error == 'STD':
-            group_to_add[group + ' STD'] = np.std(avg, axis=0)
+            group_to_add[group + ' STD'] = np.nanstd(avg, axis=0)
         group_avg_df = group_avg_df.join(group_to_add, how='outer')
     output = output.join(group_avg_df)
     output.index.name = 'Time'
@@ -159,9 +159,9 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
         group_avg = np.mean(avg, axis=0)
         group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
-            group_to_add[group + ' SEM'] = stats.sem(avg, axis=0)
+            group_to_add[group + ' SEM'] = stats.sem(avg, axis=0,nan_policy='omit')
         if average_error == 'STD':
-            group_to_add[group + ' STD'] = np.std(avg, axis=0)
+            group_to_add[group + ' STD'] = np.nanstd(avg, axis=0)
         group_avg_df = group_avg_df.join(group_to_add, how='outer')
     output = output.join(group_avg_df)
     hours_since_start = [(i - output.index[0]).total_seconds()/3600
@@ -198,9 +198,9 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         group_avg = np.mean(avg, axis=0)
         group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
-            group_to_add[group + ' SEM'] = stats.sem(avg, axis=0)
+            group_to_add[group + ' SEM'] = stats.sem(avg, axis=0,nan_policy='omit')
         if average_error == 'STD':
-            group_to_add[group + ' STD'] = np.std(avg, axis=0)
+            group_to_add[group + ' STD'] = np.nanstd(avg, axis=0)
         group_avgs = group_avgs.join(group_to_add, how='outer')
     output = output.join(group_avgs)
     output.index.name = 'Elapsed Hours'
@@ -322,11 +322,11 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
         group_avg_df.loc[circ_value,group+' day'] = group_day_mean
         group_avg_df.loc[circ_value,group+' night'] = group_night_mean
         if circ_error == 'SEM':
-            group_avg_df.loc[circ_value,group+' day SEM'] = stats.sem(group_day_values)
-            group_avg_df.loc[circ_value,group+' night SEM']= stats.sem(group_night_values)
+            group_avg_df.loc[circ_value,group+' day SEM'] = stats.sem(group_day_values,nan_policy='omit')
+            group_avg_df.loc[circ_value,group+' night SEM']= stats.sem(group_night_values,nan_policy='omit')
         if circ_error == 'STD':
-            group_avg_df.loc[circ_value,group+' day STD'] = np.std(group_day_values)
-            group_avg_df.loc[circ_value,group+' night STD'] = np.std(group_night_values)       
+            group_avg_df.loc[circ_value,group+' day STD'] = np.nanstd(group_day_values)
+            group_avg_df.loc[circ_value,group+' night STD'] = np.nanstd(group_night_values)       
     output = output.merge(group_avg_df, left_index=True, right_index=True)
     return output
 
@@ -425,9 +425,9 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         group_mean = np.nanmean(group_vals, axis=0)    
         to_add = pd.DataFrame({group:group_mean})
         if circ_error == "SEM":
-            to_add[group + " SEM"] = stats.sem(group_vals, axis=0)
+            to_add[group + " SEM"] = stats.sem(group_vals, axis=0,nan_policy='omit')
         elif circ_error == 'STD':
-            to_add[group + " STD"] = np.std(group_vals, axis=0)
+            to_add[group + " STD"] = np.nanstd(group_vals, axis=0)
         avgs = avgs.join(to_add, how='outer')
     output = output.join(avgs, how='outer')
     output.index.name = "Hours"
@@ -484,8 +484,8 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         y = np.nanmean(group_vals,)
         group_output.loc[break_style, group] = y
         if break_error == 'SEM':
-            group_output.loc[break_style, group + " SEM"] = stats.sem(group_vals)
+            group_output.loc[break_style, group + " SEM"] = stats.sem(group_vals,nan_policy='omit')
         elif break_error == 'STD':
-            group_output.loc[break_style, group + " STD"] = np.std(group_vals)
+            group_output.loc[break_style, group + " STD"] = np.nanstd(group_vals)
     output = output.merge(group_output, left_index=True, right_index=True)
     return output
