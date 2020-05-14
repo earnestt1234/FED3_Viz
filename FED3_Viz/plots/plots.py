@@ -759,8 +759,8 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, *args, **kwargs):
             cum_correct = cum_correct[cum_correct.index <= df.index[break_index]].copy()
             out = np.nanmax(cum_correct)
         ys.append(out)
-    fig_len = min([max([len(FEDs), 2]), 8])
-    fig, ax = plt.subplots(figsize=(fig_len, 4.5))
+    fig_len = min([max([len(FEDs), 4]), 8])
+    fig, ax = plt.subplots(figsize=(fig_len, 5), dpi=125)
     xs = range(len(FEDs))
     xticklabels = [x.filename for x in FEDs]
     ax.bar(xs, ys, color=color_gradients)
@@ -808,10 +808,10 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         error_val = None
         if break_error == 'SEM':
             error_val = stats.sem(group_vals)
-            title = 'Break Point\n(error = SEM)'
+            title = 'Breakpoint\n(error = SEM)'
         elif break_error == 'STD':
             error_val = np.std(group_vals)
-            title = 'Break Point\n(error = STD)'
+            title = 'Breakpoint\n(error = STD)'
         ax.bar(xs[i], y, color=colors[i], yerr=error_val,
                capsize=3,alpha=.5,ecolor='gray')
         if break_show_indvl:

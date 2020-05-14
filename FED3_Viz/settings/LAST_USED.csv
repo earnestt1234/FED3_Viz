@@ -5,24 +5,29 @@ lights_off,7 pm
 allgroups,True
 skip_duplicates,True
 overwrite,False
-weirdwarn,False
+weirdwarn,True
 pellet_values,Cumulative
 pellet_bins,1
-pellet_color,purple
+pellet_color,blue
 pellet_align,False
 average_error,SEM
-average_bins,2
-load_last_used,True
+average_bins,1
+load_last_used,False
 average_method,shared date & time
-average_align_start,5 pm
-average_align_days,2
+average_align_start,7 am
+average_align_days,3
 circ_value,pellets
 circ_error,SEM
 circ_show_indvl,False
-kde,False
+kde,True
 poke_style,Cumulative
 poke_bins,1
 poke_show_correct,True
 poke_show_error,True
 bias_style,correct - error
 dynamic_color,True
+break_style,pellets
+break_hours,1
+break_mins,0
+break_error,SEM
+break_show_indvl,False

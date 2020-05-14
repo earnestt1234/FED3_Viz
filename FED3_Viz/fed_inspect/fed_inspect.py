@@ -21,7 +21,8 @@ plotfuncs = {name:func for name, func in inspect.getmembers(mymod2)}
 
 string_arguments = ['pellet_color', 'pellet_bins', 'average_bins',
                     'average_error', 'circ_value', 'circ_error','bias_style',
-                    'poke_bins','dependent','poke_style']
+                    'poke_bins','dependent','poke_style','break_style',
+                    'break_error']
 shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'pellet_plot_multi_unaligned',
                     'pellet_freq_multi_unaligned',
@@ -33,11 +34,10 @@ avg_funcs = ['average_plot_ontime','average_plot_ondatetime',
 circ_funcs = ['daynight_plot', 'line_chronogram', 'heatmap_chronogram']
 date_format_funcs = ['pellet_plot_single','pellet_freq_single',
                      'average_plot_ondatetime','poke_plot','poke_bias',
-                     'diagnostic plot']
-date_format_multi_funcs = ['pellet_plot_multi_unaligned',
-                           'pellet_freq_multi_unaligned',]
+                     'diagnostic plot','pellet_plot_multi_unaligned',
+                     'pellet_freq_multi_unaligned',]
+pr_funcs = ['pr_plot','group_pr_plot']
 
-   
 def add_quotes(string):
     output = '"' + string + '"'
     return output
@@ -69,7 +69,7 @@ from scipy import stats
 
 register_matplotlib_converters()
 """
-    load_code = '\n\n#CODE TO LOAD FED DATA FROM A DIRECTORY\n\n'
+    load_code = '\n#CODE TO LOAD FED DATA FROM A DIRECTORY\n\n'
     load_code += inspect.getsource(mymod1.FED3_File)
     
     shade_helpers = '\n#HELPER FUNCTIONS (SHADING DARK)\n\n'
@@ -78,9 +78,9 @@ register_matplotlib_converters()
     shade_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
     shade_helpers += inspect.getsource(mymod2.shade_darkness)
     
-    bar_helpers = '\n#HELPER FUNCTIONS (DAY/NIGHT PLOTS)\n\n'
-    bar_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
-    bar_helpers += inspect.getsource(mymod2.raw_data_scatter)
+    dn_helpers = '\n#HELPER FUNCTIONS (DAY/NIGHT PLOTS)\n\n'
+    dn_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
+    dn_helpers += inspect.getsource(mymod2.raw_data_scatter)
     
     circ_helpers = '\n#HELPER FUNCTIONS (CIRCADIAN PLOTS)\n\n'
     circ_helpers += inspect.getsource(mymod2.resample_get_yvals) + '\n'
@@ -93,6 +93,9 @@ register_matplotlib_converters()
     
     date_helpers = '\n#HELPER FUNCTIONS (DATE FORMATTING)\n\n'
     date_helpers += inspect.getsource(mymod2.date_format_x)
+    
+    pr_helpers = '\n#HELPER FUNCTIONS (BREAKPOINT PLOTS)\n\n'
+    pr_helpers += inspect.getsource(mymod2.raw_data_scatter)
     
     function_code ='\n#PLOTTING FUNCTION:\n\n'
     inspected = inspect.getsource(plotfunc).replace('plt.close()','')
@@ -139,10 +142,9 @@ register_matplotlib_converters()
     output += imports
     output += load_code
     if plotfunc.__name__ in shade_dark_funcs:
-        if used_args['shade_dark'] == True:
-            output += shade_helpers
+        output += shade_helpers
     if plotfunc.__name__ == 'daynight_plot':
-        output += bar_helpers
+        output += dn_helpers
     if plotfunc.__name__ in circ_funcs:
         output += circ_helpers
     if plotfunc.__name__ == 'poke_plot':
@@ -151,9 +153,8 @@ register_matplotlib_converters()
         output += avg_helpers
     if plotfunc.__name__ in date_format_funcs:
         output += date_helpers
-    elif plotfunc.__name__ in date_format_multi_funcs:
-        if used_args['pellet_align'] == False:
-            output += date_helpers
+    if plotfunc.__name__ in pr_funcs:
+        output += pr_helpers
     output += function_code
     output += arguments
     output += call

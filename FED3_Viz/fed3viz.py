@@ -146,11 +146,14 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_poke, 3, text='Average Poke Plot (Error)')
         self.plot_treeview.insert(self.ps_poke, 4, text='Poke Bias Plot')
         self.plot_treeview.insert(self.ps_poke, 5, text='Average Poke Bias Plot')
-        self.ps_circadian = self.plot_treeview.insert("", 3, text='Circadian')
+        self.ps_pr = self.plot_treeview.insert('', 3, text='Progressive Ratio')
+        self.plot_treeview.insert(self.ps_pr, 1, text = 'Breakpoint Plot')
+        self.plot_treeview.insert(self.ps_pr, 2, text = 'Group Breakpoint Plot')
+        self.ps_circadian = self.plot_treeview.insert("", 4, text='Circadian')
         self.plot_treeview.insert(self.ps_circadian, 1, text='Day/Night Plot')
         self.plot_treeview.insert(self.ps_circadian, 2, text='Chronogram (Line)')
         self.plot_treeview.insert(self.ps_circadian, 3, text='Chronogram (Heatmap)')
-        self.ps_other = self.plot_treeview.insert("", 4, text='Other')
+        self.ps_other = self.plot_treeview.insert("", 5, text='Other')
         self.plot_treeview.insert(self.ps_other, 1, text='Diagnostic Plot')
         self.plot_treeview.bind('<<TreeviewSelect>>', self.handle_plot_selelection)
         
@@ -225,7 +228,9 @@ class FED3_Viz(tk.Tk):
                                 'Day/Night Plot':'Plot group averages for day/night on a bar chart',
                                 'Diagnostic Plot':'Plot battery life and motor turns',
                                 'Chronogram (Line)':'Plot average 24-hour curves for groups',
-                                'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows'}
+                                'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
+                                'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
+                                'Group Breakpoint Plot':'Plot the average breakpoint for groups (maximum pellets or pokes reached before a period of inactivity)'}
             
     #---PLOT TREEVIEW > PLOT FUNCTION
         #associate each plot_treeview entry with a plotting function
@@ -242,7 +247,9 @@ class FED3_Viz(tk.Tk):
                                 'Poke Bias Plot':self.poke_bias_single_TK,
                                 'Average Poke Bias Plot':self.avg_plot_TK,
                                 'Chronogram (Line)':self.chronogram_line_TK,
-                                'Chronogram (Heatmap)':self.chronogram_heatmap_TK}   
+                                'Chronogram (Heatmap)':self.chronogram_heatmap_TK,
+                                'Breakpoint Plot':self.breakpoint_plot,
+                                'Group Breakpoint Plot':self.group_breakpoint_plot}   
                
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
@@ -326,9 +333,12 @@ class FED3_Viz(tk.Tk):
         self.average_settings_frame = tk.Frame(self.settings_col1)
         self.average_settings_frame.grid(row=1,column=0,sticky='nsew',)
         
-        self.ipi_settings_frame = tk.Frame(self.settings_col2)
-        self.ipi_settings_frame.grid(row=0,column=0, sticky='nsew',
-                                     padx=20, pady=(0,20))
+        self.ipi_settings_frame = tk.Frame(self.settings_col1)
+        self.ipi_settings_frame.grid(row=3,column=0, sticky='nsew', 
+                                     pady=(20,40))
+        
+        self.pr_settings_frame = tk.Frame(self.settings_col2)
+        self.pr_settings_frame.grid(row=0,column=0,sticky='nsew',padx=(20))
         
         self.poke_settings_frame = tk.Frame(self.settings_col2)
         self.poke_settings_frame.grid(row=1,column=0,sticky='nsew',padx=(20))
@@ -380,6 +390,15 @@ class FED3_Viz(tk.Tk):
         self.ipi_settings_label = tk.Label(self.ipi_settings_frame,
                                            text='Interpellet Interval Plots',
                                            font=self.section_font)
+        self.pr_settings_label = tk.Label(self.pr_settings_frame,
+                                          text='Progressive Ratio',
+                                          font=self.section_font)
+        self.pr_style_label = tk.Label(self.pr_settings_frame,
+                                       text='Value to plot')
+        self.pr_length_label = tk.Label(self.pr_settings_frame,
+                                        text='Break length (hours/minutes)')
+        self.pr_error_label = tk.Label(self.pr_settings_frame,
+                                       text='Error value for group breakpoint plots')
         self.poke_settings_label = tk.Label(self.poke_settings_frame,
                                             text='Individual Poke Plots',
                                             font=self.section_font)
@@ -483,7 +502,7 @@ class FED3_Viz(tk.Tk):
                                                 values=['SEM','STD','None'])
         self.daynight_error_menu.set('SEM')
         self.daynight_show_indvl_val = tk.BooleanVar()
-        self.daynight_show_indvl_val.set(True)
+        self.daynight_show_indvl_val.set(False)
         self.daynight_show_indvl = ttk.Checkbutton(self.daynight_settings_frame,
                                                   text='Show individual FED data points',
                                                   var=self.daynight_show_indvl_val)
@@ -493,6 +512,30 @@ class FED3_Viz(tk.Tk):
         self.ipi_kde_checkbox = ttk.Checkbutton(self.ipi_settings_frame,
                                                 text='Use kernel density estimation',
                                                 var=self.ipi_kde_val)
+        #   progressive ratio
+        self.pr_style_menu = ttk.Combobox(self.pr_settings_frame,
+                                          values=['pellets','pokes'],
+                                          width=10)
+        self.pr_style_menu.set('pellets')
+        self.pr_hours_menu = ttk.Combobox(self.pr_settings_frame,
+                                          values=list(range(4)),
+                                          width=5)
+        self.pr_hours_menu.set(1)
+        self.pr_mins_menu = ttk.Combobox(self.pr_settings_frame,
+                                         values=[0,15,30,45],
+                                         width=5)
+        self.pr_mins_menu.set(0)
+        self.pr_error_menu = ttk.Combobox(self.pr_settings_frame,
+                                          values=['SEM','STD','None'],
+                                          width=10)
+        self.pr_error_menu.set('SEM')
+        
+        self.pr_show_indvl_val = tk.BooleanVar()
+        self.pr_show_indvl_val.set(False)
+        self.pr_show_indvl_box = ttk.Checkbutton(self.pr_settings_frame,
+                                                 text='Show individual values',
+                                                 var=self.pr_show_indvl_val)
+        
         #   poke
         self.poke_style_menu = ttk.Combobox(self.poke_settings_frame,
                                             values=['Cumulative','Frequency','Percentage'])
@@ -575,6 +618,16 @@ class FED3_Viz(tk.Tk):
         
         self.ipi_settings_label.grid(row=0,column=0,sticky='w')
         self.ipi_kde_checkbox.grid(row=1,column=0,sticky='w',padx=(20,0))
+        
+        self.pr_settings_label.grid(row=0,column=0,sticky='w')
+        self.pr_style_label.grid(row=1,column=0,sticky='w',padx=(20,0))
+        self.pr_style_menu.grid(row=1,column=1,sticky='ew',columnspan=2)
+        self.pr_length_label.grid(row=2,column=0,sticky='w',padx=(20,0))
+        self.pr_hours_menu.grid(row=2,column=1,sticky='ew')
+        self.pr_mins_menu.grid(row=2,column=2,sticky='ew')
+        self.pr_error_label.grid(row=3,column=0,sticky='w',padx=(20,55))
+        self.pr_error_menu.grid(row=3,column=1,sticky='ew',columnspan=2)
+        self.pr_show_indvl_box.grid(row=4,column=0,sticky='w',padx=(20,0), pady=(0,20))
         
         self.poke_settings_label.grid(row=0,column=0,sticky='w')
         self.poke_style_label.grid(row=1,column=0,sticky='w',padx=(20,0))
@@ -1100,7 +1153,43 @@ class FED3_Viz(tk.Tk):
                 self.draw_figure(new_plot)
                 self.raise_figure(fig_name)
                 self.update()
-        
+                
+    def breakpoint_plot(self):
+        arg_dict = self.get_current_settings_as_args()
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        arg_dict['FEDs'] = FEDs_to_plot
+        fig_name = self.create_plot_name('Breakpoint Plot')
+        new_plot_frame = ttk.Frame(self.plot_container)
+        figure = plots.pr_plot(**arg_dict)
+        plotdata = getdata.pr_plot(**arg_dict)
+        new_plot = FED_Plot(frame=new_plot_frame, figure=figure,
+                            figname=fig_name, plotfunc=plots.pr_plot, 
+                            arguments=arg_dict, plotdata=plotdata)
+        self.PLOTS[fig_name] = new_plot
+        self.draw_figure(new_plot)
+        self.raise_figure(fig_name)
+    
+    def group_breakpoint_plot(self):
+        args_dict = self.get_current_settings_as_args()
+        args_dict['FEDs'] = self.LOADED_FEDS
+        if self.allgroups_val.get():
+            groups = self.GROUPS
+        else:
+            ints = [int(i) for i in self.group_view.curselection()]
+            groups = [self.GROUPS[i] for i in ints]
+        args_dict['groups'] = groups
+        fig = plots.group_pr_plot(**args_dict)
+        plotdata = getdata.group_pr_plot(**args_dict)
+        fig_name = self.create_plot_name('Group Breakpoint Plot')
+        new_plot_frame = ttk.Frame(self.plot_container)
+        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
+                            figname=fig_name, plotfunc=plots.group_pr_plot,
+                            arguments=args_dict, plotdata=plotdata,)
+        self.PLOTS[fig_name] = new_plot
+        self.draw_figure(new_plot)
+        self.raise_figure(fig_name)
+    
     #---HOME HELPER FUNCTIONS
     def update_file_view(self):
         self.files_spreadsheet.delete(*self.files_spreadsheet.get_children())
@@ -1166,7 +1255,7 @@ class FED3_Viz(tk.Tk):
         text = self.plot_treeview.item(selection,'text')
         if text in ['Single Pellet Plot', 'Multi Pellet Plot', 'Diagnostic Plot',
                     'Interpellet Interval', 'Poke Bias Plot',
-                    'Chronogram (Heatmap)']:
+                    'Chronogram (Heatmap)', 'Breakpoint Plot']:
             #if there are feds selected
             if self.files_spreadsheet.selection():
                 self.button_create_plot.configure(state=tk.NORMAL)
@@ -1180,7 +1269,8 @@ class FED3_Viz(tk.Tk):
                 self.button_create_plot.configure(state=tk.DISABLED)
         elif text in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)',
                       'Average Poke Plot (Correct)','Average Poke Plot (Error)',
-                      'Average Poke Bias Plot', 'Group Interpellet Interval']:
+                      'Average Poke Bias Plot', 'Group Interpellet Interval',
+                      'Group Breakpoint Plot']:
             #if the all groups box is checked
             if self.allgroups_val.get():
                 #if there are any groups
@@ -1571,6 +1661,11 @@ class FED3_Viz(tk.Tk):
             self.daynight_show_indvl_val.set(settings_df.loc['circ_show_indvl','Values'])
             self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.ipi_kde_val.set(settings_df.loc['kde','Values'])
+            self.pr_style_menu.set(settings_df.loc['break_style','Values'])
+            self.pr_hours_menu.set(settings_df.loc['break_hours','Values'])
+            self.pr_mins_menu.set(settings_df.loc['break_mins','Values'])
+            self.pr_error_menu.set(settings_df.loc['break_error','Values'])
+            self.pr_show_indvl_val.set(settings_df.loc['break_show_indvl','Values'])
             self.poke_style_menu.set(settings_df.loc['poke_style','Values'])
             self.poke_bins_menu.set(settings_df.loc['poke_bins','Values'])
             self.poke_correct_val.set(settings_df.loc['poke_show_correct','Values'])
@@ -1615,7 +1710,12 @@ class FED3_Viz(tk.Tk):
                              poke_show_correct  =self.poke_correct_val.get(),
                              poke_show_error    =self.poke_error_val.get(),
                              bias_style         =self.poke_biasstyle_menu.get(),
-                             dynamic_color      =self.poke_dynamiccolor_val.get())
+                             dynamic_color      =self.poke_dynamiccolor_val.get(),
+                             break_style        =self.pr_style_menu.get(),
+                             break_hours        =self.pr_hours_menu.get(),
+                             break_mins         =self.pr_mins_menu.get(),
+                             break_error        =self.pr_error_menu.get(),
+                             break_show_indvl   =self.pr_show_indvl_val.get())
         return settings_dict
     
     def get_current_settings_as_args(self):
@@ -1624,7 +1724,7 @@ class FED3_Viz(tk.Tk):
             settings_dict[time_setting] = self.times_to_int[settings_dict[time_setting]]
         for bin_setting in ['pellet_bins','average_bins', 'poke_bins']:
             settings_dict[bin_setting] += 'H' 
-        for int_setting in ['average_align_days']:
+        for int_setting in ['average_align_days','break_hours','break_mins']:
             settings_dict[int_setting] = int(settings_dict[int_setting])
         return settings_dict
     

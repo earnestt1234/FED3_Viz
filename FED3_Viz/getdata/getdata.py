@@ -433,3 +433,59 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
     output.index.name = "Hours"
         
     return output
+
+def pr_plot(FEDs, break_hours, break_mins, break_style, *args, **kwargs):
+    delta = dt.timedelta(hours=break_hours, minutes=break_mins)
+    output=pd.DataFrame()
+    for FED in FEDs:
+        df = FED.data
+        index = df.index
+        nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
+        try:
+            break_index = next(i for i, val in enumerate(nextaction) if val > delta)
+        except StopIteration:
+            break_index = len(nextaction)
+        if break_style == 'pellets':
+            out = df.loc[df.index[break_index],'Pellet_Count']
+        elif break_style == 'pokes':
+            cum_correct = pd.Series([1 if i==True else np.nan for i in df['Correct_Poke']]).cumsum()
+            cum_correct.index = df.index
+            cum_correct = cum_correct[cum_correct.index <= df.index[break_index]].copy()
+            out = np.nanmax(cum_correct)
+        output.loc[break_style,FED.basename] = out
+    return output
+
+def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
+                  break_error, *args, **kwargs):
+    delta = dt.timedelta(hours=break_hours, minutes=break_mins)
+    output = pd.DataFrame()
+    group_output = pd.DataFrame()
+    for i, group in enumerate(groups):
+        group_vals = []
+        for FED in FEDs:
+            if group in FED.group:
+                df = FED.data
+                index = df.index
+                nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
+                try:
+                    break_index = next(i for i, val in enumerate(nextaction) if val > delta)
+                except StopIteration:
+                    break_index = len(nextaction)
+                if break_style == 'pellets':
+                    out = df.loc[df.index[break_index],'Pellet_Count']
+                elif break_style == 'pokes':
+                    cum_correct = pd.Series([1 if i==True else np.nan for i in df['Correct_Poke']]).cumsum()
+                    cum_correct.index = df.index
+                    cum_correct = cum_correct[cum_correct.index <= df.index[break_index]].copy()
+                    out = np.nanmax(cum_correct)
+                group_vals.append(out)
+                if FED.basename not in output.columns:
+                    output.loc[break_style, FED.basename] = out
+        y = np.nanmean(group_vals,)
+        group_output.loc[break_style, group] = y
+        if break_error == 'SEM':
+            group_output.loc[break_style, group + " SEM"] = stats.sem(group_vals)
+        elif break_error == 'STD':
+            group_output.loc[break_style, group + " STD"] = np.std(group_vals)
+    output = output.merge(group_output, left_index=True, right_index=True)
+    return output
