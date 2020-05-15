@@ -179,6 +179,9 @@ class FED3_Viz(tk.Tk):
                                                       skip_duplicates=self.loadduplicates_checkbox_val.get(),
                                                       from_folder=True),
                                        width=10)
+        self.button_abort_load = tk.Button(self.fed_buttons, text='Abort Load',
+                                    command = self.escape,
+                                    state=tk.DISABLED)
         self.button_delete = tk.Button(self.fed_buttons, text='Delete',
                                        command=self.delete_FEDs,
                                        state=tk.DISABLED,
@@ -189,6 +192,10 @@ class FED3_Viz(tk.Tk):
                                                    width=10)
         self.button_delete_group       = tk.Button(self.fed_buttons, text='Delete Group',
                                                    command=self.delete_group,
+                                                   state=tk.DISABLED,
+                                                   width=10)
+        self.button_edit_group         = tk.Button(self.fed_buttons, text='Edit Group',
+                                                   command=self.edit_group,
                                                    state=tk.DISABLED,
                                                    width=10)
         self.button_save_groups        = tk.Button(self.fed_buttons, text='Save Groups',
@@ -206,16 +213,19 @@ class FED3_Viz(tk.Tk):
     #---HOVER TEXT DICTIONARY          
         #dictionary mapping widgets to hover text
         self.hover_text_one_dict = {self.button_load : 'Load FED3 files',
-                                    self.button_load_folder: 'Load all FED3 files in a folder',
-                                    self.button_delete: 'Unload highlighted FED3 files',
+                                    self.button_load_folder: 'Load all FED3 files in a folder (and subfolders)',
+                                    self.button_abort_load: 'Cancel loading (or press Esc)',
+                                    self.button_delete: 'Delete highlighted FED3 files',
                                     self.button_create_group:
-                                        'Add selected devices to a group',
+                                        'Add selected devices to a Group',
                                     self.button_delete_group:
-                                        'Delete selected group',
+                                        'Delete selected Group',
+                                    self.button_edit_group:
+                                        'Add/Remove FEDs from Groups',
                                     self.button_save_groups:
-                                        'Save the current group labels for the loaded devices',
+                                        'Save the current Group labels for the loaded devices',
                                     self.button_load_groups:
-                                        'Load group labels from a saved groups file',}
+                                        'Load Group labels from a saved groups file',}
         for button in self.hover_text_one_dict.keys():
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
@@ -224,20 +234,20 @@ class FED3_Viz(tk.Tk):
         #associate each plot_treeview entry with helptext
         self.plot_nodes_help = {'Single Pellet Plot':'Plot pellets received for one device',
                                 'Multi Pellet Plot':'Plot pellets received for multiple devices (no averaging)',
-                                'Average Pellet Plot':'Plot average pellets received for grouped devices (groups make individual curves)',
+                                'Average Pellet Plot':'Plot average pellets received for Grouped devices (groups make individual curves)',
                                 'Interpellet Interval':'Plot histogram of intervals between pellet retrievals',
-                                'Group Interpellet Interval':'Plot histogram of intervals between pellet retrievals for groups',
+                                'Group Interpellet Interval':'Plot histogram of intervals between pellet retrievals for Groups',
                                 'Single Poke Plot':'Plot the amount of correct or incorrect pokes',
-                                'Average Poke Plot (Correct)':'Plot average correct pokes for grouped devices (groups make individual curves)',
-                                'Average Poke Plot (Error)':'Plot average error pokes for grouped devices (groups make individual curves)',
+                                'Average Poke Plot (Correct)':'Plot average correct pokes for Grouped devices (Groups make individual curves)',
+                                'Average Poke Plot (Error)':'Plot average error pokes for Grouped devices (Groups make individual curves)',
                                 'Poke Bias Plot':'Plot the tendency to pick one poke over another',
-                                'Average Poke Bias Plot':'Plot the average group tendency to pick one poke over another (groups make individual curves)',
+                                'Average Poke Bias Plot':'Plot the average Group tendency to pick one poke over another (Groups make individual curves)',
                                 'Day/Night Plot':'Plot group averages for day/night on a bar chart',
                                 'Diagnostic Plot':'Plot battery life and motor turns',
                                 'Chronogram (Line)':'Plot average 24-hour curves for groups',
                                 'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
-                                'Group Breakpoint Plot':'Plot the average breakpoint for groups (maximum pellets or pokes reached before a period of inactivity)'}
+                                'Group Breakpoint Plot':'Plot the average breakpoint for Groups (maximum pellets or pokes reached before a period of inactivity)'}
             
     #---PLOT TREEVIEW > PLOT FUNCTION
         #associate each plot_treeview entry with a plotting function
@@ -262,11 +272,13 @@ class FED3_Viz(tk.Tk):
         #fed_buttons/group buttons
         self.button_load.grid(row=0,column=0,sticky='sew')
         self.button_load_folder.grid(row=0,column=1,sticky='sew')
-        self.button_delete.grid(row=0,column=2,sticky='nsew')
-        self.button_create_group.grid(row=0,column=3,sticky='sew')
-        self.button_delete_group.grid(row=0,column=4,sticky='sew')
-        self.button_save_groups.grid(row=0,column=5,sticky='sew')
-        self.button_load_groups.grid(row=0,column=6,sticky='sew')
+        self.button_abort_load.grid(row=0,column=2,sticky='sew')
+        self.button_delete.grid(row=0,column=3,sticky='nsew')
+        self.button_create_group.grid(row=0,column=4,sticky='sew')
+        self.button_delete_group.grid(row=0,column=5,sticky='sew')
+        self.button_edit_group.grid(row=0,column=6,sticky='sew')
+        self.button_save_groups.grid(row=0,column=7,sticky='sew')
+        self.button_load_groups.grid(row=0,column=8,sticky='sew')
         
         #labels
         self.home_buttons_help.grid(row=0,column=0,sticky='nsw',padx=(0,20),
@@ -812,6 +824,8 @@ class FED3_Viz(tk.Tk):
         pass_FEDs = []
         failed_FEDs = []
         weird_FEDs = []
+        self.loading = True
+        self.button_abort_load.configure(state=tk.NORMAL)
         if files:
             self.home_buttons_help.configure(text='')
             self.progressbar.grid(row=0,column=0,sticky='ew',padx=(0,20),pady=(12))
@@ -819,22 +833,24 @@ class FED3_Viz(tk.Tk):
             self.progresstext.grid(row=0,column=1,sticky='nsw')
             if overwrite:
                 self.LOADED_FEDS = []
-            for file in files:
-                if skip_duplicates:
-                    file_name = os.path.basename(file)
-                    if file_name not in loaded_filenames:
+            for i,file in enumerate(files):
+                if self.loading:
+                    if skip_duplicates:
+                        file_name = os.path.basename(file)
+                        if file_name not in loaded_filenames:
+                            try:
+                                pass_FEDs.append(FED3_File(file))
+                            except:
+                                failed_FEDs.append(file_name)                     
+                    else:
                         try:
                             pass_FEDs.append(FED3_File(file))
                         except:
-                            failed_FEDs.append(file_name)                     
-                else:
-                    try:
-                        pass_FEDs.append(FED3_File(file))
-                    except:
-                        failed_FEDs.append(file_name)
-                self.progresstextvar.set(os.path.basename(file) + '...')
-                self.progressbar.step(1/len(files)*100)
-                self.update()
+                            failed_FEDs.append(file_name)
+                    self.progresstextvar.set(os.path.basename(file)[:50] + '...')
+                    self.progressbar.step(1/len(files)*100)
+                    self.update()
+        self.button_abort_load.configure(state=tk.DISABLED)
         self.progressbar.grid_remove()
         self.progresstext.grid_remove()
         for file in pass_FEDs:
@@ -848,6 +864,7 @@ class FED3_Viz(tk.Tk):
         self.update_file_view()
         self.update_group_view()
         self.update_buttons_home()
+        self.loading=False
     
     def delete_FEDs(self):
         to_delete = [int(i) for i in self.files_spreadsheet.selection()]
@@ -895,7 +912,33 @@ class FED3_Viz(tk.Tk):
             self.update_file_view()
             self.update_group_view()
             self.update_buttons_home()
-        
+    
+    def edit_group(self):
+        selected = [int(i) for i in self.files_spreadsheet.selection()]
+        self.edit_window = tk.Toplevel(self)
+        if not platform.system() == 'Darwin': 
+            self.edit_window.iconbitmap('img/edit.ico')
+        self.edit_window.title('Edit Groups')
+        introtext = 'For ' + str(len(selected)) + ' selected file(s), add to / remove from these groups:'
+        edit_intro = tk.Label(self.edit_window, text=introtext)
+        self.edit_listbox = tk.Listbox(self.edit_window, width=50,selectmode=tk.EXTENDED,
+                                     activestyle=tk.NONE)
+        for group in self.GROUPS:
+            self.edit_listbox.insert(tk.END, group)
+        self.button_edit_add = tk.Button(self.edit_window, text='Add',
+                                         state=tk.DISABLED, width=6,
+                                         command=lambda: self.handle_edit('add'))
+        self.button_edit_remove = tk.Button(self.edit_window, text='Remove',
+                                            state=tk.DISABLED, width=6,
+                                            command=lambda: self.handle_edit('remove'))        
+        edit_intro.grid(row=0,column=0,sticky='nsew', padx=(30), pady=30,
+                        columnspan=2)
+        self.edit_listbox.grid(row=1,column=0,sticky='nsew',padx=(30), pady=(0,30),
+                               columnspan=2)
+        self.button_edit_add.grid(row=2, column=0, sticky='nsew', padx=30, pady=(0,30))
+        self.button_edit_remove.grid(row=2,column=1,sticky='nsew', padx=30, pady=(0,30))
+        self.edit_listbox.bind('<<ListboxSelect>>', self.check_addremove)
+    
     def save_groups(self):
         group_dict = {fed.directory : fed.group for fed in self.LOADED_FEDS
                       if fed.group}
@@ -1342,7 +1385,11 @@ class FED3_Viz(tk.Tk):
             self.button_save_groups.configure(state=tk.NORMAL)           
         else:
             self.button_save_groups.configure(state=tk.DISABLED)
-            
+        #if there are feds selected and groups loaded
+        if self.files_spreadsheet.selection() and self.GROUPS:
+            self.button_edit_group.configure(state=tk.NORMAL)
+        else:
+            self.button_edit_group.configure(state=tk.DISABLED)
             
     def update_all_buttons(self,*event):
         self.update_buttons_home()
@@ -1403,8 +1450,38 @@ class FED3_Viz(tk.Tk):
         self.update_all_buttons()
         
     def escape(self, *event):
-        self.update_all_buttons()
+        if self.loading:
+            self.loading = False
+        self.update_all_buttons() 
+        
+    def check_addremove(self, *event):
+        if self.edit_listbox.curselection():
+            self.button_edit_add.configure(state=tk.NORMAL)
+            self.button_edit_remove.configure(state=tk.NORMAL)
+        else:
+            self.button_edit_add.configure(state=tk.DISABLED)
+            self.button_edit_remove.configure(state=tk.DISABLED)  
 
+    def handle_edit(self, todo):
+        selected_groups = self.edit_listbox.curselection()
+        selected_feds = [int(i) for i in self.files_spreadsheet.selection()]
+        groups = []
+        for i in selected_groups:
+            groups.append(self.edit_listbox.get(i))
+        for group in groups:
+            for i in selected_feds:
+                fed = self.LOADED_FEDS[i]
+                if todo == 'add':
+                    if group not in fed.group:
+                        fed.group.append(group)
+                elif todo == 'remove':
+                    if group in fed.group:
+                        fed.group.remove(group)
+        self.update_all_buttons()
+        self.update_group_view()
+        self.update_file_view()
+        self.edit_window.destroy()
+        
     #---PLOT TAB BUTTON FUNCTIONS
     def rename_plot(self):
         clicked = self.plot_listbox.curselection()[0]
