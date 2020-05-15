@@ -60,6 +60,19 @@ class FED3_Viz(tk.Tk):
                 times.append(time)
                 
         self.times_to_int = {time : num for num,time in enumerate(times)}
+        self.freq_bins = ['5 minutes', '10 minutes', '15 minutes', '30 minutes', '1 hour']
+        self.freq_bins += [str(i) + ' hours' for i in range(2,25)]
+        self.freq_bins_to_args = {}
+        for val in self.freq_bins:
+            out =''
+            for char in val:
+                if char.isdigit():
+                    out += char
+            if 'minutes' in val:
+                out += 'T'
+            elif 'hour' in val:
+                out += 'H'
+            self.freq_bins_to_args[val] = out
         
     #---SETUP TABS
         self.tabcontrol = ttk.Notebook(self)
@@ -384,7 +397,7 @@ class FED3_Viz(tk.Tk):
         self.pelletplottype_label    = tk.Label(self.pellet_settings_frame,
                                                 text='Values to plot')
         self.pelletplotcumu_label    = tk.Label(self.pellet_settings_frame,
-                                                text='Bin size of pellet frequency (hours)',
+                                                text='Bin size of pellet frequency',
                                                 fg='gray')
         self.pelletplotcolor_label   = tk.Label(self.pellet_settings_frame,
                                                 text='Default color (single pellet plots)')
@@ -395,7 +408,7 @@ class FED3_Viz(tk.Tk):
         self.average_error_label     = tk.Label(self.average_settings_frame,
                                                 text='Error value for average plots')
         self.average_bin_label       = tk.Label(self.average_settings_frame,
-                                                text='Bin size for averaging (hours)')
+                                                text='Bin size for averaging')
         self.average_method_label    = tk.Label(self.average_settings_frame,
                                                 text='Alignment method for averaging')
         self.average_align_ontime_label = tk.Label(self.average_settings_frame,
@@ -425,7 +438,7 @@ class FED3_Viz(tk.Tk):
         self.poke_style_label = tk.Label(self.poke_settings_frame,
                                          text='Values to plot')
         self.poke_binsize_label  = tk.Label(self.poke_settings_frame,
-                                            text='Bin size for poke plots (hours)')
+                                            text='Bin size for poke plots')
         self.poke_biasstyle_label = tk.Label(self.poke_settings_frame,
                                              text='Comparison for poke bias plots')
         self.load_settings_label = tk.Label(self.load_settings_frame,
@@ -481,9 +494,9 @@ class FED3_Viz(tk.Tk):
         self.average_error_menu.set('SEM')
         
         self.average_bin_menu = ttk.Combobox(self.average_settings_frame,
-                                             values=list(range(1,25)),
+                                             values=self.freq_bins,
                                              width=10)
-        self.average_bin_menu.set(1)
+        self.average_bin_menu.set('1 hour')
         self.average_method_menu = ttk.Combobox(self.average_settings_frame,
                                                 values=['shared date & time','shared time', 'elapsed time'],)
         self.average_method_menu.set('shared date & time')
@@ -505,9 +518,9 @@ class FED3_Viz(tk.Tk):
         self.pelletplottype_menu.set('Cumulative')
         self.pelletplottype_menu.bind('<<ComboboxSelected>>',self.check_pellet_type)
         self.pelletplotcumu_menu = ttk.Combobox(self.pellet_settings_frame,
-                                                values=list(range(1,49)),
+                                                values=self.freq_bins,
                                                 state=tk.DISABLED)
-        self.pelletplotcumu_menu.set(1)
+        self.pelletplotcumu_menu.set('1 hour')
         self.pelletplotcolor_menu = ttk.Combobox(self.pellet_settings_frame,
                                                  values=self.colors)
         self.pelletplotcolor_menu.set('blue')
@@ -566,9 +579,9 @@ class FED3_Viz(tk.Tk):
                                             values=['Cumulative','Frequency','Percentage'])
         self.poke_style_menu.set('Cumulative')
         self.poke_bins_menu = ttk.Combobox(self.poke_settings_frame,
-                                           values=list(range(1,25)),
+                                           values=self.freq_bins,
                                            width=10)
-        self.poke_bins_menu.set(1)     
+        self.poke_bins_menu.set('10 hours')     
         self.poke_correct_val = tk.BooleanVar()
         self.poke_correct_val.set(True)
         self.poke_correct_box = ttk.Checkbutton(self.poke_settings_frame,
@@ -618,7 +631,7 @@ class FED3_Viz(tk.Tk):
         self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
         self.average_error_menu.grid(row=1,column=1,sticky='nw')
         self.average_bin_label.grid(row=2,column=0,sticky='w', padx=(20,0))
-        self.average_bin_menu.grid(row=2,column=1,sticky='w')
+        self.average_bin_menu.grid(row=2,column=1,sticky='ew', columnspan=2)
         self.average_method_label.grid(row=3, column=0, sticky='w', padx=(20,0))
         self.average_method_menu.grid(row=3,column=1,sticky='ew', columnspan=2)
         self.average_align_ontime_label.grid(row=4,column=0,sticky='w',padx=(30,0))
@@ -659,7 +672,7 @@ class FED3_Viz(tk.Tk):
         self.poke_style_label.grid(row=1,column=0,sticky='w',padx=(20,0))
         self.poke_style_menu.grid(row=1,column=1,sticky='ew',)
         self.poke_binsize_label.grid(row=2,column=0,sticky='w', padx=(20,95))
-        self.poke_bins_menu.grid(row=2,column=1,sticky='w')
+        self.poke_bins_menu.grid(row=2,column=1,sticky='ew')
         self.poke_correct_box.grid(row=3,column=0,sticky='w',padx=(20))
         self.poke_error_box.grid(row=4,column=0,sticky='w',padx=20)
         self.poke_biasstyle_label.grid(row=5,column=0,sticky='w',padx=20,pady=(10,0))
@@ -1839,7 +1852,7 @@ class FED3_Viz(tk.Tk):
         for time_setting in ['lights_on','lights_off','average_align_start']:
             settings_dict[time_setting] = self.times_to_int[settings_dict[time_setting]]
         for bin_setting in ['pellet_bins','average_bins', 'poke_bins']:
-            settings_dict[bin_setting] += 'H' 
+            settings_dict[bin_setting] = self.freq_bins_to_args[settings_dict[bin_setting]]
         for int_setting in ['average_align_days','break_hours','break_mins']:
             settings_dict[int_setting] = int(settings_dict[int_setting])
         return settings_dict

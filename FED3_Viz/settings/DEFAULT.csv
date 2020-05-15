@@ -8,11 +8,11 @@ skip_duplicates,True
 overwrite,False
 weirdwarn,True
 pellet_values,Cumulative
-pellet_bins,1
+pellet_bins,1 hour
 pellet_color,blue
 pellet_align,False
 average_error,SEM
-average_bins,1
+average_bins,1 hour
 load_last_used,False
 average_method,shared date & time
 average_align_start,7 am
@@ -22,7 +22,7 @@ circ_error,SEM
 circ_show_indvl,False
 kde,True
 poke_style,Cumulative
-poke_bins,1
+poke_bins,1 hour
 poke_show_correct,True
 poke_show_error,True
 bias_style,correct - error
