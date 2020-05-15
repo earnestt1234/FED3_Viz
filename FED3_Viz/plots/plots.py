@@ -453,7 +453,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
                     x = y.index
                     y = y
                     ax.plot(x, y, color=colors[i], alpha=.3, linewidth=.8)                   
-        group_avg = np.mean(avg, axis=0)    
+        group_avg = np.nanmean(avg, axis=0)    
         if average_error == 'None':
             label = group
         else:
@@ -525,8 +525,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                 avg.append(y)
                 if show_indvl:
                     x = y.index
-                    ax.plot(x, y, color=colors[i], alpha=.3, linewidth=.8)
-                    
+                    ax.plot(x, y, color=colors[i], alpha=.3, linewidth=.8)               
         group_avg = np.nanmean(avg, axis=0)
         if average_error == 'None':
             label = group
@@ -607,7 +606,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                 if show_indvl:
                     x = y.index
                     ax.plot(x, y, color=colors[i], alpha=.3, linewidth=.8)                  
-        group_avg = np.mean(avg, axis=0)
+        group_avg = np.nanmean(avg, axis=0)
         if average_error == 'None':
             label = group
         else:
@@ -859,8 +858,8 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 for start, end in nights:
                     night_slice = df[(df.index>start) & (df.index<end)].copy()
                     night_vals.append(resample_get_yvals(night_slice,circ_value))
-                group_day_values.append(np.mean(day_vals))
-                group_night_values.append(np.mean(night_vals))
+                group_day_values.append(np.nanmean(day_vals))
+                group_night_values.append(np.nanmean(night_vals))
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
         if circ_error == 'None':
@@ -899,7 +898,7 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                                               spread=spread)
             ax.scatter(dayx,dayy,s=10,color=colors[i],zorder=5)
             ax.scatter(nightx,nighty,s=10,color=colors[i],zorder=5)
-    ax.set_xticks([np.mean(bar_offsets + x1),(np.mean(bar_offsets + x2))])
+    ax.set_xticks([np.nanmean(bar_offsets + x1),(np.nanmean(bar_offsets + x2))])
     ax.set_xticklabels(['Day', 'Night'])
     ax.set_ylabel(circ_value.capitalize())
     ax.set_title(circ_value.capitalize() + ' by Time of Day')

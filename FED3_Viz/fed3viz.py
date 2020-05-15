@@ -988,6 +988,7 @@ class FED3_Viz(tk.Tk):
     def init_plot(self):
         selection = self.plot_treeview.selection()
         text = self.plot_treeview.item(selection,'text')
+        self.plotting = True
         if text in self.plot_nodes_func:
             self.plot_nodes_func[text]()
     
@@ -995,27 +996,28 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for obj in FEDs_to_plot:
-            arg_dict = self.get_current_settings_as_args()
-            arg_dict['FED'] = obj
-            new_plot_frame = ttk.Frame(self.plot_container)
-            func_choices = {'Cumulative': plots.pellet_plot_single,
-                            'Frequency' : plots.pellet_freq_single}
-            name_choices = {'Cumulative': 'Cumulative pellet plot for ' + obj.filename,
-                            'Frequency' : 'Frequency pellet plot for ' + obj.filename}
-            plotdata_choices = {'Cumulative': getdata.pellet_plot_single,
-                                'Frequency' : getdata.pellet_freq_single}
-            plotfunc = func_choices[self.pelletplottype_menu.get()]           
-            basename = name_choices[self.pelletplottype_menu.get()]
-            plotdata = plotdata_choices[self.pelletplottype_menu.get()](**arg_dict)
-            fig_name = self.create_plot_name(basename)
-            fig = plotfunc(**arg_dict)
-            new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
-                                figname=fig_name, plotfunc=plotfunc,
-                                plotdata=plotdata, arguments=arg_dict,)
-            self.PLOTS[fig_name] = new_plot
-            self.draw_figure(new_plot)
-            self.raise_figure(fig_name)
-            self.update()
+            if self.plotting == True:
+                arg_dict = self.get_current_settings_as_args()
+                arg_dict['FED'] = obj
+                new_plot_frame = ttk.Frame(self.plot_container)
+                func_choices = {'Cumulative': plots.pellet_plot_single,
+                                'Frequency' : plots.pellet_freq_single}
+                name_choices = {'Cumulative': 'Cumulative pellet plot for ' + obj.filename,
+                                'Frequency' : 'Frequency pellet plot for ' + obj.filename}
+                plotdata_choices = {'Cumulative': getdata.pellet_plot_single,
+                                    'Frequency' : getdata.pellet_freq_single}
+                plotfunc = func_choices[self.pelletplottype_menu.get()]           
+                basename = name_choices[self.pelletplottype_menu.get()]
+                plotdata = plotdata_choices[self.pelletplottype_menu.get()](**arg_dict)
+                fig_name = self.create_plot_name(basename)
+                fig = plotfunc(**arg_dict)
+                new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
+                                    figname=fig_name, plotfunc=plotfunc,
+                                    plotdata=plotdata, arguments=arg_dict,)
+                self.PLOTS[fig_name] = new_plot
+                self.draw_figure(new_plot)
+                self.raise_figure(fig_name)
+                self.update()
             
     def pellet_plot_multi_TK(self):
         arg_dict = self.get_current_settings_as_args()
@@ -1123,21 +1125,22 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for FED in FEDs_to_plot:
-            arg_dict = self.get_current_settings_as_args()
-            arg_dict['FED'] = FED
-            basename = 'Diagnostic Plot for ' + FED.filename
-            fig_name = self.create_plot_name(basename)
-            new_plot_frame = ttk.Frame(self.plot_container)
-            fig = plots.diagnostic_plot(**arg_dict)
-            plotdata = getdata.diagnostic_plot(**arg_dict)
-            new_plot = FED_Plot(figure=fig, frame=new_plot_frame,figname=fig_name,
-                                plotfunc=plots.diagnostic_plot,
-                                plotdata=plotdata, arguments=arg_dict,)
-            self.PLOTS[fig_name] = new_plot
-            self.draw_figure(new_plot)
-            self.raise_figure(fig_name)
-            self.update()
-        
+            if self.plotting == True:
+                arg_dict = self.get_current_settings_as_args()
+                arg_dict['FED'] = FED
+                basename = 'Diagnostic Plot for ' + FED.filename
+                fig_name = self.create_plot_name(basename)
+                new_plot_frame = ttk.Frame(self.plot_container)
+                fig = plots.diagnostic_plot(**arg_dict)
+                plotdata = getdata.diagnostic_plot(**arg_dict)
+                new_plot = FED_Plot(figure=fig, frame=new_plot_frame,figname=fig_name,
+                                    plotfunc=plots.diagnostic_plot,
+                                    plotdata=plotdata, arguments=arg_dict,)
+                self.PLOTS[fig_name] = new_plot
+                self.draw_figure(new_plot)
+                self.raise_figure(fig_name)
+                self.update()
+            
     def daynight_plot_TK(self):
         args_dict = self.get_current_settings_as_args()
         args_dict['FEDs'] = self.LOADED_FEDS
@@ -1201,36 +1204,38 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for obj in FEDs_to_plot:
-            arg_dict = self.get_current_settings_as_args()
-            arg_dict['FED'] = obj
-            new_plot_frame = ttk.Frame(self.plot_container)
-            fig_name = self.create_plot_name('Poke plot for ' + obj.filename)
-            fig = plots.poke_plot(**arg_dict)
-            new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
-                                figname=fig_name, plotfunc=plots.poke_plot,
-                                plotdata=getdata.poke_plot(**arg_dict), arguments=arg_dict,)
-            self.PLOTS[fig_name] = new_plot
-            self.draw_figure(new_plot)
-            self.raise_figure(fig_name)
-            self.update()
-    
-    def poke_bias_single_TK(self):
-            to_plot = [int(i) for i in self.files_spreadsheet.selection()]
-            FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
-            for obj in FEDs_to_plot:
+            if self.plotting == True:
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
                 new_plot_frame = ttk.Frame(self.plot_container)
-                fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)
-                fig = plots.poke_bias(**arg_dict)
+                fig_name = self.create_plot_name('Poke plot for ' + obj.filename)
+                fig = plots.poke_plot(**arg_dict)
                 new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
-                                    figname=fig_name, plotfunc=plots.poke_bias,
-                                    plotdata=getdata.poke_bias(**arg_dict), 
-                                    arguments=arg_dict,)
+                                    figname=fig_name, plotfunc=plots.poke_plot,
+                                    plotdata=getdata.poke_plot(**arg_dict), arguments=arg_dict,)
                 self.PLOTS[fig_name] = new_plot
                 self.draw_figure(new_plot)
                 self.raise_figure(fig_name)
                 self.update()
+        
+    def poke_bias_single_TK(self):
+            to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+            FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+            for obj in FEDs_to_plot:
+                if self.plotting == True:
+                    arg_dict = self.get_current_settings_as_args()
+                    arg_dict['FED'] = obj
+                    new_plot_frame = ttk.Frame(self.plot_container)
+                    fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)
+                    fig = plots.poke_bias(**arg_dict)
+                    new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
+                                        figname=fig_name, plotfunc=plots.poke_bias,
+                                        plotdata=getdata.poke_bias(**arg_dict), 
+                                        arguments=arg_dict,)
+                    self.PLOTS[fig_name] = new_plot
+                    self.draw_figure(new_plot)
+                    self.raise_figure(fig_name)
+                    self.update()
                 
     def breakpoint_plot(self):
         arg_dict = self.get_current_settings_as_args()
@@ -1465,6 +1470,8 @@ class FED3_Viz(tk.Tk):
     def escape(self, *event):
         if self.loading:
             self.loading = False
+        if self.plotting:
+            self.plotting = False
         self.update_all_buttons() 
         
     def check_addremove(self, *event):

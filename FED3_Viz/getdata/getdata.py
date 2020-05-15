@@ -116,7 +116,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
                     indvl_line = pd.DataFrame({file.basename:y},
                                               index=y.index)
                     output = output.join(indvl_line, how='outer')                     
-        group_avg = np.mean(avg, axis=0)
+        group_avg = np.nanmean(avg, axis=0)
         group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
             group_to_add[group + ' SEM'] = stats.sem(avg, axis=0,nan_policy='omit')
@@ -156,7 +156,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                                               index=y.index)
                     output = output.join(indvl_line, how='outer')
                     
-        group_avg = np.mean(avg, axis=0)
+        group_avg = np.nanmean(avg, axis=0)
         group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
             group_to_add[group + ' SEM'] = stats.sem(avg, axis=0,nan_policy='omit')
@@ -195,7 +195,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                     indvl = pd.DataFrame({file.basename:y},
                                          index=y.index)
                     output = output.join(indvl, how='outer')
-        group_avg = np.mean(avg, axis=0)
+        group_avg = np.nanmean(avg, axis=0)
         group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
             group_to_add[group + ' SEM'] = stats.sem(avg, axis=0,nan_policy='omit')
@@ -310,12 +310,12 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 for start, end in nights:
                     night_slice = df[(df.index>start) & (df.index<end)].copy()
                     night_vals.append(resample_get_yvals(night_slice, circ_value))
-                group_day_values.append(np.mean(day_vals))
-                group_night_values.append(np.mean(night_vals))
+                group_day_values.append(np.nanmean(day_vals))
+                group_night_values.append(np.nanmean(night_vals))
                 if fed.basename not in used:
                     f = fed.basename
-                    output.loc[circ_value,f+' day'] = np.mean(day_vals)
-                    output.loc[circ_value,f+' night'] = np.mean(night_vals)  
+                    output.loc[circ_value,f+' day'] = np.nanmean(day_vals)
+                    output.loc[circ_value,f+' night'] = np.nanmean(night_vals)  
                     used.append(fed.basename)
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
