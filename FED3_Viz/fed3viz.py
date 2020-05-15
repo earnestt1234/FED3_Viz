@@ -1235,7 +1235,7 @@ class FED3_Viz(tk.Tk):
   
     def walk_filenames(self, folder):
         output = []
-        dirs = list(os.walk(folder))      
+        dirs = os.walk(folder)     
         for directory in dirs:
             dirname = directory[0]
             filelist = directory[-1]
