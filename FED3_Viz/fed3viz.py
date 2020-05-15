@@ -46,6 +46,8 @@ class FED3_Viz(tk.Tk):
         self.LOADED_FEDS = []
         self.PLOTS = OrderedDict()
         self.GROUPS = []
+        self.loading = False
+        self.plotting = False
         self.mac_color = '#E2E2E2'
         self.colors =  ['blue','red','green','yellow','purple','orange',
                         'black',]
@@ -822,6 +824,33 @@ class FED3_Viz(tk.Tk):
             for widget in [self.home_tab, self.plot_tab,
                             self.settings_tab, self.about_tab]:
                 config_color_mac(widget)
+     
+    #---RIGHT CLICK MENUS   
+        r_click = '<Button-3>'
+        #file_view_single
+        self.files_spreadsheet.bind(r_click, self.r_raise_menu)
+        self.r_menu_file_empty = tkinter.Menu(self, tearoff=0,)
+        self.r_menu_file_empty.add_command(label='Load files',
+                                            command=lambda:self.load_FEDs(skip_duplicates=self.loadduplicates_checkbox_val.get()))
+        self.r_menu_file_empty.add_command(label='Load folder',
+                                            command=lambda:self.load_FEDs(skip_duplicates=self.loadduplicates_checkbox_val.get(),
+                                                                          from_folder=True))
+        
+        self.r_menu_file_single = tkinter.Menu(self, tearoff=0,)
+        self.r_menu_file_single.add_command(label='Open file location',command= self.r_open_location,)
+        self.r_menu_file_single.add_command(label='Open file externally', command=self.r_open_externally)
+        self.r_menu_file_single.add_separator()
+        self.r_menu_file_single.add_command(label='Create Group', command=self.create_group)
+        self.r_menu_file_single.add_command(label='Edit Group', command=self.edit_group)
+        self.r_menu_file_single.add_separator()
+        self.r_menu_file_single.add_command(label='Delete', command=self.delete_FEDs)
+        
+        self.r_menu_file_multi = tkinter.Menu(self, tearoff=0,)
+        self.r_menu_file_multi.add_command(label='Create Group', command=self.create_group)
+        self.r_menu_file_multi.add_command(label='Edit Group', command=self.edit_group)
+        self.r_menu_file_multi.add_separator()
+        self.r_menu_file_multi.add_command(label='Delete', command=self.delete_FEDs)
+                
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False):
         if from_folder:
@@ -929,6 +958,7 @@ class FED3_Viz(tk.Tk):
     def edit_group(self):
         selected = [int(i) for i in self.files_spreadsheet.selection()]
         self.edit_window = tk.Toplevel(self)
+        self.edit_window.grab_set()
         if not platform.system() == 'Darwin': 
             self.edit_window.iconbitmap('img/edit.ico')
         self.edit_window.title('Edit Groups')
@@ -1468,6 +1498,8 @@ class FED3_Viz(tk.Tk):
         self.update_all_buttons()
         
     def escape(self, *event):
+        if self.focus_get() == self.files_spreadsheet:
+            self.files_spreadsheet.selection_remove(self.files_spreadsheet.selection())
         if self.loading:
             self.loading = False
         if self.plotting:
@@ -1920,6 +1952,32 @@ class FED3_Viz(tk.Tk):
 
     def canvas_config(self, event):
         self.warn_canvas.configure(scrollregion=self.warn_canvas.bbox("all"),)
+        
+    #---RIGHT CLICK FUNCS
+    def r_raise_menu(self, event):
+        widget = event.widget
+        menu = None
+        if widget == self.files_spreadsheet:         
+            if len(self.files_spreadsheet.selection()) == 1:
+                menu = self.r_menu_file_single
+            elif len(self.files_spreadsheet.selection()) > 1:
+                menu = self.r_menu_file_multi
+            else:
+                menu = self.r_menu_file_empty
+        if menu:
+            menu.tk_popup(event.x_root, event.y_root,)
+            menu.grab_release()
+            
+    def r_open_location(self,):
+        selected = self.files_spreadsheet.selection()
+        fed = self.LOADED_FEDS[int(selected[0])]
+        dirname = os.path.dirname(fed.directory)
+        os.startfile(dirname)
+        
+    def r_open_externally(self):
+        selected = self.files_spreadsheet.selection()
+        fed = self.LOADED_FEDS[int(selected[0])]
+        os.startfile(fed.directory)
             
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.save_last_used)

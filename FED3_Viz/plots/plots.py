@@ -238,8 +238,12 @@ def pellet_plot_multi_aligned(FEDs, *args,**kwargs):
     ax.set_xlabel('Time (h)')
     ax.set_xlim(0,xmax)
     number_of_days = int(xmax//24)
-    days_in_hours = [24*day for day in range(number_of_days+1)]
-    ax.set_xticks(days_in_hours)
+    if number_of_days > 2:
+        days_in_hours = [24*day for day in range(number_of_days+1)]
+        ax.set_xticks(days_in_hours)
+    else:
+        days_in_sixes = [6*quart for quart in range((number_of_days+1)*4)]
+        ax.set_xticks(days_in_sixes)
     ax.xaxis.set_minor_locator(AutoMinorLocator()) 
     ax.set_ylabel('Cumulative Pellets')     
     ax.set_ylim(0,ymax*1.1)    
@@ -578,15 +582,15 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
     if average_error == 'raw data':
         average_error = 'None'
         show_indvl=True
-    shortest_index = []
+    longest_index = []
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_average_onstart()'
         df = file.data
         resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
-        if len(shortest_index) == 0:
-            shortest_index = resampled.index
-        elif len(resampled.index) < len(shortest_index):
-            shortest_index = resampled.index
+        if len(longest_index) == 0:
+            longest_index = resampled.index
+        elif len(resampled.index) > len(longest_index):
+            longest_index = resampled.index
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     maxy=0
@@ -598,7 +602,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                 df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
                 y = df.apply(resample_get_yvals, dependent)
-                y = y.reindex(shortest_index)          
+                y = y.reindex(longest_index)          
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 if np.nanmax(y.index) > maxx:
                     maxx=np.nanmax(y.index)
@@ -628,8 +632,12 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                 maxy = np.nanmax(np.abs(group_avg) + error_shade)
     ax.set_xlabel('Time (h since recording start)')
     number_of_days = int(maxx//24)
-    days_in_hours = [24*day for day in range(number_of_days+1)]
-    ax.set_xticks(days_in_hours)
+    if number_of_days > 2:
+        days_in_hours = [24*day for day in range(number_of_days+1)]
+        ax.set_xticks(days_in_hours)
+    else:
+        days_in_sixes = [6*quart for quart in range((number_of_days+1)*4)]
+        ax.set_xticks(days_in_sixes)
     ax.xaxis.set_minor_locator(AutoMinorLocator()) 
     ax.set_ylabel(dependent.capitalize())  
     if "%" in dependent:

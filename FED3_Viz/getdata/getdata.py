@@ -167,28 +167,28 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     hours_since_start = [(i - output.index[0]).total_seconds()/3600
                          for i in output.index]
     output.index = hours_since_start
-    output.index.name = 'Elapsed Hours'
+    output.index.name = 'Elapsed Hours (since ' + str(average_align_start) + ':00)' 
     return output
 
 def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                          *args, **kwargs):
     output = pd.DataFrame()
     group_avgs = pd.DataFrame()
-    shortest_index = []
+    longest_index = []
     for file in FEDs:
         df = file.data
         resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
-        if len(shortest_index) == 0:
-            shortest_index = resampled.index
-        elif len(resampled.index) < len(shortest_index):
-            shortest_index = resampled.index
+        if len(longest_index) == 0:
+            longest_index = resampled.index
+        elif len(resampled.index) > len(longest_index):
+            longest_index = resampled.index
     for i, group in enumerate(groups):
         avg = []
         for file in FEDs:
             if group in file.group:
                 df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,base=0))
                 y = df.apply(resample_get_yvals, dependent)
-                y = y.reindex(shortest_index)           
+                y = y.reindex(longest_index)           
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 avg.append(y)
                 if file.basename not in output.columns:
