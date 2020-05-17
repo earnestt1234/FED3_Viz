@@ -1100,7 +1100,7 @@ class FED3_Viz(tk.Tk):
             plotdata=getdata.average_plot_ondatetime(**args_dict)
         elif method == 'elapsed time':
             plotfunc=plots.average_plot_onstart
-            plotdata=getdata.average_plot_onstart
+            plotdata=getdata.average_plot_onstart(**args_dict)
         fig = plotfunc(**args_dict)
         if fig == 'NO_OVERLAP ERROR':
             self.raise_average_warning()
