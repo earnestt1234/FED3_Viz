@@ -90,8 +90,11 @@ def shade_darkness(ax, min_date,max_date,lights_on,lights_off,
 def resample_get_yvals(df, value):
     possible = ['pellets','retrieval time','interpellet intervals',
                 'correct pokes','errors','correct pokes (%)','errors (%)',
-                'poke bias (correct - error)', 'poke bias (left - right)']
+                'poke bias (correct - error)', 'poke bias (left - right)',
+                'poke bias (correct %)',]
     assert value in possible, 'Value not understood by daynight plot: ' + value
+    if value == 'poke bias (correct %)':
+        value = 'correct pokes (%)'
     if value == 'pellets':
         output = df['Binary_Pellets'].sum()
     elif value == 'retrieval time':
@@ -104,16 +107,22 @@ def resample_get_yvals(df, value):
         output = list(df['Correct_Poke']).count(False)
     elif value == 'correct pokes (%)':
         try:
-            output = (list(df['Correct_Poke']).count(True) / len(df.index)) * 100
+            correct = (list(df['Correct_Poke']).count(True))
+            incorrect = (list(df['Correct_Poke']).count(False))
+            output = correct/(correct+incorrect) * 100
         except ZeroDivisionError:
             output = np.nan
     elif value == 'errors (%)':
         try:
-            output = (list(df['Correct_Poke']).count(False) / len(df.index)) * 100
+            correct = (list(df['Correct_Poke']).count(True))
+            incorrect = (list(df['Correct_Poke']).count(False))
+            output = incorrect/(correct+incorrect)*100
         except ZeroDivisionError:
             output = np.nan
     elif value == 'poke bias (correct - error)':
         output = list(df['Correct_Poke']).count(True) - list(df['Correct_Poke']).count(False)
+    elif value == 'poke bias (left - right)':
+        output = df['Binary_Left_Pokes'].sum() - df['Binary_Right_Pokes'].sum()
     return output      
 
 def raw_data_scatter(array, xcenter, spread):    
@@ -172,6 +181,25 @@ def date_format_x(ax, start, end):
     ax.xaxis.set_minor_locator(minor)   
     
 
+def left_right_bias(df, bin_size, version='ondatetime', starttime=None):
+    if version == 'ondatetime':
+        grouper = pd.Grouper(freq=bin_size,base=0)
+    elif version == 'ontime':
+        grouper = pd.Grouper(freq=bin_size,base=starttime)
+    elif version == 'onstart':
+        grouper = pd.Grouper(key='Elapsed_Time',freq=bin_size,base=0)
+    resampled = df.groupby(grouper)
+    left_resampled = resampled['Left_Poke_Count'].max().dropna()
+    right_resampled = resampled['Right_Poke_Count'].max().dropna()
+    left_diff = left_resampled.diff()
+    left_diff[0] = left_resampled[0]
+    left_diff = left_diff.reindex(resampled.sum().index)
+    right_diff = right_resampled.diff()
+    right_diff[0] = right_resampled[0]
+    right_diff = right_diff.reindex(resampled.sum().index)
+    out = left_diff/(left_diff+right_diff).replace([np.inf,-np.inf], np.nan)*100
+    return out
+    
 #---Single Pellet Plots
 
 def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
@@ -598,10 +626,13 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
     for i, group in enumerate(groups):
         avg = []
         for file in FEDs:
-            if group in file.group:
-                df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
+            if group in file.group:              
+                if dependent == 'poke bias (left %)':
+                    y = left_right_bias(file.data, average_bins, version='onstart')
+                else:
+                    df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
-                y = df.apply(resample_get_yvals, dependent)
+                    y = df.apply(resample_get_yvals, dependent)
                 y = y.reindex(longest_index)          
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 if np.nanmax(y.index) > maxx:
@@ -609,7 +640,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                 avg.append(y)
                 if show_indvl:
                     x = y.index
-                    ax.plot(x, y, color=colors[i], alpha=.3, linewidth=.8)                  
+                    ax.plot(x, y, color=colors[i], alpha=.3, linewidth=.8)
         group_avg = np.nanmean(avg, axis=0)
         if average_error == 'None':
             label = group
@@ -641,10 +672,9 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
     ax.xaxis.set_minor_locator(AutoMinorLocator()) 
     ax.set_ylabel(dependent.capitalize())  
     if "%" in dependent:
-        ax.set_ylim(0,100)
+        ax.set_ylim(-5,105)
     if 'bias' in dependent:
-        ax.set_ylim(-abs(maxy)*1.1, abs(maxy)*1.1)
-        ax.axhline(y=0, linestyle='--', color='gray', zorder=2)     
+        ax.axhline(y=50, linestyle='--', color='gray', zorder=2)     
     title = ('Average Plot of ' + dependent.capitalize())
     ax.set_title(title)
     ax.legend(bbox_to_anchor=(1,1), loc='upper left')
@@ -705,29 +735,28 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
     DENSITY = 10000
     assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
     fig, ax = plt.subplots(figsize=(7, 3.5), dpi=150)
-    if bias_style == 'correct - error':
-        resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
-        y = resampled.apply(lambda b: (b==True).sum() - (b==False).sum())
-    elif bias_style == 'left - right':
-        resampled = FED.data[['Binary_Left_Pokes',
-                              'Binary_Right_Pokes']].resample(poke_bins).sum()
-        y = resampled['Binary_Left_Pokes'] - resampled['Binary_Right_Pokes']
+    if bias_style == 'C/E':
+        resampled = FED.data.resample(poke_bins)
+        y = resampled.apply(resample_get_yvals, 'poke bias (correct %)')
+    elif bias_style == 'L/R':
+        y = left_right_bias(FED.data, poke_bins)
     x = y.index
-    maxy = max(np.abs(y))*1.1
-    xoffset = (max(x) - min(x))*.05
     if not dynamic_color:
         ax.plot(x, y, color = 'magenta', zorder=3)
     else:
         xnew = pd.date_range(min(x),max(x),periods=DENSITY)
         ynew = np.interp(xnew, x, y)
         ax.scatter(xnew, ynew, s=1, c=ynew,
-                   cmap='bwr', vmin=-maxy, vmax=maxy, zorder=1)
+                   cmap='bwr', vmin=0, vmax=100, zorder=1)
     date_format_x(ax, x[0], x[-1])
-    ax.set_xlim(min(x)-xoffset, max(x)+xoffset)
-    ax.set_ylabel('poke bias (' + bias_style + ')')
-    ax.set_ylim(-maxy, maxy)
+    if bias_style == 'C/E':
+        label = 'Correct Pokes (%)'
+    elif bias_style == 'L/R':
+        label = 'Left Pokes (%)'
+    ax.set_ylabel(label)
+    ax.set_ylim(-5,105)
     ax.set_title('Poke Bias for ' + FED.filename)
-    ax.axhline(y=0, linestyle='--', color='gray', zorder=2)
+    ax.axhline(y=50, linestyle='--', color='gray', zorder=2)
     if shade_dark:
         shade_darkness(ax, min(x), max(x),
                        lights_on=lights_on,

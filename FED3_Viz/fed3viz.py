@@ -1089,7 +1089,7 @@ class FED3_Viz(tk.Tk):
         choices = {'Average Pellet Plot':'pellets',
                    'Average Poke Plot (Correct)':'correct pokes',
                    'Average Poke Plot (Error)':'errors',
-                   'Average Poke Bias Plot':'poke bias (correct - error)'}
+                   'Average Poke Bias Plot':'poke bias (correct %)'}
         args_dict['dependent'] = choices[text]
         method = self.average_method_menu.get()
         if method == 'shared time':
