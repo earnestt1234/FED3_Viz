@@ -25,7 +25,9 @@ poke_style,Cumulative
 poke_bins,1 hour
 poke_show_correct,True
 poke_show_error,True
-bias_style,correct - error
+poke_show_left,False
+poke_show_right,False
+bias_style,correct (%)
 dynamic_color,True
 break_style,pellets
 break_hours,1

@@ -86,10 +86,16 @@ register_matplotlib_converters()
     circ_helpers += inspect.getsource(mymod2.resample_get_yvals) + '\n'
     
     poke_helpers = '\n#HELPER FUNCTIONS (POKE PLOTS)\n\n'
-    poke_helpers += inspect.getsource(mymod2.poke_resample_func)
+    poke_helpers += inspect.getsource(mymod2.left_right_noncumulative)
+    
+    bias_helpers = '\n#HELPER FUNCTIONS (BIAS PLOTS)\n\n'
+    bias_helpers += inspect.getsource(mymod2.resample_get_yvals)
+    bias_helpers += inspect.getsource(mymod2.left_right_bias)
     
     avg_helpers = '\n#HELPER FUNCTIONS (AVERAGE PLOTS)\n\n'
     avg_helpers += inspect.getsource(mymod2.resample_get_yvals)
+    avg_helpers += inspect.getsource(mymod2.left_right_noncumulative)
+    avg_helpers += inspect.getsource(mymod2.left_right_bias)
     
     date_helpers = '\n#HELPER FUNCTIONS (DATE FORMATTING)\n\n'
     date_helpers += inspect.getsource(mymod2.date_format_x)
@@ -149,6 +155,8 @@ register_matplotlib_converters()
         output += circ_helpers
     if plotfunc.__name__ == 'poke_plot':
         output += poke_helpers
+    if plotfunc.__name__ == 'poke_bias':
+        output += bias_helpers
     if plotfunc.__name__ in avg_funcs:
         output += avg_helpers
     if plotfunc.__name__ in date_format_funcs:

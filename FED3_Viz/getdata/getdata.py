@@ -13,7 +13,7 @@ import seaborn as sns
 
 from scipy import stats
 
-from plots.plots import resample_get_yvals, night_intervals, poke_resample_func
+from plots.plots import resample_get_yvals, night_intervals, left_right_bias, left_right_noncumulative
 
 def pellet_plot_single(FED,*args, **kwargs):
     df = FED.data
@@ -107,8 +107,15 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
-                y = df.apply(resample_get_yvals, dependent)
+                if dependent == 'poke bias (left %)':
+                    y = left_right_bias(file.data, average_bins, version='ondatetime')
+                elif dependent == 'left pokes':
+                    y = left_right_noncumulative(file.data,average_bins,side='l',version='ondatetime')
+                elif dependent == 'right pokes':
+                    y = left_right_noncumulative(file.data,average_bins,side='r',version='ondatetime')
+                else:
+                    df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
+                    y = df.apply(resample_get_yvals,dependent)
                 y = y[(y.index > latest_start) &
                       (y.index < earliest_end)].copy()
                 avg.append(y)
@@ -142,8 +149,18 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
-                y = df.apply(resample_get_yvals, dependent)
+                if dependent == 'poke bias (left %)':
+                    y = left_right_bias(file.data, average_bins, version='ontime',
+                                        starttime=average_align_start)
+                elif dependent == 'left pokes':
+                    y = left_right_noncumulative(file.data,average_bins,side='l',version='ontime', 
+                                                 starttime=average_align_start)
+                elif dependent == 'right pokes':
+                    y = left_right_noncumulative(file.data,average_bins,side='r',version='ontime',
+                                                 starttime=average_align_start)
+                else:
+                    df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
+                    y = df.apply(resample_get_yvals, dependent)
                 first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)
@@ -186,8 +203,16 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         avg = []
         for file in FEDs:
             if group in file.group:
-                df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,base=0))
-                y = df.apply(resample_get_yvals, dependent)
+                if dependent == 'poke bias (left %)':
+                    y = left_right_bias(file.data, average_bins, version='onstart')
+                elif dependent == 'left pokes':
+                    y = left_right_noncumulative(file.data,average_bins,side='l',version='onstart')
+                elif dependent == 'right pokes':
+                    y = left_right_noncumulative(file.data,average_bins,side='r',version='onstart')
+                else:
+                    df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
+                                                  base=0))
+                    y = df.apply(resample_get_yvals, dependent)
                 y = y.reindex(longest_index)           
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 avg.append(y)
@@ -330,7 +355,8 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
     output = output.merge(group_avg_df, left_index=True, right_index=True)
     return output
 
-def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_style,
+def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left,
+              poke_show_right, poke_style,
               *args, **kwargs):
     output=pd.DataFrame()
     if poke_style == 'Cumulative':
@@ -351,30 +377,52 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_style,
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
+        if poke_show_left:
+            y = FED.data['Left_Poke_Count']
+            y = y.rename('Left Pokes')
+            x = y.index
+            temp = pd.DataFrame(y, index=x,)
+            output = output.join(temp, how='outer')
+        if poke_show_right:
+            y = FED.data['Right_Poke_Count']
+            y = y.rename('Right Pokes')
+            x = y.index
+            temp = pd.DataFrame(y, index=x,)
+            output = output.join(temp, how='outer')
     else:
-        resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+        resampled_correct = FED.data['Correct_Poke'].dropna().resample(poke_bins)
         if poke_show_correct:
-            y = resampled.apply(poke_resample_func, val=True, style=poke_style)
+            y = resampled_correct.apply(lambda binn: (binn==True).sum())
             y = y.rename('Correct Pokes')
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
         if poke_show_error:
-            y = resampled.apply(poke_resample_func, val=False, style=poke_style)
+            y = resampled_correct.apply(lambda binn: (binn==False).sum())
             y = y.rename('Incorrect Pokes')
+            x = y.index
+            temp = pd.DataFrame(y, index=x,)
+            output = output.join(temp, how='outer')
+        if poke_show_left:
+            y = left_right_noncumulative(FED.data, bin_size=poke_bins,side='l')
+            y = y.rename('Left Pokes')
+            x = y.index
+            temp = pd.DataFrame(y, index=x,)
+            output = output.join(temp, how='outer')
+        if poke_show_right:
+            y = left_right_noncumulative(FED.data, bin_size=poke_bins,side='r')
+            y = y.rename('Right Pokes')
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
     return output
 
 def poke_bias(FED, poke_bins, bias_style, *args, **kwargs):
-    if bias_style == 'correct - error':
-        resampled = FED.data['Correct_Poke'].dropna().resample(poke_bins)
-        y = resampled.apply(lambda b: (b==True).sum() - (b==False).sum())
-    elif bias_style == 'left - right':
-        resampled = FED.data[['Binary_Left_Pokes',
-                              'Binary_Right_Pokes']].resample(poke_bins).sum()
-        y = resampled['Binary_Left_Pokes'] - resampled['Binary_Right_Pokes']
+    if bias_style == 'correct (%)':
+        resampled = FED.data.resample(poke_bins)
+        y = resampled.apply(resample_get_yvals, 'poke bias (correct %)')
+    elif bias_style == 'left (%)':
+        y = left_right_bias(FED.data, poke_bins)
     y = y.rename('Poke Bias (' + bias_style + ')')
     x = y.index
     output = pd.DataFrame(y, index=x)

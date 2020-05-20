@@ -148,7 +148,8 @@ class FED3_Viz(tk.Tk):
         
         #plot selector:
         self.plot_treeview = ttk.Treeview(self.plot_selector, selectmode = 'browse',)
-        self.plot_treeview.heading('#0', text='Plots')
+        self.plot_treeview.heading('#0', text='Plots',)
+        self.plot_treeview.column('#0', width=230)
         self.ps_pellet = self.plot_treeview.insert("", 1, text='Pellets')
         self.plot_treeview.insert(self.ps_pellet, 1, text='Single Pellet Plot')
         self.plot_treeview.insert(self.ps_pellet, 2, text='Multi Pellet Plot')
@@ -159,8 +160,11 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
         self.plot_treeview.insert(self.ps_poke, 2, text='Average Poke Plot (Correct)')
         self.plot_treeview.insert(self.ps_poke, 3, text='Average Poke Plot (Error)')
-        self.plot_treeview.insert(self.ps_poke, 4, text='Poke Bias Plot')
-        self.plot_treeview.insert(self.ps_poke, 5, text='Average Poke Bias Plot')
+        self.plot_treeview.insert(self.ps_poke, 4, text='Average Poke Plot (Left)')
+        self.plot_treeview.insert(self.ps_poke, 5, text='Average Poke Plot (Right)')
+        self.plot_treeview.insert(self.ps_poke, 6, text='Poke Bias Plot')
+        self.plot_treeview.insert(self.ps_poke, 7, text='Average Poke Bias Plot (Correct %)')
+        self.plot_treeview.insert(self.ps_poke, 8, text='Average Poke Bias Plot (Left %)')
         self.ps_pr = self.plot_treeview.insert('', 3, text='Progressive Ratio')
         self.plot_treeview.insert(self.ps_pr, 1, text = 'Breakpoint Plot')
         self.plot_treeview.insert(self.ps_pr, 2, text = 'Group Breakpoint Plot')
@@ -252,11 +256,14 @@ class FED3_Viz(tk.Tk):
                                 'Average Pellet Plot':'Plot average pellets received for Grouped devices (groups make individual curves)',
                                 'Interpellet Interval':'Plot histogram of intervals between pellet retrievals',
                                 'Group Interpellet Interval':'Plot histogram of intervals between pellet retrievals for Groups',
-                                'Single Poke Plot':'Plot the amount of correct or incorrect pokes',
+                                'Single Poke Plot':'Plot the amount of pokes for one device',
                                 'Average Poke Plot (Correct)':'Plot average correct pokes for Grouped devices (Groups make individual curves)',
                                 'Average Poke Plot (Error)':'Plot average error pokes for Grouped devices (Groups make individual curves)',
+                                'Average Poke Plot (Left)':'Plot average left pokes for Grouped devices (Groups make individual curves)',
+                                'Average Poke Plot (Right)':'Plot average right pokes for Grouped devices (Groups make individual curves)',
                                 'Poke Bias Plot':'Plot the tendency to pick one poke over another',
-                                'Average Poke Bias Plot':'Plot the average Group tendency to pick one poke over another (Groups make individual curves)',
+                                'Average Poke Bias Plot (Correct %)':'Plot the average Group tendency to poke the active poke (Groups make individual curves)',
+                                'Average Poke Bias Plot (Left %)':'Plot the average Group tendency to poke the left poke (Groups make individual curves)',
                                 'Day/Night Plot':'Plot group averages for day/night on a bar chart',
                                 'Diagnostic Plot':'Plot battery life and motor turns',
                                 'Chronogram (Line)':'Plot average 24-hour curves for groups',
@@ -276,8 +283,11 @@ class FED3_Viz(tk.Tk):
                                 'Single Poke Plot':self.poke_plot_single_TK,
                                 'Average Poke Plot (Correct)':self.avg_plot_TK,
                                 'Average Poke Plot (Error)':self.avg_plot_TK,
+                                'Average Poke Plot (Left)':self.avg_plot_TK,
+                                'Average Poke Plot (Right)':self.avg_plot_TK,
                                 'Poke Bias Plot':self.poke_bias_single_TK,
-                                'Average Poke Bias Plot':self.avg_plot_TK,
+                                'Average Poke Bias Plot (Correct %)':self.avg_plot_TK,
+                                'Average Poke Bias Plot (Left %)':self.avg_plot_TK,
                                 'Chronogram (Line)':self.chronogram_line_TK,
                                 'Chronogram (Heatmap)':self.chronogram_heatmap_TK,
                                 'Breakpoint Plot':self.breakpoint_plot,
@@ -384,7 +394,7 @@ class FED3_Viz(tk.Tk):
         
         self.load_settings_frame = tk.Frame(self.settings_col2)
         self.load_settings_frame.grid(row=3,column=0,sticky='nsew', 
-                                      padx=(20,20))
+                                      padx=(20,20), pady=(0,40))
         
         #labels
         self.section_font = 'Segoe 10 bold'
@@ -442,7 +452,7 @@ class FED3_Viz(tk.Tk):
         self.poke_binsize_label  = tk.Label(self.poke_settings_frame,
                                             text='Bin size for poke plots')
         self.poke_biasstyle_label = tk.Label(self.poke_settings_frame,
-                                             text='Comparison for poke bias plots')
+                                             text='Comparison for single poke bias plots')
         self.load_settings_label = tk.Label(self.load_settings_frame,
                                               text='Save/Load Settings',
                                               font=self.section_font)
@@ -578,12 +588,12 @@ class FED3_Viz(tk.Tk):
         
         #   poke
         self.poke_style_menu = ttk.Combobox(self.poke_settings_frame,
-                                            values=['Cumulative','Frequency','Percentage'])
+                                            values=['Cumulative','Frequency',])
         self.poke_style_menu.set('Cumulative')
         self.poke_bins_menu = ttk.Combobox(self.poke_settings_frame,
                                            values=self.freq_bins,
                                            width=10)
-        self.poke_bins_menu.set('10 hours')     
+        self.poke_bins_menu.set('1 hour')     
         self.poke_correct_val = tk.BooleanVar()
         self.poke_correct_val.set(True)
         self.poke_correct_box = ttk.Checkbutton(self.poke_settings_frame,
@@ -596,14 +606,26 @@ class FED3_Viz(tk.Tk):
                                               text='Show incorrect pokes',
                                               var=self.poke_error_val,
                                               command=self.update_buttons_home)
+        self.poke_left_val = tk.BooleanVar()
+        self.poke_left_val.set(False)
+        self.poke_left_box = ttk.Checkbutton(self.poke_settings_frame,
+                                             text='Show left pokes',
+                                             var=self.poke_left_val,
+                                             command=self.update_buttons_home)
+        self.poke_right_val = tk.BooleanVar()
+        self.poke_right_val.set(False)
+        self.poke_right_box = ttk.Checkbutton(self.poke_settings_frame,
+                                             text='Show right pokes',
+                                             var=self.poke_right_val,
+                                             command=self.update_buttons_home)
         self.poke_dynamiccolor_val = tk.BooleanVar()
         self.poke_dynamiccolor_val.set(True)
         self.poke_dynamiccolor_box = ttk.Checkbutton(self.poke_settings_frame,
-                                                     text='Use dynamic color for bias plots',
+                                                     text='Use dynamic color for single bias plots',
                                                      var=self.poke_dynamiccolor_val)
         self.poke_biasstyle_menu = ttk.Combobox(self.poke_settings_frame,
-                                                values=['correct - error','left - right'],)
-        self.poke_biasstyle_menu.set('correct - error')
+                                                values=['correct (%)','left (%)'],)
+        self.poke_biasstyle_menu.set('correct (%)')
         #   load/save
         self.settings_lastused_val = tk.BooleanVar()
         self.settings_lastused_val.set(False)
@@ -677,9 +699,11 @@ class FED3_Viz(tk.Tk):
         self.poke_bins_menu.grid(row=2,column=1,sticky='ew')
         self.poke_correct_box.grid(row=3,column=0,sticky='w',padx=(20))
         self.poke_error_box.grid(row=4,column=0,sticky='w',padx=20)
-        self.poke_biasstyle_label.grid(row=5,column=0,sticky='w',padx=20,pady=(10,0))
-        self.poke_biasstyle_menu.grid(row=5,column=1,sticky='w', pady=(10,0))
-        self.poke_dynamiccolor_box.grid(row=6,column=0,sticky='w',padx=20)
+        self.poke_left_box.grid(row=5,column=0,sticky='w',padx=20)
+        self.poke_right_box.grid(row=6,column=0,sticky='w',padx=20)
+        self.poke_biasstyle_label.grid(row=7,column=0,sticky='w',padx=20,pady=(10,0))
+        self.poke_biasstyle_menu.grid(row=7,column=1,sticky='w', pady=(10,0))
+        self.poke_dynamiccolor_box.grid(row=8,column=0,sticky='w',padx=20)
         
         self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
         self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
@@ -850,6 +874,24 @@ class FED3_Viz(tk.Tk):
         self.r_menu_file_multi.add_command(label='Edit Group', command=self.edit_group)
         self.r_menu_file_multi.add_separator()
         self.r_menu_file_multi.add_command(label='Delete', command=self.delete_FEDs)
+        
+        self.plot_listbox.bind(r_click, self.r_raise_menu)
+        self.r_menu_plot_single = tkinter.Menu(self, tearoff=0,)
+        self.r_menu_plot_single.add_command(label='Rename',command= self.rename_plot,)
+        self.r_menu_plot_single.add_command(label='New Window',command= self.new_window_plot,)
+        self.r_menu_plot_single.add_command(label='Plot Code',command= self.show_plot_code,)
+        self.r_menu_plot_single.add_command(label='Save Figure',command= self.save_plots,)
+        self.r_menu_plot_single.add_command(label='Save Data',command= self.save_plot_data,)
+        self.r_menu_plot_single.add_separator()
+        self.r_menu_plot_single.add_command(label='Delete',command= self.delete_plot,)
+        
+        self.r_menu_plot_multi = tkinter.Menu(self, tearoff=0,)
+        self.r_menu_plot_multi.add_command(label='New Window',command= self.new_window_plot,)
+        self.r_menu_plot_multi.add_command(label='Plot Code',command= self.show_plot_code,)
+        self.r_menu_plot_multi.add_command(label='Save Figure',command= self.save_plots,)
+        self.r_menu_plot_multi.add_command(label='Save Data',command= self.save_plot_data,)
+        self.r_menu_plot_multi.add_separator()
+        self.r_menu_plot_multi.add_command(label='Delete',command= self.delete_plot,)
                 
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False):
@@ -1089,7 +1131,10 @@ class FED3_Viz(tk.Tk):
         choices = {'Average Pellet Plot':'pellets',
                    'Average Poke Plot (Correct)':'correct pokes',
                    'Average Poke Plot (Error)':'errors',
-                   'Average Poke Bias Plot':'poke bias (correct %)'}
+                   'Average Poke Plot (Left)':'left pokes',
+                   'Average Poke Plot (Right)':'right pokes',
+                   'Average Poke Bias Plot (Correct %)':'poke bias (correct %)',
+                   'Average Poke Bias Plot (Left %)':'poke bias (left %)'}
         args_dict['dependent'] = choices[text]
         method = self.average_method_menu.get()
         if method == 'shared time':
@@ -1240,9 +1285,10 @@ class FED3_Viz(tk.Tk):
                 new_plot_frame = ttk.Frame(self.plot_container)
                 fig_name = self.create_plot_name('Poke plot for ' + obj.filename)
                 fig = plots.poke_plot(**arg_dict)
+                plotdata=getdata.poke_plot(**arg_dict)
                 new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
                                     figname=fig_name, plotfunc=plots.poke_plot,
-                                    plotdata=getdata.poke_plot(**arg_dict), arguments=arg_dict,)
+                                    plotdata=plotdata, arguments=arg_dict,)
                 self.PLOTS[fig_name] = new_plot
                 self.draw_figure(new_plot)
                 self.raise_figure(fig_name)
@@ -1258,9 +1304,10 @@ class FED3_Viz(tk.Tk):
                     new_plot_frame = ttk.Frame(self.plot_container)
                     fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)
                     fig = plots.poke_bias(**arg_dict)
+                    plotdata=getdata.poke_bias(**arg_dict)
                     new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
                                         figname=fig_name, plotfunc=plots.poke_bias,
-                                        plotdata=getdata.poke_bias(**arg_dict), 
+                                        plotdata=plotdata, 
                                         arguments=arg_dict,)
                     self.PLOTS[fig_name] = new_plot
                     self.draw_figure(new_plot)
@@ -1388,13 +1435,16 @@ class FED3_Viz(tk.Tk):
                 self.button_create_plot.configure(state=tk.DISABLED)
         elif text == 'Single Poke Plot':
             if self.files_spreadsheet.selection():
-                if self.poke_correct_val.get() or self.poke_error_val.get():
+                if (self.poke_correct_val.get() or self.poke_error_val.get() or 
+                    self.poke_left_val.get() or self.poke_right_val.get()):
                     self.button_create_plot.configure(state=tk.NORMAL)
             else:
                 self.button_create_plot.configure(state=tk.DISABLED)
         elif text in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)',
                       'Average Poke Plot (Correct)','Average Poke Plot (Error)',
-                      'Average Poke Bias Plot', 'Group Interpellet Interval',
+                      'Average Poke Plot (Left)','Average Poke Plot (Right)',
+                      'Average Poke Bias Plot (Correct %)','Average Poke Bias Plot (Left %)',
+                      'Group Interpellet Interval',
                       'Group Breakpoint Plot']:
             #if the all groups box is checked
             if self.allgroups_val.get():
@@ -1539,6 +1589,7 @@ class FED3_Viz(tk.Tk):
         clicked = self.plot_listbox.curselection()[0]
         self.old_name = self.plot_listbox.get(clicked)
         self.rename_window = tk.Toplevel(self)
+        self.rename_window.grab_set()
         self.rename_window.title('Rename plot: ' + self.old_name)
         self.rename_var = tk.StringVar()
         self.rename_var.set(self.old_name)
@@ -1568,6 +1619,7 @@ class FED3_Viz(tk.Tk):
             selection=self.plot_listbox.get(i)
             self.plot_listbox.delete(i)
             self.PLOTS[selection].frame.destroy()
+            plt.close(self.PLOTS[selection].figure)
             del(self.PLOTS[selection])
             new_plot_index=self.plot_listbox.size()-1
             if new_plot_index>=0:
@@ -1837,6 +1889,8 @@ class FED3_Viz(tk.Tk):
             self.poke_bins_menu.set(settings_df.loc['poke_bins','Values'])
             self.poke_correct_val.set(settings_df.loc['poke_show_correct','Values'])
             self.poke_error_val.set(settings_df.loc['poke_show_error','Values'])
+            self.poke_left_val.set(settings_df.loc['poke_show_left','Values'])
+            self.poke_right_val.set(settings_df.loc['poke_show_right','Values'])
             self.poke_biasstyle_menu.set(settings_df.loc['bias_style','Values'])
             self.poke_dynamiccolor_val.set(settings_df.loc['dynamic_color','Values'])
             self.check_average_align()
@@ -1877,6 +1931,8 @@ class FED3_Viz(tk.Tk):
                              poke_bins          =self.poke_bins_menu.get(),
                              poke_show_correct  =self.poke_correct_val.get(),
                              poke_show_error    =self.poke_error_val.get(),
+                             poke_show_left     =self.poke_left_val.get(),
+                             poke_show_right    =self.poke_right_val.get(),
                              bias_style         =self.poke_biasstyle_menu.get(),
                              dynamic_color      =self.poke_dynamiccolor_val.get(),
                              break_style        =self.pr_style_menu.get(),
@@ -1964,6 +2020,11 @@ class FED3_Viz(tk.Tk):
                 menu = self.r_menu_file_multi
             else:
                 menu = self.r_menu_file_empty
+        elif widget == self.plot_listbox:
+            if len(self.plot_listbox.curselection()) == 1:
+                menu = self.r_menu_plot_single
+            elif len(self.plot_listbox.curselection()) > 1:
+                menu = self.r_menu_plot_multi
         if menu:
             menu.tk_popup(event.x_root, event.y_root,)
             menu.grab_release()

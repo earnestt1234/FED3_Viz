@@ -102,21 +102,18 @@ class FED3_File():
     
     def determine_mode(self):
         mode = 'Unknown'
-        if 'FR_Ratio' in self.data.columns:
-            mode = 'FR' + str(self.data['FR_Ratio'][0])
-        if ' FR_Ratio' in self.data.columns:
-            mode = 'FR' + str(self.data[' FR_Ratio'][0])
-        if 'Session_Type' in self.data.columns:
-            sesh = self.data['Session_Type']
-            if all(isinstance(i,int) for i in sesh):
-                if len(set(sesh)) == 1:
-                    mode = 'FR' + str(sesh[0])
+        column = pd.Series()
+        for name in ['FR_Ratio',' FR_Ratio','Session_Type']:
+            if name in self.data.columns:
+                column = self.data[name]
+        if not column.empty:
+            if all(isinstance(i,int) for i in column):
+                if len(set(column)) == 1:
+                    mode = 'FR' + str(column[0])
                 else:
                     mode = 'PR'
-            elif 'PR' in sesh[0]:
+            elif 'PR' in column[0]:
                 mode = 'PR'
             else:
-                mode = str(sesh[0])
+                mode = str(column[0])
         return mode
-                    
-                
