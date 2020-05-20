@@ -161,6 +161,8 @@ FED3 saves data as a `.csv` file on its internal SD card; these are the files us
 
 FED3 Viz will recognize these `.csv` files, as well as files converted into Excel (`.xlsx`) format.  If the data have been changed out of one of these file types, they will have to be reconverted in order to be used by FED3 Viz.
 
+The [Appendix](#appendix) contains a note about different versions of the Arduino scripts used by FED3, and how FED3 Viz deals with them.
+
 ### Loading FEDs
 
 The **Load Button** of the Home Tab is used for loading data into FED3 Viz; this button is always active.  Clicking it will bring up a file dialog where one or more FED3 files can be selected to import.
@@ -580,7 +582,9 @@ This section will mainly cover troubleshooting and issues; please also check the
   
 - **The program slows down, doesn't respond, or crashes.**  In previous iterations of the code, I experienced slowdown when many FED files were loaded in one go (especially with long files) or when a plot was created with many devices shown as separate curves.  In my experience, the program recovered and finished the loading/plotting after a few seconds.  To avoid these issues, I had to select fewer (10 or less) devices when loading (i.e. per push of the Load Button) or plotting devices.  However, changes since then have cleared up some of these issues (on my end; the program now "checks in" in between each device load or plot creation).  If the problems on your device result in frequent crashes or persistent slow downs, even when using small amounts of data, please report this.  I have taken a relatively minimal approach to optimizing speed, and there may be ways to improve.
 
-- **I can't load some of my FED data, or I can load but some plots don't work**.  The most likely cause is that you have a previous version of FED output data, or that there have been edits to raw data.  FED3 Viz tries to handle old formats of the data, but there may be cases which cannot be caught.  Some examples of current data are included on GitHub in the `example_data` folder.  You can compare your data to these to see if there might be any obvious differences; you can also test that the example data load correctly.  Please share any specific issues on GitHub.
+- **I can't load some of my FED data, or I can load but some plots don't work**.  The most likely cause is that you have a previous version of FED output data, or that there have been edits to raw data.  FED3 Viz tries to handle old formats of the data, but there may be cases which may be caught.  Some examples of current data are included on GitHub in the `example_data` folder.  You can compare your data to these to see if there might be any obvious differences; you can also test that the example data load correctly.  Please share any specific issues on GitHub.
+
+- **I do have differently formatted data; how can I know which plots work?**  If the discrepancy is that your data files are missing some columns (because of editing or previous file formats), the best bet is to check the [Appendix](#appendix) and look at the plot column dependencies - these are literally the columns that the program interacts with in order to make the plot.  If the issue is that there are changed values (i.e. not written by FED3) in the data, the results are more unpredictable.  Additionally, there are some specific notes about pokes in older file formats provided in the Appendix.
 
 - **One of the plots I made looks weird.**  By "looks weird" I mean things like broken lines, empty areas of the plot, lines during off periods, smooshed axes text, or completely empty plots.  "Issues" like this may occur given some specific cases of data; I put issues in quotes because some peculiarities may actually accurately reflect the data (say if they have missing values or are temporally distant from each other).  Hopefully, this manual can give you an intuition of the processing that goes into creating a specific plot.
 
@@ -612,6 +616,20 @@ This section will mainly cover troubleshooting and issues; please also check the
 <div style="page-break-after: always; break-after: page;"></div> 
 
 # Appendix
+
+### FED3 Arduino Versions
+
+The FED3 data logging scripts are open source, and are often being updated to meet new requirements by FED3 Users.  **This software is designed to work with the current version of standard Arduino scripts (i.e. those posted on the FED3 Hackaday) used by FED3**.  Moreover, we will attempt to marry the development of FED3 with the development of this software, such that files will continue to be recognized and plots give expected results.  While many small tweaks to the data logging code may not causes issues with this software, changes that may affect FED3 Viz are things like the addition or removal of columns written by FED3, or changes to how pellets, pokes, or timestamps are logged.  If you have a new version of FED code that doesn't work with FED3 Viz, please report the issue!
+
+###### Specific note on poke logging in older versions: 
+
+A major change in the development of FED3 code was changing how often data was written, and for what events.  Currently, FED3 will timestamp and log a row when there is a poke (both active and inactive) or a pellet retrieval.  Previously, FED3 would only log a row whenever a pellet was retrieved.  Thus, the current version logs more information, and gives the precise time when all pokes occur.
+
+FED3 Viz is written to work with this newer style of data logging.  It will assign each poke as "Correct" or "Incorrect" based on which poke was labeled as "Active" at the time of logging.   **Because the older format does not log which poke is active for each poke, pokes are not labeled as correct or incorrect**; the rationale for this decision is based on newer recording modes during which the active poke can switch from left to right.  Therefore, this old format will likely not work with plots about correct/incorrect pokes.  
+
+Instead, plots based on left or right pokes may achieve a similar purpose for these older file formats (if say the Left Poke is always active).  These plots only rely on detecting the cumulative poke change in the `Left_Poke_Count` and `Right_Poke_Count` columns, regardless of file format.  However, note that coarser grain of data in the old file format can still cause issues: in the (unlikely) case that there is a long period of time with only inactive pokes, these will only be logged on the next active poke.  Hence, when making inactive pokes that bin data over time, inactive pokes may be placed in the wrong bin.
+
+All-in-all, when using the old file format (or any custom version of FED3 software), be aware there may be issues!
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
