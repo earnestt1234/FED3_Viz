@@ -1119,13 +1119,19 @@ class FED3_Viz(tk.Tk):
            
     def avg_plot_TK(self):
         args_dict = self.get_current_settings_as_args()
-        args_dict['FEDs'] = self.LOADED_FEDS
         if self.allgroups_val.get():
             groups = self.GROUPS
         else:
             ints = [int(i) for i in self.group_view.curselection()]
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
+        feds = []
+        for fed in self.LOADED_FEDS:
+            for group in fed.group:
+                if group in groups:
+                    feds.append(fed)
+                    break
+        args_dict['FEDs'] = feds
         selection = self.plot_treeview.selection()
         text = self.plot_treeview.item(selection,'text')
         choices = {'Average Pellet Plot':'pellets',

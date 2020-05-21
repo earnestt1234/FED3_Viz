@@ -116,8 +116,8 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
                 else:
                     df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
                     y = df.apply(resample_get_yvals,dependent)
-                y = y[(y.index > latest_start) &
-                      (y.index < earliest_end)].copy()
+                    y = y[(y.index > latest_start) &
+                          (y.index < earliest_end)].copy()
                 avg.append(y)
                 if file.basename not in output.columns:
                     indvl_line = pd.DataFrame({file.basename:y},

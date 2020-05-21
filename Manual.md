@@ -7,9 +7,9 @@
 </p>
 
 
-**Written for version**: v0.1.0 (beta)
+**Written for version**: v0.2.0 (beta)
 
-**Date of creation**: May 11th, 2020
+**Date of creation**: May 21th, 2020
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
@@ -21,7 +21,7 @@ Welcome to FED3 Viz, a Python GUI for graphing data from FED3 devices.  This man
 
 You can find the FED3 Viz landing page at [GitHub](https://github.com/earnestt1234/FED3_Viz); all changes to the program will be made and logged though GitHub.  I wrote this application while working as a research technician in the Kravitz Lab (with input from Dr. Kravitz and the rest of the lab!).
 
-If you do notice any inaccuracies, typos, misinformation, or missed content in this manual, please report the issue through GitHub.  You can also find this manual as a PDF under `FED3_Viz/pdfs`.
+If you do notice any inaccuracies, typos, misinformation, or missed content in this manual, please report the issue through GitHub.  You can also find this manual as a PDF under `FED3_Viz/pdfs`.  Please note that some screenshots may refer to earlier software versions, so some images may not match exactly what you see.
 
 Thanks!
 
@@ -165,7 +165,9 @@ The [Appendix](#appendix) contains a note about different versions of the Arduin
 
 ### Loading FEDs
 
-The **Load Button** of the Home Tab is used for loading data into FED3 Viz; this button is always active.  Clicking it will bring up a file dialog where one or more FED3 files can be selected to import.
+The **Load Button** and the **Load Folder Button** of the Home Tab are used for loading data into FED3 Viz; these buttons are always active.  The Load Button will allow you to select individual files to load, while the Load Folder Button will allow you to selected a folder to load files from.  Note that the Load Folder Button will currently search for *all files* in *all subfolders* of the selected folder; searching an extensive tree (like your User directory) will likely cause the program to crash.
+
+When folders are being loaded, a progress bar will appear in the Info Bar.  To halt the loading process, either press the **Abort Load Button** or press Escape.
 
 ##### How FEDs Are Loaded
 
@@ -192,7 +194,7 @@ These columns are looked for **by name, not the content or type of data in the c
 An error message pop-up may be raised if there are any issues encountered during the loading process.  The two major types of errors are:
 
 - Unrecognized: the file(s) was not recognized as FED3 data.  This error means that the program failed to load the data.  This can occur from attempts to read non `.csv` or `.xlsx` files, or from correct file types that differ significantly from the standard FED3 file format.  This error can not be suppressed.
-- Missing Data: the file(s) is missing at least one of the default columns.  This means that the file was loaded, but it may be missing some columns which are used by FED3 Viz for plotting; it is meant to serve as a warning that some plots may be unavailable or may produce unexpected results.  This error can occur when the raw data has been edited to remove or rename columns, or when using an earlier version of FED3 Arduino code.  This error can be suppressed by unticking **Settings > General > Show missing column warning when loading.**
+- Missing Data: the file(s) is missing at least one of the default columns.  This means that the file was loaded, but it may be missing some columns which are used by FED3 Viz for plotting; it is meant to serve as a warning that some plots may be unavailable or may produce unexpected results.  This error can occur when the raw data has been edited to remove or rename columns, or when using an earlier version of FED3 Arduino code (see the [Appendix](#appendix) for a discussion).  This error can be suppressed by unticking **Settings > General > Show missing column warning when loading.**
 
 Further discussion of problems with loading may be brought up in the [FAQ](#FAQ) as the application develops.  Additionally, the dependent columns of each plot can be viewed in the Appendix.
 
@@ -205,11 +207,12 @@ Further discussion of problems with loading may be brought up in the [FAQ](#FAQ)
 Loaded FED data can be inspected on the File View of the Home Tab.  Each loaded FED will correspond to a row in the File View, where column entries will correspond to properties of the file:
 
 - Name: the name & extension of the file
-- \# events: how many events were logged by the device, either Pokes or Pellets (essentially the number of rows in the data file)
-- start time: the date and time of the start of the recording
-- end time: the date and time of the end of the recording
-- duration: the amount of time between the first and last logged event
-- groups: any user-defined groups associated with the recording
+- Mode: the recording mode of the file (e.g. fixed ratio, progressive ratio, etc.)
+- \# Events: how many events were logged by the device, either Pokes or Pellets (essentially the number of rows in the data file)
+- Start Time: the date and time of the start of the recording
+- End Time: the date and time of the end of the recording
+- Duration: the amount of time between the first and last logged event
+- Groups: any user-defined groups associated with the recording
 
 Additionally, FEDs with missing columns will be labeled with a :warning: symbol.
 
@@ -238,7 +241,11 @@ The Groups associated with each loaded data file will be shown in the "groups" c
 
 FEDs do not have to be grouped uniquely; one FED can be part of multiple groups.
 
-There is currently no ability to edit the members of a Group once it has been created.  Rather, this can be achieved by creating a new Group with the desired members.  
+There is currently no ability to edit the members of a Group once it has been created.  Rather, this can be achieved by creating a new Group with the desired members.
+
+### Editing Groups
+
+The **Edit Group Button** can be used to edit the Groups for selected files (note that this is slightly different than selecting a Group and editing its members).   Pressing Edit Group will bring up an editing window which lists all the loaded Groups.  Then, the **Add Button** or the **Remove Button** can be used to respectively add or remove the selected FEDs in the File View from the selected Groups in the editing window.
 
 ### Deleting Groups:
 
@@ -260,7 +267,7 @@ To save the currently loaded groups, click the **Save Groups Button** on the Hom
 
 Groups can then be reloaded with the **Load Groups Button**; at least one FED file must be loaded for the button to be active.  Clicking the button will prompt the user to select a Group file to load.
 
-Group files associated **file names** with **Group names**.  In this way, files that are moved around the computer will still be recognized.  However, **files with changed names will not be re-grouped**.  Additionally, if a new file matches a name in the Groups file, it will be Grouped, even if it was not the original file used to create the group.
+Group `.csv` files associate absolute file paths with Group labels.  By default, Groups will only be assigned if the absolute path of the loaded file matches the absolute path listed in the Groups file.  Therefore, loaded files that have been moved (or renamed) will not be picked up.  This behavior can be changed by unticking **Settings > General > When loading groups, check for the absolute path (rather than the file name)**, in which case Groups will be assigned based on the file name and regardless of file location.  Using this option allows files to be moved, but FEDs with the same file name will be indiscernible: all matching names will be given the same Group label(s) if available.
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
@@ -269,7 +276,7 @@ Group files associated **file names** with **Group names**.  In this way, files 
 The general steps to create a plot are:
 
 - Select the desired settings from the Settings Tab (if applicable)
-- Select the FED files to include in the plot, either by clicking or by Grouping
+- Select the FED files to include in the plot, either by highlighting in File View or by Grouping
 - Highlight the desired plotting function from the Plot Selector
 - Hit the Create Plot Button
 
@@ -605,13 +612,14 @@ This section will mainly cover troubleshooting and issues; please also check the
   - Your IDE is not showing the plot (sometimes an issue with how inline plotting is handled; sometimes this causes plots not to show on the first run)
   - There is an error in the output plot script, which is certainly possible!  The most likely issues are that some of the necessary helper functions were not included or the arguments are improperly formatted.  Please report these errors on GitHub with the specific context, both to help solve your specific case and to improve the application.
   
-- **I have suggestions for improving the plot code I saved.**  Please note that FED3 Viz's plotting functions are designed to handle different settings on the fly, and the code to make one specific plot may be writable in a much less verbose way.  Some pieces of the code may be helpful for the application, but irrelevant to your specific plot.  
+- **I have suggestions for improving the plot code I saved.**  You may rightfully wonder why the code to make a simple line plot ends up being 400 lines!  Please note that FED3 Viz's plotting functions are designed to handle different settings on the fly, and the code to make one specific plot may be writable in a much less verbose way.  Some pieces of the code may be helpful for the application, but irrelevant to your specific plot.
 
   That being said, I would enjoy discussing (on GitHub) and possibly including any proposed changes which significantly contribute to the readable or speed of the code.  Aside from that, sharing code may be useful for other users.
 
-- __What are the `**kwargs` doing in plot function definitions? __  [These are "star keyword arguments"](https://realpython.com/python-kwargs-and-args/).  In general, they allow Python functions to accept a variable number of arguments.  Every time FED3 Viz creates a plot, it gets the current state of *all* settings and converts them into a dictionary of arguments (where the key is an argument name and the value is an argument value, like a number or a string); these arguments are passed to the selected plotting function.  Arguments not used by the function are then treated as `**kwargs`; they do not get used but they also do not produce an error.  This system allows FED3 Viz settings to easily affect multiple plotting functions, and saves some verbosity in the GUI code.  *Basically, they are needed in the context of the application, but they are unnecessary (and can be deleted) in the returned Plot Code*.  In general, it's confusing and redundant to include `**kwargs` (or `*args`) if they are not being used (hence), but this is a peculiar case.  
+- __What are the `**kwargs` doing in plot function definitions? __  [These are "star keyword arguments"](https://realpython.com/python-kwargs-and-args/).  In general, they allow Python functions to accept a variable number of arguments.  Every time FED3 Viz creates a plot, it gets the current state of *all* settings and converts them into a dictionary of arguments (where the key is an argument name and the value is an argument value, like a number or a string); these arguments are passed to the selected plotting function.  Arguments that aren't explicitly named in that function definition will be passed as  `**kwargs`; they do not get used but they also do not produce an error.  This system allows FED3 Viz settings to easily affect multiple plotting functions, and saves some verbosity in the GUI code.  *Basically, `**kwargs` are needed in the context of the application, but they are unnecessary (and can be deleted) in the returned Plot Code*.  In general, it's confusing and redundant to include `**kwargs` (or `*args`) if they are not being used (hence), but this is a peculiar case.  
 
 - **I can't load some settings, or my settings look weird.**  This could be an issue with altered setting files, or settings files with which have entries that don't match the application.  Please redownload the `DEFAULT.CSV` and `LAST_USED.CSV` files from GitHub and replace them in your FED3 Viz folder.  Alternatively, try to save new settings from the application to overwrite the `DEFAULT.CSV` file.
+
 - **I have an issue that I have shared and I haven't heard back from anyone.**  Please be aware that FEDs are being worked on by a small group of researchers, and FED3 Viz is only really maintained by me :cold_sweat:.  We will do our best to respond prudently to questions shared online, but bear with us!
 
 <div style="page-break-after: always; break-after: page;"></div> 
@@ -620,15 +628,15 @@ This section will mainly cover troubleshooting and issues; please also check the
 
 ### FED3 Arduino Versions
 
-The FED3 data logging scripts are open source, and are often being updated to meet new requirements by FED3 Users.  **This software is designed to work with the current version of standard Arduino scripts (i.e. those posted on the FED3 Hackaday) used by FED3**.  Moreover, we will attempt to marry the development of FED3 with the development of this software, such that files will continue to be recognized and plots give expected results.  While many small tweaks to the data logging code may not causes issues with this software, changes that may affect FED3 Viz are things like the addition or removal of columns written by FED3, or changes to how pellets, pokes, or timestamps are logged.  If you have a new version of FED code that doesn't work with FED3 Viz, please report the issue!
+The FED3 Arduino code is open source, and it's often being updated to meet new requirements by FED3 Users.  **This software is designed to work with the current (time of writing) version of standard Arduino scripts (i.e. those posted on the FED3 Hackaday) used by FED3**.  Although, we will attempt to marry the development of FED3 with the development of this software, such that files will continue to be recognized and plots give expected results.  While many small tweaks to the data logging code may not causes issues with this software, changes that may affect FED3 Viz are things like the addition or removal of columns written by FED3, or changes to how pellets, pokes, or timestamps are logged.  If you have a new version of FED code that doesn't work with FED3 Viz, please report the issue!
 
 ###### Specific note on poke logging in older versions: 
 
-A major change in the development of FED3 code was changing how often data was written, and for what events.  Currently, FED3 will timestamp and log a row when there is a poke (both active and inactive) or a pellet retrieval.  Previously, FED3 would only log a row whenever a pellet was retrieved.  Thus, the current version logs more information, and gives the precise time when all pokes occur.
+A major change in the development of FED3 code was altering how often data was written, and for what events.  Currently, FED3 will timestamp and log a row when there is a poke (both active and inactive) or a pellet retrieval.  Previously, FED3 would only log a row whenever a pellet was retrieved.  Thus, the current version logs more information, and gives the precise time when all pokes occur.
 
-FED3 Viz is written to work with this newer style of data logging.  It will assign each poke as "Correct" or "Incorrect" based on which poke was labeled as "Active" at the time of logging.   **Because the older format does not log which poke is active for each poke, pokes are not labeled as correct or incorrect**; the rationale for this decision is based on newer recording modes during which the active poke can switch from left to right.  Therefore, this old format will likely not work with plots about correct/incorrect pokes.  
+FED3 Viz is written to work with this newer style of data logging.  It will assign each poke as "Correct" or "Incorrect" based on which poke was labeled as "Active" at the time of logging.   **Because the older format does not log individual pokes, nor which poke is active for each poke, pokes are not labeled as correct or incorrect**; the rationale for this decision is based on newer recording modes during which the active poke can switch between left and right.  Therefore, this old format will likely not work with plots about correct/incorrect pokes.  
 
-Instead, plots based on left or right pokes may achieve a similar purpose for these older file formats (if say the Left Poke is always active).  These plots only rely on detecting the cumulative poke change in the `Left_Poke_Count` and `Right_Poke_Count` columns, regardless of file format.  However, note that coarser grain of data in the old file format can still cause issues: in the (unlikely) case that there is a long period of time with only inactive pokes, these will only be logged on the next active poke.  Hence, when making inactive pokes that bin data over time, inactive pokes may be placed in the wrong bin.
+Instead, plots based on left or right pokes may achieve a similar purpose for these older file formats (if one poke is always active).  These plots only rely on detecting the cumulative poke change in the `Left_Poke_Count` and `Right_Poke_Count` columns, regardless of file format.  However, note that coarser grain of data in the old file format can still cause issues: in the (unlikely) case that there is a long period of time with only inactive pokes, these will only be logged on the next active poke.  Hence, when making inactive pokes that bin data over time, inactive pokes may be placed in the wrong bin.
 
 All-in-all, when using the old file format (or any custom version of FED3 software), be aware there may be issues!
 
