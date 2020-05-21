@@ -12,7 +12,24 @@ import pandas as pd
 import numpy as np
 
 class FED3_File():
+    """Class used by FED3 Viz to .csv and .xlsx FED3 Files"""
     def __init__(self,directory):
+        """
+        Reads FED3 data, adds variables, and assigns attributes
+        based on recording.
+
+        Parameters
+        ----------
+        directory : str
+            Path to the FED3 file (.csv or .xlsx)
+
+        Raises
+        ------
+        Exception
+            An Exception is raised when reading the file fails; generally
+            occurs if the file is not tabular or if it is missing the
+            FED3 "MM:DD:YYYY hh:mm:ss" column.
+        """
         self.directory = os.path.abspath(directory).replace('\\','/')
         self.fixed_names = ['Device_Number',
                             'Battery_Voltage',
@@ -59,17 +76,24 @@ class FED3_File():
         self.mode = self.determine_mode()
 
     def __repr__(self):
+        """Shows the directory used to make the file."""
         return 'FED3_File("' + self.directory + '")'
     
     def add_elapsed_time(self):
+        """pandas Timedelta relative to starting point for each row.
+        Stored in new Elapsed_Time column"""
         events = self.data.index
         elapsed_times = [event - self.start_time for event in events]
         self.data['Elapsed_Time'] = elapsed_times
         
     def add_binary_pellet_count(self):
+        """Convert cumulative pellet count to binary value for each row.
+        Stored in new Binary_Pellets column."""
         self.data['Binary_Pellets'] = self.data['Pellet_Count'].diff()
     
     def add_interpellet_intervals(self):
+        """Compute time between each pellet retrieval.
+        Stored in new Interpellet_Intervals column."""
         inter_pellet = np.array(np.full(len(self.data.index),np.nan))
         c=0
         for i,val in enumerate(self.data['Binary_Pellets']):         
@@ -83,6 +107,10 @@ class FED3_File():
         self.data['Interpellet_Intervals'] = inter_pellet
     
     def add_correct_pokes(self):
+        """Compute whether each poke was correct or not.  This process returns
+        numpy NaN if files are in the older format (only pellets logged).  Stored
+        in a new Correct_Poke column, also creates Binary_Left_Pokes and
+        Binary_Right_Pokes."""
         df = self.data
         df['Binary_Left_Pokes']  = df['Left_Poke_Count'].diff()
         df['Binary_Right_Pokes'] = df['Right_Poke_Count'].diff()
@@ -91,6 +119,7 @@ class FED3_File():
         df['Correct_Poke'] = df.apply(lambda row: self.is_correct_poke(row), axis=1)       
         
     def is_correct_poke(self,row):
+        """For each poke event against the active poke column to verify correctness."""
         try:
             if row['Event'] == 'Poke':
                 return (row['Active_Poke'] == 'Left' and row['Binary_Left_Pokes'] == 1 or
@@ -101,6 +130,7 @@ class FED3_File():
             return np.nan
     
     def determine_mode(self):
+        """Find the recording mode of the file.  Returns the mode as a string."""
         mode = 'Unknown'
         column = pd.Series()
         for name in ['FR_Ratio',' FR_Ratio','Session_Type']:
