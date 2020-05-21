@@ -51,6 +51,7 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
 - [Groups](#groups)
   
   - [Creating Groups](#creating-groups)
+  - [Editing Groups](#editing-groups)
   - [Deleting Groups](#deleting-groups)
 - [Saving Groups](#saving-groups)
 - [Plots](#plots)
