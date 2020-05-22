@@ -123,9 +123,10 @@ register_matplotlib_converters()
         elif arg == 'groups':
             arguments += ('\ngroups = ' + str(used_args['groups']) + '\n\n')
             for fedfile in used_args['FEDs']:
-                for group in fedfile.group:
-                    arguments += (fed_varname_dict[fedfile] + '.group.append(' 
-                                  + add_quotes(group) +')\n')
+                for group in used_args['groups']:
+                    if group in fedfile.group:
+                        arguments += (fed_varname_dict[fedfile] + '.group.append(' 
+                                      + add_quotes(group) +')\n')
             arguments += '\n'           
         else:
             if arg in string_arguments:

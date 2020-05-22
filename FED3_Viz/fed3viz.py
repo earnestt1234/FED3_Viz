@@ -1184,13 +1184,19 @@ class FED3_Viz(tk.Tk):
 
     def group_ipi_TK(self):
         args_dict = self.get_current_settings_as_args()
-        args_dict['FEDs'] = self.LOADED_FEDS
         if self.allgroups_val.get():
             groups = self.GROUPS
         else:
             ints = [int(i) for i in self.group_view.curselection()]
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
+        feds = []
+        for fed in self.LOADED_FEDS:
+            for group in fed.group:
+                if group in groups:
+                    feds.append(fed)
+                    break
+        args_dict['FEDs'] = feds
         fig = plots.group_interpellet_interval_plot(**args_dict)
         plotdata = getdata.group_interpellet_interval_plot(**args_dict)
         fig_name = self.create_plot_name('Group Interpellet Interval Plot')
@@ -1224,13 +1230,19 @@ class FED3_Viz(tk.Tk):
             
     def daynight_plot_TK(self):
         args_dict = self.get_current_settings_as_args()
-        args_dict['FEDs'] = self.LOADED_FEDS
         if self.allgroups_val.get():
             groups = self.GROUPS
         else:
             ints = [int(i) for i in self.group_view.curselection()]
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
+        feds = []
+        for fed in self.LOADED_FEDS:
+            for group in fed.group:
+                if group in groups:
+                    feds.append(fed)
+                    break
+        args_dict['FEDs'] = feds
         fig = plots.daynight_plot(**args_dict)
         plotdata = getdata.daynight_plot(**args_dict)
         value = args_dict['circ_value'].capitalize()
@@ -1245,13 +1257,19 @@ class FED3_Viz(tk.Tk):
     
     def chronogram_line_TK(self):
         args_dict = self.get_current_settings_as_args()
-        args_dict['FEDs'] = self.LOADED_FEDS
         if self.allgroups_val.get():
             groups = self.GROUPS
         else:
             ints = [int(i) for i in self.group_view.curselection()]
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
+        feds = []
+        for fed in self.LOADED_FEDS:
+            for group in fed.group:
+                if group in groups:
+                    feds.append(fed)
+                    break
+        args_dict['FEDs'] = feds
         fig = plots.line_chronogram(**args_dict)
         plotdata = getdata.line_chronogram(**args_dict)
         value = args_dict['circ_value'].capitalize()
@@ -1301,24 +1319,24 @@ class FED3_Viz(tk.Tk):
                 self.update()
         
     def poke_bias_single_TK(self):
-            to_plot = [int(i) for i in self.files_spreadsheet.selection()]
-            FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
-            for obj in FEDs_to_plot:
-                if self.plotting == True:
-                    arg_dict = self.get_current_settings_as_args()
-                    arg_dict['FED'] = obj
-                    new_plot_frame = ttk.Frame(self.plot_container)
-                    fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)
-                    fig = plots.poke_bias(**arg_dict)
-                    plotdata=getdata.poke_bias(**arg_dict)
-                    new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
-                                        figname=fig_name, plotfunc=plots.poke_bias,
-                                        plotdata=plotdata, 
-                                        arguments=arg_dict,)
-                    self.PLOTS[fig_name] = new_plot
-                    self.draw_figure(new_plot)
-                    self.raise_figure(fig_name)
-                    self.update()
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        for obj in FEDs_to_plot:
+            if self.plotting == True:
+                arg_dict = self.get_current_settings_as_args()
+                arg_dict['FED'] = obj
+                new_plot_frame = ttk.Frame(self.plot_container)
+                fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)
+                fig = plots.poke_bias(**arg_dict)
+                plotdata=getdata.poke_bias(**arg_dict)
+                new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
+                                    figname=fig_name, plotfunc=plots.poke_bias,
+                                    plotdata=plotdata, 
+                                    arguments=arg_dict,)
+                self.PLOTS[fig_name] = new_plot
+                self.draw_figure(new_plot)
+                self.raise_figure(fig_name)
+                self.update()
                 
     def breakpoint_plot(self):
         arg_dict = self.get_current_settings_as_args()
@@ -1338,13 +1356,19 @@ class FED3_Viz(tk.Tk):
     
     def group_breakpoint_plot(self):
         args_dict = self.get_current_settings_as_args()
-        args_dict['FEDs'] = self.LOADED_FEDS
         if self.allgroups_val.get():
             groups = self.GROUPS
         else:
             ints = [int(i) for i in self.group_view.curselection()]
             groups = [self.GROUPS[i] for i in ints]
         args_dict['groups'] = groups
+        feds = []
+        for fed in self.LOADED_FEDS:
+            for group in fed.group:
+                if group in groups:
+                    feds.append(fed)
+                    break
+        args_dict['FEDs'] = feds
         fig = plots.group_pr_plot(**args_dict)
         plotdata = getdata.group_pr_plot(**args_dict)
         fig_name = self.create_plot_name('Group Breakpoint Plot')

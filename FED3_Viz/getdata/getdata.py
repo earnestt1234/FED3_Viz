@@ -378,13 +378,19 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
         if poke_show_left:
-            y = FED.data['Left_Poke_Count']
+            try:
+                y = FED.data[FED.data['Event'] == 'Poke']['Left_Poke_Count']
+            except:
+                y = FED.data['Left_Poke_Count']
             y = y.rename('Left Pokes')
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
         if poke_show_right:
-            y = FED.data['Right_Poke_Count']
+            try:
+                y = FED.data[FED.data['Event'] == 'Poke']['Right_Poke_Count']
+            except:
+                y = FED.data['Right_Poke_Count']
             y = y.rename('Right Pokes')
             x = y.index
             temp = pd.DataFrame(y, index=x,)
@@ -500,6 +506,19 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, *args, **kwargs):
             cum_correct.index = df.index
             cum_correct = cum_correct[cum_correct.index <= df.index[break_index]].copy()
             out = np.nanmax(cum_correct)
+            if df['Correct_Poke'].dropna().empty:
+                try:
+                    if len(set(df['Active_Poke'])) == 1:
+                        active = df['Active_Poke'][0]
+                        if active.lower() == "left":
+                            col = 'Left_Poke_Count'
+                        elif active.lower() == 'right':
+                            col = 'Right_Poke_Count'
+                        out = df.loc[df.index[break_index],col]
+                except:
+                    pass
+        if isinstance(out, pd.Series):
+            out = out[-1]
         output.loc[break_style,FED.basename] = out
     return output
 
@@ -526,6 +545,19 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
                     cum_correct.index = df.index
                     cum_correct = cum_correct[cum_correct.index <= df.index[break_index]].copy()
                     out = np.nanmax(cum_correct)
+                    if df['Correct_Poke'].dropna().empty:
+                        try:
+                            if len(set(df['Active_Poke'])) == 1:
+                                active = df['Active_Poke'][0]
+                                if active.lower() == "left":
+                                    col = 'Left_Poke_Count'
+                                elif active.lower() == 'right':
+                                    col = 'Right_Poke_Count'
+                                out = df.loc[df.index[break_index],col]
+                        except:
+                            pass
+                if isinstance(out, pd.Series):
+                    out = out[-1]
                 group_vals.append(out)
                 if FED.basename not in output.columns:
                     output.loc[break_style, FED.basename] = out

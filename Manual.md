@@ -268,7 +268,7 @@ To save the currently loaded groups, click the **Save Groups Button** on the Hom
 
 Groups can then be reloaded with the **Load Groups Button**; at least one FED file must be loaded for the button to be active.  Clicking the button will prompt the user to select a Group file to load.
 
-Group `.csv` files associate absolute file paths with Group labels.  By default, Groups will only be assigned if the absolute path of the loaded file matches the absolute path listed in the Groups file.  Therefore, loaded files that have been moved (or renamed) will not be picked up.  This behavior can be changed by unticking **Settings > General > When loading groups, check for the absolute path (rather than the file name)**, in which case Groups will be assigned based on the file name and regardless of file location.  Using this option allows files to be moved, but FEDs with the same file name will be indiscernible: all matching names will be given the same Group label(s) if available.
+Group `.csv` files associate absolute file paths with Group labels.  By default, Groups will only be assigned if the absolute path of the loaded file matches the absolute path listed in the Groups file.  Therefore, loaded files that have been moved (or renamed) will not be picked up.  This behavior can be changed by unticking **Settings > General > When loading groups, check for the absolute path (rather than the file name)**, in which case Groups will be assigned based on the file name and regardless of file location.  Using this option allows files to be moved, but FEDs with the same file name will be indiscernible: all matching names will be given the same Group label(s) if available.  Basically, ticking this box is more precise if you are working with files that stay in the same folder, while unticking will be flexible to different file locations yet may erroneously label duplicate file names.
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
@@ -309,7 +309,7 @@ There are a couple settings which apply to multiple plots:
 	<img src="img/examples/pelletplot.png" width="500">
 </p>
 
-This plot shows the pellets retrieved over time for a single data file.  By default, the raw *Pellet_Count* column (the cumulative total) is plotted against the timestamps (**Settings > Individual Pellet Plots > Values to plot > Cumulative**).  This can be changed to show the sum of pellets retrieved at a specified bin size using **Settings > Individual Pellet Plots > Values to plot > Frequency** and **Settings > Individual Pellet Plots > Bin size of pellet frequency (hours):**
+This plot shows the pellets retrieved over time for a single data file.  By default, the raw *Pellet_Count* column (the cumulative total) is plotted against the timestamps (**Settings > Individual Pellet Plots > Values to plot > Cumulative**).  This can be changed to show the sum of pellets retrieved at a specified bin size using **Settings > Individual Pellet Plots > Values to plot > Frequency** and **Settings > Individual Pellet Plots > Bin size of pellet frequency :**
 
 <p align="center">
 	<img src="img/manual/freqplot.png" width="500">
@@ -384,11 +384,14 @@ Same as the Interpellet Interval Plot (see above), except this version plots gro
 </p>
 The Poke Plot shows the amount of pokes overtime for a single file.  The file is binned at a user-specified frequency, and the amount of pokes within each bin is plotted.  Settings for tweaking this plot are under **Settings > Individual Poke Plots**:
 
-- **Values to plot**: How to represent the pokes plotted (cumulative, frequency per bin, or percent per bin)
-
-- **Bin size for poke plots (hours)**: The size of bins for resampling
+- **Values to plot**: How to represent the pokes plotted: **Cumulative** or **Frequency** (non-cumulative)
+- **Bin size for poke plots**: The size of bins (only used then **Values to plot** is **Frequency**)
 - **Show correct pokes**: Shows the amount of correct pokes when ticked
 - **Show incorrect pokes**: Shows the amount of errors when ticked
+- **Show left pokes**: Shows the amount of left pokes when ticked
+- **Show right pokes**: Shows the amount of right pokes when ticked
+
+Note that you can plot any combination of left/right/correct/incorrect pokes, but at least one must be selected to make the Create Plot Button active.
 
 ### Average Poke Plot
 
@@ -402,7 +405,7 @@ The Poke Plot shows the amount of pokes overtime for a single file.  The file is
 	<img src="img/manual/avg_correctpokes.png" width="700">
 </p>
 
-The Average Poke Plot creates a Group average of either correct or incorrect pokes (depending on the selection from the Plot Selector).  Currently, the frequency of pokes per bin (rather than the cumulative total or percentage) must be plotted.
+The Average Poke Plot creates a Group average of either correct, incorrect, left, or right pokes (depending on the selection from the Plot Selector).  The non-cumulative count of pokes per bin is plotted.
 
 ### Poke Bias Plot
 
@@ -414,7 +417,7 @@ The Average Poke Plot creates a Group average of either correct or incorrect pok
 	<img src="img/manual/pokebias.png" width="700">
 </p>
 
-The Poke Bias Plot visualizes the preference for one poke versus another over time.  The program bins the data (at a frequency set by **Settings > Individual Poke Plots > Bin size of poke plots (hours)**), and for each bin computes the difference in the amount of one type of poke versus another.  Either the difference between correct & incorrect pokes, or left & right poke (regardless of correctness) can be visualized (**Settings > Individual Poke Plots > Comparison for poke bias plots **).  By default, the program will use a red-white-blue color map to highlight the bias; it can be changed to a single solid color by unticking **Use dynamic color for bias plots***.
+The Poke Bias Plot visualizes the preference for one poke versus another over time.  The program bins the data (at a frequency set by **Settings > Individual Poke Plots > Bin size of poke plots**), and for each bin computes the percentage of one type of poke (out of the total number of pokes in that bin).  Either the bias towards the correct poke or the left poke (regardless of correctnesss) can be visualized (**Settings > Individual Poke Plots > Comparison for poke bias plots**).  By default, the program will use a red-white-blue color map to highlight the bias; it can be changed to a single solid color by unticking **Use dynamic color for bias plots***.
 
 *Note that the dynamic coloring of the line plots is actually made by creating a scatter plot of thousands of points, rather than a true line plot (this is easier given options provided by `matplotlib`).  In some cases, the dots may be visible rather than a complete line; a work around for this would need to increase the density of points created in the source code (the `DENSITY` argument in the `poke_bias` function of `plots/plots.py`).
 
@@ -432,6 +435,34 @@ The Poke Bias Plot visualizes the preference for one poke versus another over ti
 
 Average Poke Bias plots average the poke bias (see above) for Grouped devices.  Note that the dynamic coloring style cannot be used here.
 
+### Breakpoint Plot
+
+*Combines all highlighted files into a single plot* :bar_chart:
+
+<p align="center">
+	<img src="img/manual/bp.png" width="500">
+</p>
+
+The Breakpoint Plot is a bar plot showing the "breakpoint" for multiple devices.  The breakpoint is the maximum value of pokes or pellets reached before a period of inactivity.  It is a concept primarily used in progressive ratio tasks to capture a point of loss of motivation.  While the Breakpoint Plots here are designed to be used with progressive ratio data, they can be made for any type of file.
+
+Options for these plots are under **Settings > Progressive Ratio**:
+
+- **Value to plot**: can be **pellets** or **pokes**, the latter being correct pokes
+- **Break length (hours/minutes)**: threshold of inactivity to call the breakpoint; the "hours" and "minutes" are added
+
+### Group Breakpoint Plot
+
+*Uses groups* :paperclip:
+
+<p align="center">
+	<img src="img/manual/group_bp.png" width="500">
+</p>
+
+The Group Breakpoint Plot averages breakpoints (see Breakpoint Plot) for Grouped devices.  In addition to the other settings under **Settings > Progressive Ratio**, Group Breakpoint Plots can be tweaked with:
+
+- **Error value for group breakpoint plots**: What values to use to create error bars; options are SEM (standard error of the mean), STD (standard deviation), or None.
+- **Show individual values**: When ticked, values for individual recordings are superimposed over the bars to show the values contributing to the average.
+
 ### Chronograms (Line)
 
 *Can use night shading* :new_moon_with_face:
@@ -448,9 +479,9 @@ There are a few settings which affect these plots, as well as the other Circadia
 
 - **Values to plot**: What values are being plotted on the y-axis.  Options are pellets, interpellet intervals, retrieval time (of pellets), correct pokes, and errors; the latter two can also be expressed as a percent.
 - **Error value**: What values to use to create error bars; options are SEM (standard error of the mean), STD (standard deviation), or None.
-- **Show individual FED data points**: When ticked, values for individual recordings are superimposed over the bars to show the values contributing to the average.  For Chronogram (Line) plots, ticking this will override the **Error value**.
+- **Show individual FED data points**: When ticked, values for individual recordings are superimposed around the average line to show the values contributing to the average.  For Chronogram (Line) plots, ticking this will override the Error value.
 
-These plots all refer to the light/dark cycle, which is set under **Settings > General > Shade dark periods (lights on/lights off)**.
+These and other circadian plots all refer to the light/dark cycle, which is set under **Settings > General > Shade dark periods (lights on/lights off)**.
 
 ### Chronogram (Heatmap)
 
@@ -590,13 +621,20 @@ This section will mainly cover troubleshooting and issues; please also check the
   
 - **The program slows down, doesn't respond, or crashes.**  In previous iterations of the code, I experienced slowdown when many FED files were loaded in one go (especially with long files) or when a plot was created with many devices shown as separate curves.  In my experience, the program recovered and finished the loading/plotting after a few seconds.  To avoid these issues, I had to select fewer (10 or less) devices when loading (i.e. per push of the Load Button) or plotting devices.  However, changes since then have cleared up some of these issues (on my end; the program now "checks in" in between each device load or plot creation).  If the problems on your device result in frequent crashes or persistent slow downs, even when using small amounts of data, please report this.  I have taken a relatively minimal approach to optimizing speed, and there may be ways to improve.
 
-- **I can't load some of my FED data, or I can load but some plots don't work**.  The most likely cause is that you have a previous version of FED output data, or that there have been edits to raw data.  FED3 Viz tries to handle old formats of the data, but there may be cases which may be caught.  Some examples of current data are included on GitHub in the `example_data` folder.  You can compare your data to these to see if there might be any obvious differences; you can also test that the example data load correctly.  Please share any specific issues on GitHub.
+- **I can't load some of my FED data, or I can load but some plots don't work**.  The most likely cause is that you have a previous version of FED output data, or that there have been edits to raw data.  FED3 Viz tries to handle old formats of the data, but there may be cases which cannot be handled.  Some examples of current data are included on GitHub in the `example_data` folder.  You can compare your data to these to see if there might be any obvious differences; you can also test that the example data load correctly.  Please share any specific issues on GitHub.
 
 - **I do have differently formatted data; how can I know which plots work?**  If the discrepancy is that your data files are missing some columns (because of editing or previous file formats), the best bet is to check the [Appendix](#appendix) and look at the plot column dependencies - these are literally the columns that the program interacts with in order to make the plot.  If the issue is that there are changed values (i.e. not written by FED3) in the data, the results are more unpredictable.  Additionally, there are some specific notes about pokes in older file formats provided in the Appendix.
 
 - **One of the plots I made looks weird.**  By "looks weird" I mean things like broken lines, empty areas of the plot, lines during off periods, smooshed axes text, or completely empty plots.  "Issues" like this may occur given some specific cases of data; I put issues in quotes because some peculiarities may actually accurately reflect the data (say if they have missing values or are temporally distant from each other).  Hopefully, this manual can give you an intuition of the processing that goes into creating a specific plot.
 
   On the other hand, if "looks weird" means you think the plot isn't actually representing the data, or the plot doesn't match one you have created, this could reflect a code error, or an unclear description of what the plots are doing.  Regardless of what "looks weird" means, I would be happy discuss and sort out any specific cases.
+
+- **Why do plots of left/right pokes look different from correct/error?**  There are a few reasons that could cause this:
+
+  - The recording mode is one where the "Active Poke" poke changes sides (in which case the behavior is expected)
+  - There was an error during logging - I have stumbled across a few cases where a pellet retrieval gets logged as a poke, which can affect the assignment of correct/incorrect.  These are (in my experience) rare and should only cause minute differences.
+  - You are using an old file format for which correct/incorrect fails to be assigned (see the discussion of old file formats in the Appendix).  In this case, you will have to plot left/right rather than correct/incorrect (and perhaps retitle the plot later).
+  - You have encountered a peculiar case (please report this!).  The plotting of correct/incorrect and left/right rely on different methods of calculation (in order for L/R to be more friendly to older file formats, see point above).  For new file formats, this should give the same answer (when one poke is always active).   But there is a chance the output could differ in certain scenarios - I will correct this if so.
 
 - **I'm seeing console errors & warning when starting up or running the program.**  Some of these are to be expected, and you shouldn't worry about them if the program continues to work as expected.  If there are functional issues, please report these errors.
 
@@ -629,15 +667,15 @@ This section will mainly cover troubleshooting and issues; please also check the
 
 ### FED3 Arduino Versions
 
-The FED3 Arduino code is open source, and it's often being updated to meet new requirements by FED3 Users.  **This software is designed to work with the current (time of writing) version of standard Arduino scripts (i.e. those posted on the FED3 Hackaday) used by FED3**.  Although, we will attempt to marry the development of FED3 with the development of this software, such that files will continue to be recognized and plots give expected results.  While many small tweaks to the data logging code may not causes issues with this software, changes that may affect FED3 Viz are things like the addition or removal of columns written by FED3, or changes to how pellets, pokes, or timestamps are logged.  If you have a new version of FED code that doesn't work with FED3 Viz, please report the issue!
+The FED3 Arduino code is open source, and it's often being updated to meet new requirements by FED3 Users.  **This software is designed to work with the current (time of writing) version of standard Arduino scripts (i.e. those posted on the FED3 Hackaday) used by FED3**.  We will attempt to marry the development of FED3 with the development of this software, such that files will continue to be recognized and plots give expected results.  While many small tweaks to the data logging code may not causes issues with this software, changes that may affect FED3 Viz are things like the addition or removal of columns written by FED3, or changes to how pellets, pokes, or timestamps are logged.  If you have a new version of FED code that doesn't work with FED3 Viz, please report the issue!
 
 ###### Specific note on poke logging in older versions: 
 
 A major change in the development of FED3 code was altering how often data was written, and for what events.  Currently, FED3 will timestamp and log a row when there is a poke (both active and inactive) or a pellet retrieval.  Previously, FED3 would only log a row whenever a pellet was retrieved.  Thus, the current version logs more information, and gives the precise time when all pokes occur.
 
-FED3 Viz is written to work with this newer style of data logging.  It will assign each poke as "Correct" or "Incorrect" based on which poke was labeled as "Active" at the time of logging.   **Because the older format does not log individual pokes, nor which poke is active for each poke, pokes are not labeled as correct or incorrect**; the rationale for this decision is based on newer recording modes during which the active poke can switch between left and right.  Therefore, this old format will likely not work with plots about correct/incorrect pokes.  
+FED3 Viz is written to work with this newer style of data logging.  It will assign each poke as "Correct" or "Incorrect" based on which poke was labeled as active (i.e. `Active_Poke`) at the time of logging.   **Because the older format does not log individual pokes, nor which poke is active for each poke, pokes are not labeled as correct or incorrect**; the rationale for this decision is based on newer recording modes during which the active poke can switch between left and right.  Therefore, this old format will likely not work with plots about correct/incorrect pokes.  
 
-Instead, plots based on left or right pokes may achieve a similar purpose for these older file formats (if one poke is always active).  These plots only rely on detecting the cumulative poke change in the `Left_Poke_Count` and `Right_Poke_Count` columns, regardless of file format.  However, note that coarser grain of data in the old file format can still cause issues: in the (unlikely) case that there is a long period of time with only inactive pokes, these will only be logged on the next active poke.  Hence, when making inactive pokes that bin data over time, inactive pokes may be placed in the wrong bin.
+Instead, plots based on left or right pokes may achieve a similar purpose for these older file formats (if one poke is always active).  These plots only rely on detecting the cumulative poke change in the `Left_Poke_Count` and `Right_Poke_Count` columns, regardless of file format.  However, note that coarser grain of data in the old file format can still cause issues: in the case that there is period of time with only inactive pokes, these will only be logged on the next active poke.  Hence, when making inactive pokes that bin data over time, inactive pokes may be placed in the wrong bin (but as the bin size increases these occurrences should become less likely).
 
 All-in-all, when using the old file format (or any custom version of FED3 software), be aware there may be issues!
 
