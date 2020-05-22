@@ -65,6 +65,8 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Average Poke Plot](#average-poke-plot)
   - [Poke Bias Plot](#poke-bias-plot)
   - [Average Poke Bias Plot](#average-poke-bias-plot)
+  - [Breakpoint Plot](#breakpoint-plot)
+  - [Group Breakpoint Plot](#group-breakpoint-plot)
   - [Day/Night Plot](#daynight-plot)
   - [Chronogram (Line)](#chronogram-line)
   - [Chronogram (Heatmap)](#chronogram-heatmap)
@@ -559,7 +561,7 @@ To save plots, highlight one or more plots from the Plot List and click the **Sa
 	<img src="img/manual/plotcode.png" width="400">
 </p>
 
-FED3 Viz can return the code used to create each plot through the **Plot Code Button**.  The aim of this feature is to allow users to be able to tweak graphs (with Python) in ways not possible from FED3 Viz. 
+FED3 Viz can return the code used to create each plot through the **Plot Code Button**.  The aim of this feature is to allow users to be able to tweak graphs (with Python) in ways not possible in FED3 Viz. 
 
 Each plot type in FED3 Viz is associated with one or more plotting functions defined in Python; settings from the Settings Tab translate into arguments passed to these functions.  The Plot Code Button uses Python's `inspect` library to return the source code of these plotting functions.  The program formats this code with additional lines that are specific to each plot, like the data source and the settings used.
 
@@ -574,7 +576,7 @@ Each plot type in FED3 Viz is associated with one or more plotting functions def
 
 All this makes the code somewhat verbose, but it aims to make the script run-able without modification.
 
-Plot Code is displayed in a new window, and can be saved as a `.py` or `.txt` file using the Save As... button at the bottom of the window.
+Plot Code is displayed in a new window, and can be saved as a `.py` or `.txt` file using the Save As... Button at the bottom of the window.
 
 **Saving Data**
 
