@@ -141,7 +141,8 @@ class FED3_Viz(tk.Tk):
         self.files_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.files_spreadsheet.yview,)
         self.files_spreadsheet.configure(yscrollcommand=self.files_scrollbar.set)
         self.group_view = tk.Listbox(self.home_sheets,selectmode=tk.EXTENDED,
-                                     activestyle=tk.NONE, height=5)
+                                     activestyle=tk.NONE, height=5,
+                                     exportselection=False)
         self.group_view.bind('<ButtonRelease-1>', self.select_group)
         self.group_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.group_view.yview)
         self.group_view.configure(yscrollcommand=self.group_scrollbar.set)

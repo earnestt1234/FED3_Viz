@@ -895,6 +895,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
         x = y.index
         y = group_avg
         ax.plot(x, y, label=label, color=colors[i])
+        error_shade = np.nan
         if average_error != 'None':
             if average_error == 'STD':
                 error_shade = np.nanstd(avg, axis=0)
@@ -1012,6 +1013,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
         x = y.index
         y = group_avg
         ax.plot(x, y, label=label, color=colors[i])
+        error_shade = np.nan
         if average_error != 'None':
             if average_error == 'STD':
                 error_shade = np.nanstd(avg, axis=0)
@@ -1125,6 +1127,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         x = y.index
         y = group_avg
         ax.plot(x, y, label=label, color=colors[i])
+        error_shade = np.nan
         if average_error != 'None':
             if average_error == 'STD':
                 error_shade = np.nanstd(avg, axis=0)
@@ -1387,7 +1390,7 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
                         out = df.loc[df.index[break_index],col]
                 except:
                     pass
-        if isinstance(out, pd.Series):
+        if isinstance(out, pd.Series): #issue with non-unique indexes
             out = out[-1]
         ys.append(out)
     fig_len = min([max([len(FEDs), 4]), 8])
