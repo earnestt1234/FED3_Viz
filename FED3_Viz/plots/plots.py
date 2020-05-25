@@ -1148,7 +1148,9 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
     else:
         days_in_sixes = [6*quart for quart in range((number_of_days+1)*4)]
         ax.set_xticks(days_in_sixes)
-    ax.xaxis.set_minor_locator(AutoMinorLocator()) 
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    x_offset = .1 * maxx
+    ax.set_xlim(0-x_offset,maxx+x_offset)
     ax.set_ylabel(dependent.capitalize())  
     if "%" in dependent:
         ax.set_ylim(-5,105)

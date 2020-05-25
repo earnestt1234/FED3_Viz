@@ -2,7 +2,7 @@
 shade_dark,True
 lights_on,7 am
 lights_off,7 pm
-allgroups,True
+allgroups,False
 abs_group,True
 skip_duplicates,True
 overwrite,False
@@ -12,9 +12,9 @@ pellet_bins,1 hour
 pellet_color,blue
 pellet_align,False
 average_error,SEM
-average_bins,1 hour
+average_bins,4 hours
 load_last_used,False
-average_method,shared date & time
+average_method,elapsed time
 average_align_start,7 am
 average_align_days,3
 circ_value,pellets
