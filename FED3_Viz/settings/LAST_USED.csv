@@ -2,35 +2,35 @@
 shade_dark,True
 lights_on,7 am
 lights_off,7 pm
-allgroups,False
+allgroups,True
 abs_group,True
 skip_duplicates,True
 overwrite,False
 weirdwarn,True
 pellet_values,Cumulative
-pellet_bins,4 hours
+pellet_bins,1 hour
 pellet_color,blue
-pellet_align,True
+pellet_align,False
 average_error,SEM
-average_bins,2 hours
-load_last_used,True
-average_method,shared time
-average_align_start,6 pm
-average_align_days,1
+average_bins,1 hour
+load_last_used,False
+average_method,shared date & time
+average_align_start,7 am
+average_align_days,3
 circ_value,pellets
 circ_error,SEM
 circ_show_indvl,False
 kde,True
 poke_style,Cumulative
-poke_bins,2 hours
-poke_show_correct,False
-poke_show_error,False
-poke_show_left,True
-poke_show_right,True
+poke_bins,1 hour
+poke_show_correct,True
+poke_show_error,True
+poke_show_left,False
+poke_show_right,False
 bias_style,correct (%)
 dynamic_color,True
-break_style,pokes
+break_style,pellets
 break_hours,1
 break_mins,0
 break_error,SEM
-break_show_indvl,True
+break_show_indvl,False

@@ -9,7 +9,7 @@
 
 **Written for version**: v0.2.0 (beta)
 
-**Date of creation**: May 21th, 2020
+**Date of creation**: May 25th, 2020
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
