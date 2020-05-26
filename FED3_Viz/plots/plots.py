@@ -812,6 +812,36 @@ def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
     
     return fig
 
+def retrieval_time_single(FED, retrieval_threshold, shade_dark,
+                          lights_on, lights_off, **kwargs):
+    assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_plot_single()'   
+    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    df = FED.data
+    y1 = df['Pellet_Count'].drop_duplicates()
+    x1 = y1.index
+    y2 = df['Retrieval_Time'].copy()
+    x2 = y2.index
+    if retrieval_threshold:
+        y2.loc[y2>=retrieval_threshold] = np.nan
+    ax.scatter(x1, y1, s=5, color='coral')
+    ax.set_ylabel('Cumulative Pellets', color='coral')
+    ax2 = ax.twinx()
+    ax2.scatter(x2, y2, s=5, color='darkviolet', marker='s')
+    ax2.set_ylabel('Retrieval Time (s)', color='darkviolet')
+    if retrieval_threshold:
+        ax2.set_ylim(0,retrieval_threshold)
+    ax.set_title('Pellets and Retrieval Times for ' + FED.filename)
+    date_format_x(ax, df.index[0], df.index[-1])
+    ax.set_xlabel('Time')
+    if shade_dark:
+        shade_darkness(ax,min(df.index), max(df.index),
+                       lights_on=lights_on,
+                       lights_off=lights_off)
+        ax.legend(bbox_to_anchor=(1.05,1), loc='upper left')
+    plt.tight_layout()
+    
+    return fig
+
 #---Average Pellet Plots
 
 def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error,
@@ -1796,8 +1826,8 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     
     fig, (ax1,ax2,ax3) = plt.subplots(3,1,figsize=(7,5),sharex=True, dpi=125)
     plt.subplots_adjust(hspace=.1)
-    x = df.index
-    y = df['Pellet_Count']
+    y = df['Pellet_Count'].drop_duplicates()
+    x = y.index
     ax1.scatter(x,y,s=1,c='green')
     ax1.set_ylabel('Cumulative Pellets')
     

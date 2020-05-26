@@ -157,6 +157,7 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_pellet, 3, text='Average Pellet Plot')
         self.plot_treeview.insert(self.ps_pellet, 4, text='Interpellet Interval')
         self.plot_treeview.insert(self.ps_pellet, 5, text='Group Interpellet Interval')
+        self.plot_treeview.insert(self.ps_pellet, 6, text='Retrieval Time Plot')
         self.ps_poke = self.plot_treeview.insert("", 2, text='Pokes')
         self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
         self.plot_treeview.insert(self.ps_poke, 2, text='Average Poke Plot (Correct)')
@@ -270,7 +271,8 @@ class FED3_Viz(tk.Tk):
                                 'Chronogram (Line)':'Plot average 24-hour curves for groups',
                                 'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
-                                'Group Breakpoint Plot':'Plot the average breakpoint for Groups (maximum pellets or pokes reached before a period of inactivity)'}
+                                'Group Breakpoint Plot':'Plot the average breakpoint for Groups (maximum pellets or pokes reached before a period of inactivity)',
+                                'Retrieval Time Plot':'Plot the retrieval time for each pellet (along with pellets retrieved) for a single device'}
             
     #---PLOT TREEVIEW > PLOT FUNCTION
         #associate each plot_treeview entry with a plotting function
@@ -292,7 +294,8 @@ class FED3_Viz(tk.Tk):
                                 'Chronogram (Line)':self.chronogram_line_TK,
                                 'Chronogram (Heatmap)':self.chronogram_heatmap_TK,
                                 'Breakpoint Plot':self.breakpoint_plot,
-                                'Group Breakpoint Plot':self.group_breakpoint_plot}   
+                                'Group Breakpoint Plot':self.group_breakpoint_plot,
+                                'Retrieval Time Plot':self.retrieval_plot_TK}   
                
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
@@ -381,7 +384,11 @@ class FED3_Viz(tk.Tk):
         
         self.ipi_settings_frame = tk.Frame(self.settings_col1)
         self.ipi_settings_frame.grid(row=3,column=0, sticky='nsew', 
-                                     pady=(20,40))
+                                     pady=(20,0))
+        
+        self.retrieval_settings_frame = tk.Frame(self.settings_col1)
+        self.retrieval_settings_frame.grid(row=4,column=0,sticky='nsew',
+                                           pady=(20,40))
         
         self.pr_settings_frame = tk.Frame(self.settings_col2)
         self.pr_settings_frame.grid(row=0,column=0,sticky='nsew',padx=(20))
@@ -436,6 +443,11 @@ class FED3_Viz(tk.Tk):
         self.ipi_settings_label = tk.Label(self.ipi_settings_frame,
                                            text='Interpellet Interval Plots',
                                            font=self.section_font)
+        self.retrieval_label = tk.Label(self.retrieval_settings_frame,
+                                        text='Retrieval Time',
+                                        font=self.section_font)
+        self.retrieval_threshold_label = tk.Label(self.retrieval_settings_frame,
+                                                  text='Threshold for excluding retrieval times (seconds)')
         self.pr_settings_label = tk.Label(self.pr_settings_frame,
                                           text='Progressive Ratio',
                                           font=self.section_font)
@@ -563,6 +575,11 @@ class FED3_Viz(tk.Tk):
         self.ipi_kde_checkbox = ttk.Checkbutton(self.ipi_settings_frame,
                                                 text='Use kernel density estimation',
                                                 var=self.ipi_kde_val)
+        #   retrieval
+        self.retrieval_threshold_menu = ttk.Combobox(self.retrieval_settings_frame,
+                                                     values=['None',60,120,300,600,1800,3600],
+                                                     width=10)
+        self.retrieval_threshold_menu.set('None')
         #   progressive ratio
         self.pr_style_menu = ttk.Combobox(self.pr_settings_frame,
                                           values=['pellets','pokes'],
@@ -682,6 +699,10 @@ class FED3_Viz(tk.Tk):
         
         self.ipi_settings_label.grid(row=0,column=0,sticky='w')
         self.ipi_kde_checkbox.grid(row=1,column=0,sticky='w',padx=(20,0))
+        
+        self.retrieval_label.grid(row=0,column=0,sticky='w')
+        self.retrieval_threshold_label.grid(row=1,column=0,sticky='w',padx=(20,150))
+        self.retrieval_threshold_menu.grid(row=1,column=1,sticky='w',)
         
         self.pr_settings_label.grid(row=0,column=0,sticky='w')
         self.pr_style_label.grid(row=1,column=0,sticky='w',padx=(20,0))
@@ -1380,6 +1401,25 @@ class FED3_Viz(tk.Tk):
         self.PLOTS[fig_name] = new_plot
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
+        
+    def retrieval_plot_TK(self):
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        for obj in FEDs_to_plot:
+            if self.plotting == True:
+                arg_dict = self.get_current_settings_as_args()
+                arg_dict['FED'] = obj
+                new_plot_frame = ttk.Frame(self.plot_container)
+                plotdata = None
+                fig_name = self.create_plot_name('Retrieval Time Plot for ' + obj.filename)
+                fig = plots.retrieval_time_single(**arg_dict)
+                new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
+                                    figname=fig_name, plotfunc=plots.retrieval_time_single,
+                                    plotdata=plotdata, arguments=arg_dict,)
+                self.PLOTS[fig_name] = new_plot
+                self.draw_figure(new_plot)
+                self.raise_figure(fig_name)
+                self.update()
     
     #---HOME HELPER FUNCTIONS
     def update_file_view(self):
@@ -1458,7 +1498,7 @@ class FED3_Viz(tk.Tk):
         text = self.plot_treeview.item(selection,'text')
         if text in ['Single Pellet Plot', 'Multi Pellet Plot', 'Diagnostic Plot',
                     'Interpellet Interval', 'Poke Bias Plot',
-                    'Chronogram (Heatmap)', 'Breakpoint Plot']:
+                    'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot']:
             #if there are feds selected
             if self.files_spreadsheet.selection():
                 self.button_create_plot.configure(state=tk.NORMAL)
@@ -1911,6 +1951,7 @@ class FED3_Viz(tk.Tk):
             self.daynight_show_indvl_val.set(settings_df.loc['circ_show_indvl','Values'])
             self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.ipi_kde_val.set(settings_df.loc['kde','Values'])
+            self.retrieval_threshold_menu.set(settings_df.loc['retrieval_threshold','Values'])
             self.pr_style_menu.set(settings_df.loc['break_style','Values'])
             self.pr_hours_menu.set(settings_df.loc['break_hours','Values'])
             self.pr_mins_menu.set(settings_df.loc['break_mins','Values'])
@@ -1958,6 +1999,7 @@ class FED3_Viz(tk.Tk):
                              circ_error         =self.daynight_error_menu.get(),
                              circ_show_indvl    =self.daynight_show_indvl_val.get(),
                              kde                =self.ipi_kde_val.get(),
+                             retrieval_threshold=self.retrieval_threshold_menu.get(),
                              poke_style         =self.poke_style_menu.get(),
                              poke_bins          =self.poke_bins_menu.get(),
                              poke_show_correct  =self.poke_correct_val.get(),
@@ -1981,6 +2023,10 @@ class FED3_Viz(tk.Tk):
             settings_dict[bin_setting] = self.freq_bins_to_args[settings_dict[bin_setting]]
         for int_setting in ['average_align_days','break_hours','break_mins']:
             settings_dict[int_setting] = int(settings_dict[int_setting])
+        if settings_dict['retrieval_threshold'] == 'None':
+            settings_dict['retrieval_threshold'] = None
+        else:
+            settings_dict['retrieval_threshold'] = int(settings_dict['retrieval_threshold'])
         return settings_dict
     
     #---ERROR MESSAGES

@@ -21,6 +21,7 @@ circ_value,pellets
 circ_error,SEM
 circ_show_indvl,False
 kde,True
+retrieval_threshold,None
 poke_style,Cumulative
 poke_bins,1 hour
 poke_show_correct,True
