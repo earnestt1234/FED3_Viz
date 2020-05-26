@@ -919,9 +919,9 @@ class FED3_Viz(tk.Tk):
             if overwrite:
                 self.LOADED_FEDS = []
             for i,file in enumerate(files):
-                if self.loading:
-                    if skip_duplicates:
-                        file_name = os.path.basename(file)
+                file_name = os.path.basename(file)
+                if self.loading:                    
+                    if skip_duplicates:                       
                         if file_name not in loaded_filenames:
                             try:
                                 pass_FEDs.append(FED3_File(file))
