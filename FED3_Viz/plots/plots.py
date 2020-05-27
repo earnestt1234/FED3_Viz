@@ -534,11 +534,14 @@ def pellet_plot_multi_aligned(FEDs, **kwargs):
         days_in_sixes = [6*quart for quart in range((number_of_days+1)*4)]
         ax.set_xticks(days_in_sixes)
     ax.xaxis.set_minor_locator(AutoMinorLocator()) 
+    x_offset = .05 * xmax
+    ax.set_xlim(0-x_offset,xmax+x_offset)
     ax.set_ylabel('Cumulative Pellets')     
     ax.set_ylim(0,ymax*1.1)    
     title = ('Pellets Retrieved for Multiple FEDs')
     ax.set_title(title)
-    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
     return fig
@@ -570,7 +573,6 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
         FEDs = [FEDs]
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_multi()'
-    days = mdates.DayLocator()
     min_date = np.datetime64('2100')
     max_date = np.datetime64('1970')    
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
@@ -678,7 +680,6 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
         FEDs = [FEDs]
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_multi()'
-    days = mdates.DayLocator()
     min_date = np.datetime64('2100')
     max_date = np.datetime64('1970')   
         
@@ -840,6 +841,44 @@ def retrieval_time_single(FED, retrieval_threshold, shade_dark,
         ax.legend(bbox_to_anchor=(1.05,1), loc='upper left')
     plt.tight_layout()
     
+    return fig
+
+def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for file in FEDs:
+        assert isinstance(file, FED3_File),'Non FED3_File passed to retrieval_time_multi()'
+    color_gradient_divisions = [(1/len(FEDs))*i for i in range(len(FEDs))]
+    cmap = mpl.cm.get_cmap('jet')
+    color_gradients = cmap(color_gradient_divisions)
+    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    xmax = 0
+    for i, fed in enumerate(FEDs):
+        df = fed.data
+        y = df['Retrieval_Time'].copy()
+        if retrieval_threshold:
+            y.loc[y>=retrieval_threshold] = np.nan
+        x = [t.total_seconds()/3600 for t in df['Elapsed_Time']]
+        ax.scatter(x, y, s=5, color=color_gradients[i], marker='s',
+                   alpha=.3, label=fed.filename)
+        if max(x) > xmax:
+            xmax = max(x)
+    ax.set_xlabel('Time (h)')
+    number_of_days = int(xmax//24)
+    if number_of_days > 2:
+        days_in_hours = [24*day for day in range(number_of_days+1)]
+        ax.set_xticks(days_in_hours)
+    else:
+        days_in_sixes = [6*quart for quart in range((number_of_days+1)*4)]
+        ax.set_xticks(days_in_sixes)
+    ax.xaxis.set_minor_locator(AutoMinorLocator()) 
+    x_offset = .05 * xmax
+    ax.set_xlim(0-x_offset,xmax+x_offset)
+    ax.set_ylabel('Retrieval Time (seconds)')
+    ax.set_title('Pellet Retrieval Time')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
     return fig
 
 #---Average Pellet Plots

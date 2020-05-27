@@ -4,6 +4,7 @@ FED3 Viz: A tkinter program for visualizing FED3 Data
 
 @author: https://github.com/earnestt1234
 """
+import copy
 import emoji
 import matplotlib.pyplot as plt
 import os
@@ -158,6 +159,7 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_pellet, 4, text='Interpellet Interval')
         self.plot_treeview.insert(self.ps_pellet, 5, text='Group Interpellet Interval')
         self.plot_treeview.insert(self.ps_pellet, 6, text='Retrieval Time Plot')
+        self.plot_treeview.insert(self.ps_pellet, 7, text='Multi Retrieval Time Plot')
         self.ps_poke = self.plot_treeview.insert("", 2, text='Pokes')
         self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
         self.plot_treeview.insert(self.ps_poke, 2, text='Average Poke Plot (Correct)')
@@ -272,7 +274,8 @@ class FED3_Viz(tk.Tk):
                                 'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
                                 'Group Breakpoint Plot':'Plot the average breakpoint for Groups (maximum pellets or pokes reached before a period of inactivity)',
-                                'Retrieval Time Plot':'Plot the retrieval time for each pellet (along with pellets retrieved) for a single device'}
+                                'Retrieval Time Plot':'Plot the retrieval time for each pellet (along with pellets retrieved) for a single device',
+                                'Multi Retrieval Time Plot':'Plot pellet retrieval times for multiple devices (aligned to the same start point)'}
             
     #---PLOT TREEVIEW > PLOT FUNCTION
         #associate each plot_treeview entry with a plotting function
@@ -295,7 +298,8 @@ class FED3_Viz(tk.Tk):
                                 'Chronogram (Heatmap)':self.chronogram_heatmap_TK,
                                 'Breakpoint Plot':self.breakpoint_plot,
                                 'Group Breakpoint Plot':self.group_breakpoint_plot,
-                                'Retrieval Time Plot':self.retrieval_plot_TK}   
+                                'Retrieval Time Plot':self.retrieval_plot_TK,
+                                'Multi Retrieval Time Plot':self.retrieval_plot_multi_TK}   
                
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
@@ -329,6 +333,8 @@ class FED3_Viz(tk.Tk):
 
     #---INIT WIDGETS FOR PLOTS TAB
         self.plot_container = tk.Frame(self.plot_tab)
+        self.plot_container.grid_columnconfigure(0,weight=1)
+        self.plot_container.grid_rowconfigure(0,weight=1)
         self.plot_listbox = tk.Listbox(self.plot_tab, selectmode=tk.EXTENDED,
                                        activestyle=tk.NONE,)
         self.plot_listbox.config(width=40)
@@ -899,11 +905,14 @@ class FED3_Viz(tk.Tk):
         
         self.plot_listbox.bind(r_click, self.r_raise_menu)
         self.r_menu_plot_single = tkinter.Menu(self, tearoff=0,)
+        self.r_menu_plot_single.add_command(label='Load settings used in this graph',command= self.r_load_plot_settings,)
+        self.r_menu_plot_single.add_command(label='Select files used in this graph',command= self.r_select_from_plot,)
+        self.r_menu_plot_single.add_separator()
         self.r_menu_plot_single.add_command(label='Rename',command= self.rename_plot,)
-        self.r_menu_plot_single.add_command(label='New Window',command= self.new_window_plot,)
-        self.r_menu_plot_single.add_command(label='Plot Code',command= self.show_plot_code,)
-        self.r_menu_plot_single.add_command(label='Save Figure',command= self.save_plots,)
-        self.r_menu_plot_single.add_command(label='Save Data',command= self.save_plot_data,)
+        self.r_menu_plot_single.add_command(label='New window',command= self.new_window_plot,)
+        self.r_menu_plot_single.add_command(label='Plot code',command= self.show_plot_code,)
+        self.r_menu_plot_single.add_command(label='Save figure',command= self.save_plots,)
+        self.r_menu_plot_single.add_command(label='Save data',command= self.save_plot_data,)
         self.r_menu_plot_single.add_separator()
         self.r_menu_plot_single.add_command(label='Delete',command= self.delete_plot,)
         
@@ -1410,7 +1419,7 @@ class FED3_Viz(tk.Tk):
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
                 new_plot_frame = ttk.Frame(self.plot_container)
-                plotdata = None
+                plotdata = getdata.retrieval_time_single(**arg_dict)
                 fig_name = self.create_plot_name('Retrieval Time Plot for ' + obj.filename)
                 fig = plots.retrieval_time_single(**arg_dict)
                 new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
@@ -1420,6 +1429,23 @@ class FED3_Viz(tk.Tk):
                 self.draw_figure(new_plot)
                 self.raise_figure(fig_name)
                 self.update()
+    
+    def retrieval_plot_multi_TK(self):
+        arg_dict = self.get_current_settings_as_args()
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        arg_dict['FEDs'] = FEDs_to_plot
+        fig_name = self.create_plot_name('Multi Retrieval Time Plot')
+        new_plot_frame = ttk.Frame(self.plot_container)
+        plotfunc = plots.retrieval_time_multi
+        plotdata = getdata.retrieval_time_multi(**arg_dict)
+        figure = plotfunc(**arg_dict)
+        new_plot = FED_Plot(frame=new_plot_frame, figure=figure,
+                            figname=fig_name, plotfunc=plotfunc, 
+                            arguments=arg_dict, plotdata=plotdata)
+        self.PLOTS[fig_name] = new_plot
+        self.draw_figure(new_plot)
+        self.raise_figure(fig_name)
     
     #---HOME HELPER FUNCTIONS
     def update_file_view(self):
@@ -1498,7 +1524,8 @@ class FED3_Viz(tk.Tk):
         text = self.plot_treeview.item(selection,'text')
         if text in ['Single Pellet Plot', 'Multi Pellet Plot', 'Diagnostic Plot',
                     'Interpellet Interval', 'Poke Bias Plot',
-                    'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot']:
+                    'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot',
+                    'Multi Retrieval Time Plot']:
             #if there are feds selected
             if self.files_spreadsheet.selection():
                 self.button_create_plot.configure(state=tk.NORMAL)
@@ -1921,14 +1948,19 @@ class FED3_Viz(tk.Tk):
             if savepath:         
                 df.to_csv(savepath)
             
-    def load_settings(self, dialog=True, settings_file=['']):
+    def load_settings(self, dialog=True, settings_file=[''], from_df=None):
+        settings_df = pd.DataFrame()
         if dialog:
             settings_file = tk.filedialog.askopenfilenames(title='Select FED3 Data',
                                                            defaultextension='.csv',
                                                            filetypes=[('Comma-Separated Values', '*.csv')],
                                                            initialdir='settings')
-        if settings_file:
-            settings_df = pd.read_csv(settings_file[0],index_col=0)
+        if isinstance(from_df, pd.DataFrame):
+            settings_df = from_df
+        else:
+            if settings_file:
+                settings_df = pd.read_csv(settings_file[0],index_col=0)
+        if not settings_df.empty:
             self.nightshade_checkbox_val.set(settings_df.loc['shade_dark','Values'])
             self.nightshade_lightson.set(settings_df.loc['lights_on','Values'])
             self.nightshade_lightsoff.set(settings_df.loc['lights_off','Values'])
@@ -1949,7 +1981,6 @@ class FED3_Viz(tk.Tk):
             self.daynight_values.set(settings_df.loc['circ_value','Values'])
             self.daynight_error_menu.set(settings_df.loc['circ_error','Values'])
             self.daynight_show_indvl_val.set(settings_df.loc['circ_show_indvl','Values'])
-            self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.ipi_kde_val.set(settings_df.loc['kde','Values'])
             self.retrieval_threshold_menu.set(settings_df.loc['retrieval_threshold','Values'])
             self.pr_style_menu.set(settings_df.loc['break_style','Values'])
@@ -1965,6 +1996,7 @@ class FED3_Viz(tk.Tk):
             self.poke_right_val.set(settings_df.loc['poke_show_right','Values'])
             self.poke_biasstyle_menu.set(settings_df.loc['bias_style','Values'])
             self.poke_dynamiccolor_val.set(settings_df.loc['dynamic_color','Values'])
+            self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.check_average_align()
             self.check_pellet_type()
                 
@@ -2028,6 +2060,21 @@ class FED3_Viz(tk.Tk):
         else:
             settings_dict['retrieval_threshold'] = int(settings_dict['retrieval_threshold'])
         return settings_dict
+    
+    def convert_settingsdict_to_df(self, settings_dict):
+        def get_key(value, dictionary):
+            items = dictionary.items()
+            for key, val in items:
+                if value==val:
+                    return key          
+        for time_setting in ['lights_on','lights_off','average_align_start']:
+            settings_dict[time_setting] = get_key(settings_dict[time_setting], self.times_to_int)
+        for bin_setting in ['pellet_bins','average_bins', 'poke_bins']:
+            settings_dict[bin_setting] = get_key(settings_dict[bin_setting], self.freq_bins_to_args)
+        if settings_dict['retrieval_threshold'] == None:
+            settings_dict['retrieval_threshold'] = 'None'
+        settingsdf = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])
+        return settingsdf
     
     #---ERROR MESSAGES
     def raise_average_warning(self):
@@ -2116,6 +2163,40 @@ class FED3_Viz(tk.Tk):
         selected = self.files_spreadsheet.selection()
         fed = self.LOADED_FEDS[int(selected[0])]
         os.startfile(fed.directory)
+        
+    def r_load_plot_settings(self):
+        current_settings_dict = self.get_current_settings_as_args()
+        current_settings_df = self.convert_settingsdict_to_df(current_settings_dict)
+        clicked=self.plot_listbox.curselection()
+        graph_name=self.plot_listbox.get(clicked)
+        plot_obj = self.PLOTS[graph_name]
+        plot_settings_dict = copy.deepcopy(plot_obj.arguments)
+        plot_settings_df = self.convert_settingsdict_to_df(plot_settings_dict)
+        plot_arguments = fed_inspect.get_arguments(plot_obj)
+        output_df = current_settings_df
+        for arg in plot_arguments:
+            if arg in output_df.index:
+                output_df.loc[arg,'Values'] = plot_settings_df.loc[arg, 'Values']
+        self.load_settings(dialog=False,from_df=output_df)
+        
+    def r_select_from_plot(self):
+        clicked=self.plot_listbox.curselection()
+        graph_name=self.plot_listbox.get(clicked)
+        plot_obj = self.PLOTS[graph_name]
+        feds_to_select = []
+        if 'FED' in plot_obj.arguments:
+            feds_to_select.append(plot_obj.arguments['FED'])
+        elif 'FEDs' in plot_obj.arguments:
+            feds_to_select += plot_obj.arguments['FEDs']
+        self.files_spreadsheet.selection_remove(self.files_spreadsheet.selection())
+        to_select = []
+        for plot_fed in feds_to_select:
+            for i,loaded_fed in enumerate(self.LOADED_FEDS):
+                if plot_fed == loaded_fed:
+                    to_select.append(i)
+        self.files_spreadsheet.selection_set(to_select)
+        self.update_buttons_home(None)
+        self.tabcontrol.select(self.home_tab)
             
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.save_last_used)

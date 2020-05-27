@@ -311,6 +311,37 @@ def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
     bar_output.index.name = 'log10(minutes)'
     return kde_output, bar_output       
 
+def retrieval_time_single(FED, retrieval_threshold, **kwargs):
+    output=pd.DataFrame()
+    df = FED.data
+    y1 = df['Pellet_Count'].drop_duplicates()
+    x1 = y1.index
+    y2 = df['Retrieval_Time'].copy()
+    x2 = y2.index
+    if retrieval_threshold:
+        y2.loc[y2>=retrieval_threshold] = np.nan
+    output['Pellets'] = y1
+    output['Retrieval Time'] = y2
+    return output
+
+def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
+    df_list = []
+    for file in FEDs:
+        df = file.data
+        y = df['Retrieval_Time'].copy()
+        if retrieval_threshold:
+            y.loc[y>=retrieval_threshold] = np.nan
+        x = [t.total_seconds()/3600 for t in df['Elapsed_Time']]
+        y = list(y)
+        dic = {file.basename:y}
+        df_list.append(pd.DataFrame(dic, index=x))
+    output = pd.DataFrame()
+    for df in df_list:
+        output = output.join(df, how='outer')
+    output.index.name = 'Elapsed Hours'
+    output = output.dropna(axis=0, how='all')
+    return output 
+
 def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                   *args, **kwargs):
     output = pd.DataFrame()
