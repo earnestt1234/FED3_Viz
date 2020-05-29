@@ -148,7 +148,7 @@ def shade_darkness(ax, min_date,max_date,lights_on,lights_off,
                            label='_'*i + 'lights off',
                            zorder=0)
 
-def resample_get_yvals(df, value):
+def resample_get_yvals(df, value, retrieval_threshold=None):
     """
     Function for passing to the apply() method of pandas Resampler or
     DataFrameGroupBy object.  Computes an output for each bin of binned
@@ -180,7 +180,10 @@ def resample_get_yvals(df, value):
     if value == 'pellets':
         output = df['Binary_Pellets'].sum()
     elif value == 'retrieval time':
-        output = df['Retrieval_Time'].mean()
+        output = df['Retrieval_Time'].copy()
+        if retrieval_threshold:
+            output.loc[output>=retrieval_threshold] = np.nan
+        output = output.mean()
     elif value == 'interpellet intervals':
         output = df['Interpellet_Intervals'].mean()
     elif value == 'correct pokes':
@@ -815,6 +818,31 @@ def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
 
 def retrieval_time_single(FED, retrieval_threshold, shade_dark,
                           lights_on, lights_off, **kwargs):
+    """
+    FED3 Viz: Create a scatter plot with a twin y-axis showing cumulative
+    pellets receieved and retrieval time (seconds) for each pellet.
+
+    Parameters
+    ----------
+    FED : FED3_File object
+        FED3 data (from load.FED3_File)
+    retrieval_threshold : int or float
+        maximum value of retrieval time to include (higher becomes np.nan)
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    pellet_color : str
+        matplotlib named color string to color line
+    **kwargs : 
+        Allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
     assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_plot_single()'   
     fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     df = FED.data
@@ -844,6 +872,23 @@ def retrieval_time_single(FED, retrieval_threshold, shade_dark,
     return fig
 
 def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
+    """
+    FED3 Viz: Create a scatter plot showing pelle retrieval time for
+    multiple devices, aligning them to the same start point.
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    retrieval_threshold : int or float
+        maximum value of retrieval time to include (higher becomes np.nan)
+    **kwargs : 
+        Allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     for file in FEDs:
@@ -884,7 +929,7 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
 #---Average Pellet Plots
 
 def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error,
-                            shade_dark, lights_on, lights_off, **kwargs):
+                            shade_dark, lights_on, lights_off,**kwargs):
     """
     FED3 Viz: Create an average line plot for Grouped FED3 Files; averaging
     is only done for periods where all devices were active.  If there is no such
@@ -912,12 +957,17 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        If "retrieval_threshold", sets the maximum value when dependent
+        is 'retrieval time'. Allows FED3 Viz to pass all settings to all
+        functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     show_indvl=False
     if average_error == 'raw data':
         average_error = 'None'
@@ -948,7 +998,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
                     y = left_right_noncumulative(file.data,average_bins,side='r',version='ondatetime')
                 else:
                     df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
-                    y = df.apply(resample_get_yvals,dependent)
+                    y = df.apply(resample_get_yvals,dependent,retrieval_threshold)
                 y = y[(y.index > latest_start) &
                         (y.index < earliest_end)].copy()
                 avg.append(y)
@@ -995,8 +1045,8 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
 
 
 def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_start,
-                        average_align_days, average_error,
-                        shade_dark, lights_on, lights_off, **kwargs):
+                        average_align_days, average_error, shade_dark, lights_on,
+                        lights_off, **kwargs):
     """
     FED3 Viz: Create an average line plot for Grouped FED3 Files.  Data are
     first aligned by the time of day, and then averaged.
@@ -1027,12 +1077,17 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        If "retrieval_threshold", sets the maximum value when dependent
+        is 'retrieval time'. Allows FED3 Viz to pass all settings to all
+        functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     show_indvl=False
     if average_error == 'raw data':
         average_error = 'None'
@@ -1063,7 +1118,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                                                  starttime=average_align_start)
                 else:
                     df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
-                    y = df.apply(resample_get_yvals, dependent)
+                    y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)
@@ -1120,8 +1175,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
 
     return fig
 
-def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
-                         **kwargs):
+def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, **kwargs):
     """
     FED3 Viz: Create an average line plot for Grouped FED3 Files.  Data are
     first aligned by elapsed time, and then averaged.
@@ -1143,12 +1197,17 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         How to represent the spread of data around the average.  Options are
         "SEM", "STD", "raw data", or "None".
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        If "retrieval_threshold", sets the maximum value when dependent
+        is 'retrieval time'. Allows FED3 Viz to pass all settings to all
+        functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     show_indvl=False
     if average_error == 'raw data':
         average_error = 'None'
@@ -1179,7 +1238,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                 else:
                     df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
-                    y = df.apply(resample_get_yvals, dependent)
+                    y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 y = y.reindex(longest_index)          
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 if np.nanmax(y.index) > maxx:

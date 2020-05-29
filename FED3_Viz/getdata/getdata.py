@@ -93,6 +93,9 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, *args,**kwargs):
 
 def average_plot_ondatetime(FEDs, groups, dependent, average_bins, 
                             average_error, *args, **kwargs):
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     output = pd.DataFrame()
     group_avg_df = pd.DataFrame()
     earliest_end = dt.datetime(2999,1,1,0,0,0)
@@ -115,7 +118,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
                     y = left_right_noncumulative(file.data,average_bins,side='r',version='ondatetime')
                 else:
                     df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
-                    y = df.apply(resample_get_yvals,dependent)
+                    y = df.apply(resample_get_yvals,dependent, retrieval_threshold)
                     y = y[(y.index > latest_start) &
                           (y.index < earliest_end)].copy()
                 avg.append(y)
@@ -137,6 +140,9 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
 def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_start,
                         average_align_days, average_error, *args, 
                         **kwargs):
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     output = pd.DataFrame()
     group_avg_df = pd.DataFrame()
     start_datetime = dt.datetime(year=1970,
@@ -160,7 +166,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                                                  starttime=average_align_start)
                 else:
                     df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
-                    y = df.apply(resample_get_yvals, dependent)
+                    y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)
@@ -189,6 +195,9 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
 
 def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                          *args, **kwargs):
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     output = pd.DataFrame()
     group_avgs = pd.DataFrame()
     longest_index = []
@@ -212,7 +221,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                 else:
                     df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
-                    y = df.apply(resample_get_yvals, dependent)
+                    y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 y = y.reindex(longest_index)           
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 avg.append(y)
@@ -314,14 +323,14 @@ def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
 def retrieval_time_single(FED, retrieval_threshold, **kwargs):
     output=pd.DataFrame()
     df = FED.data
-    y1 = df['Pellet_Count'].drop_duplicates()
-    x1 = y1.index
+    y1 = df['Pellet_Count'].copy()
     y2 = df['Retrieval_Time'].copy()
-    x2 = y2.index
     if retrieval_threshold:
         y2.loc[y2>=retrieval_threshold] = np.nan
+    y1[y2.isnull()] = np.nan
     output['Pellets'] = y1
     output['Retrieval Time'] = y2
+    output=output.dropna()
     return output
 
 def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):

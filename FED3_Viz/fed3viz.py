@@ -149,7 +149,7 @@ class FED3_Viz(tk.Tk):
         self.group_view.configure(yscrollcommand=self.group_scrollbar.set)
         
         #plot selector:
-        self.plot_treeview = ttk.Treeview(self.plot_selector, selectmode = 'browse',)
+        self.plot_treeview = ttk.Treeview(self.plot_selector,)
         self.plot_treeview.heading('#0', text='Plots',)
         self.plot_treeview.column('#0', width=230)
         self.ps_pellet = self.plot_treeview.insert("", 1, text='Pellets')
@@ -160,6 +160,7 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_pellet, 5, text='Group Interpellet Interval')
         self.plot_treeview.insert(self.ps_pellet, 6, text='Retrieval Time Plot')
         self.plot_treeview.insert(self.ps_pellet, 7, text='Multi Retrieval Time Plot')
+        self.plot_treeview.insert(self.ps_pellet, 8, text='Average Retrieval Time Plot')
         self.ps_poke = self.plot_treeview.insert("", 2, text='Pokes')
         self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
         self.plot_treeview.insert(self.ps_poke, 2, text='Average Poke Plot (Correct)')
@@ -275,7 +276,8 @@ class FED3_Viz(tk.Tk):
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
                                 'Group Breakpoint Plot':'Plot the average breakpoint for Groups (maximum pellets or pokes reached before a period of inactivity)',
                                 'Retrieval Time Plot':'Plot the retrieval time for each pellet (along with pellets retrieved) for a single device',
-                                'Multi Retrieval Time Plot':'Plot pellet retrieval times for multiple devices (aligned to the same start point)'}
+                                'Multi Retrieval Time Plot':'Plot pellet retrieval times for multiple devices (aligned to the same start point)',
+                                'Average Retrieval Time Plot':'Plot mean pellet retrieval time for Groups (Groups make individual curves)'}
             
     #---PLOT TREEVIEW > PLOT FUNCTION
         #associate each plot_treeview entry with a plotting function
@@ -299,7 +301,8 @@ class FED3_Viz(tk.Tk):
                                 'Breakpoint Plot':self.breakpoint_plot,
                                 'Group Breakpoint Plot':self.group_breakpoint_plot,
                                 'Retrieval Time Plot':self.retrieval_plot_TK,
-                                'Multi Retrieval Time Plot':self.retrieval_plot_multi_TK}   
+                                'Multi Retrieval Time Plot':self.retrieval_plot_multi_TK,
+                                'Average Retrieval Time Plot':self.avg_plot_TK}   
                
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
@@ -1090,10 +1093,18 @@ class FED3_Viz(tk.Tk):
     
     def init_plot(self):
         selection = self.plot_treeview.selection()
-        text = self.plot_treeview.item(selection,'text')
         self.plotting = True
-        if text in self.plot_nodes_func:
-            self.plot_nodes_func[text]()
+        for i in selection:
+            text = self.plot_treeview.item(i,'text')
+            if self.is_plottable(text):
+                if self.plotting:
+                    if text in self.plot_nodes_func:
+                        plotting_function = self.plot_nodes_func[text]
+                        if plotting_function == self.avg_plot_TK:
+                            plotting_function(text)
+                        else:
+                            plotting_function()
+            self.update()
     
     def pellet_plot_single_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
@@ -1148,7 +1159,7 @@ class FED3_Viz(tk.Tk):
         self.draw_figure(new_plot)
         self.raise_figure(fig_name)
            
-    def avg_plot_TK(self):
+    def avg_plot_TK(self, plot_name):
         args_dict = self.get_current_settings_as_args()
         if self.allgroups_val.get():
             groups = self.GROUPS
@@ -1163,16 +1174,15 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        selection = self.plot_treeview.selection()
-        text = self.plot_treeview.item(selection,'text')
         choices = {'Average Pellet Plot':'pellets',
                    'Average Poke Plot (Correct)':'correct pokes',
                    'Average Poke Plot (Error)':'errors',
                    'Average Poke Plot (Left)':'left pokes',
                    'Average Poke Plot (Right)':'right pokes',
                    'Average Poke Bias Plot (Correct %)':'poke bias (correct %)',
-                   'Average Poke Bias Plot (Left %)':'poke bias (left %)'}
-        args_dict['dependent'] = choices[text]
+                   'Average Poke Bias Plot (Left %)':'poke bias (left %)',
+                   'Average Retrieval Time Plot':'retrieval time'}
+        args_dict['dependent'] = choices[plot_name]
         method = self.average_method_menu.get()
         if method == 'shared time':
             plotfunc=plots.average_plot_ontime
@@ -1489,12 +1499,13 @@ class FED3_Viz(tk.Tk):
     
     def show_plot_help(self, *event):
         selection = self.plot_treeview.selection()
-        text = self.plot_treeview.item(selection,'text')
-        if text in self.plot_nodes_help:
-            self.home_buttons_help.configure(text=self.plot_nodes_help[text])
-        else:
-            self.home_buttons_help.configure(text='')
-    
+        if selection:
+            text = self.plot_treeview.item(selection[-1],'text')
+            if text in self.plot_nodes_help:
+                self.home_buttons_help.configure(text=self.plot_nodes_help[text])
+            else:
+                self.home_buttons_help.configure(text='')
+
     def sort_FEDs(self, event, reverse):
         where_clicked = self.files_spreadsheet.identify_region(event.x,event.y)
         if where_clicked == 'heading':
@@ -1517,48 +1528,60 @@ class FED3_Viz(tk.Tk):
             if column_name == '':
                 self.LOADED_FEDS.sort(key=lambda x:len(x.missing_columns), reverse=reverse)
             self.update_file_view()
-            
-    def update_buttons_home(self,*event):
-        #start with the create plot button
-        selection = self.plot_treeview.selection()
-        text = self.plot_treeview.item(selection,'text')
-        if text in ['Single Pellet Plot', 'Multi Pellet Plot', 'Diagnostic Plot',
-                    'Interpellet Interval', 'Poke Bias Plot',
-                    'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot',
-                    'Multi Retrieval Time Plot']:
-            #if there are feds selected
+    
+    def is_plottable(self, plot_name):
+        plottable = False
+        if plot_name in ['Single Pellet Plot', 'Multi Pellet Plot', 'Diagnostic Plot',
+                         'Interpellet Interval', 'Poke Bias Plot',
+                         'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot',
+                         'Multi Retrieval Time Plot']:
             if self.files_spreadsheet.selection():
-                self.button_create_plot.configure(state=tk.NORMAL)
+                plottable = True
             else:
-                self.button_create_plot.configure(state=tk.DISABLED)
-        elif text == 'Single Poke Plot':
+                plottable = False
+        elif plot_name == 'Single Poke Plot':
             if self.files_spreadsheet.selection():
                 if (self.poke_correct_val.get() or self.poke_error_val.get() or 
                     self.poke_left_val.get() or self.poke_right_val.get()):
-                    self.button_create_plot.configure(state=tk.NORMAL)
+                    plottable = True
             else:
-                self.button_create_plot.configure(state=tk.DISABLED)
-        elif text in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)',
-                      'Average Poke Plot (Correct)','Average Poke Plot (Error)',
-                      'Average Poke Plot (Left)','Average Poke Plot (Right)',
-                      'Average Poke Bias Plot (Correct %)','Average Poke Bias Plot (Left %)',
-                      'Group Interpellet Interval',
-                      'Group Breakpoint Plot']:
+                plottable = False
+        elif plot_name in ['Average Pellet Plot', 'Day/Night Plot', 'Chronogram (Line)',
+                          'Average Poke Plot (Correct)','Average Poke Plot (Error)',
+                          'Average Poke Plot (Left)','Average Poke Plot (Right)',
+                          'Average Poke Bias Plot (Correct %)','Average Poke Bias Plot (Left %)',
+                          'Group Interpellet Interval','Group Breakpoint Plot',
+                          'Average Retrieval Time Plot']:
             #if the all groups box is checked
             if self.allgroups_val.get():
                 #if there are any groups
                 if self.GROUPS:
-                    self.button_create_plot.configure(state=tk.NORMAL)
+                    plottable = True
                 else:
-                    self.button_create_plot.configure(state=tk.DISABLED)
+                    plottable = False
             else:
                 #if there are groups selected
                 if self.group_view.curselection():
-                    self.button_create_plot.configure(state=tk.NORMAL)
+                    plottable = True
                 else:
-                    self.button_create_plot.configure(state=tk.DISABLED)
+                    plottable = False
+        else:
+            plottable = False
+        return plottable
+    
+    def update_create_plot_button(self):
+        plottables = []
+        selected = self.plot_treeview.selection()
+        for i in selected:
+            plot_name = self.plot_treeview.item(i,'text')
+            plottables.append(self.is_plottable(plot_name))
+        if any(plottables):
+            self.button_create_plot.configure(state=tk.NORMAL)
         else:
             self.button_create_plot.configure(state=tk.DISABLED)
+    
+    def update_buttons_home(self,*event):
+        self.update_create_plot_button()
         #if there are feds selected
         if self.files_spreadsheet.selection():
             self.button_delete.configure(state=tk.NORMAL)
@@ -1648,6 +1671,8 @@ class FED3_Viz(tk.Tk):
     def escape(self, *event):
         if self.focus_get() == self.files_spreadsheet:
             self.files_spreadsheet.selection_remove(self.files_spreadsheet.selection())
+        if self.focus_get() == self.plot_treeview:
+            self.plot_treeview.selection_remove(self.plot_treeview.selection())
         if self.loading:
             self.loading = False
         if self.plotting:

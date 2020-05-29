@@ -47,6 +47,9 @@ def generate_code(PLOTOBJ):
     used_args = PLOTOBJ.arguments
     plotfunc    = plotfuncs[PLOTOBJ.plotfunc.__name__]
     args_ordered = inspect.getfullargspec(plotfunc).args
+    if PLOTOBJ.plotfunc.__name__ in avg_funcs:
+        if used_args['dependent'] == 'retrieval time':
+            args_ordered.append('retrieval_threshold')
 
     output = ""
     imports = """
@@ -141,7 +144,10 @@ register_matplotlib_converters()
     call += 'plot = '
     call += plotfunc.__name__ + '('
     for i, arg in enumerate(args_ordered, start=1):
-        call += arg
+        if arg == 'retrieval_threshold' and (plotfunc.__name__ in avg_funcs):
+            call += (arg + '=retrieval_threshold')
+        else:
+            call+=arg
         if i != len(args_ordered):
             call += ', '
         else:
