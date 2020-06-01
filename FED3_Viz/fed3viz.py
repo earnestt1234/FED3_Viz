@@ -9,6 +9,7 @@ import emoji
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
+import pickle
 import platform
 import tkinter as tk
 import tkinter.filedialog
@@ -228,6 +229,12 @@ class FED3_Viz(tk.Tk):
         self.button_load_groups        = tk.Button(self.fed_buttons, text='Load Groups',
                                                    command=lambda: self.load_groups(),
                                                    state=tk.DISABLED)
+        self.button_save_session       = tk.Button(self.fed_buttons, text='Save Session',
+                                                   command = self.save_session,
+                                                   state=tk.NORMAL)
+        self.button_load_session       = tk.Button(self.fed_buttons, text='Load Session',
+                                                   command=self.load_session,
+                                                   state=tk.NORMAL)
         self.button_create_plot        = tk.Button(self.plot_selector, text='Create Plot',
                                                    command=self.init_plot,
                                                    state=tk.DISABLED, height=2,
@@ -249,7 +256,11 @@ class FED3_Viz(tk.Tk):
                                     self.button_save_groups:
                                         'Save the current Group labels for the loaded devices',
                                     self.button_load_groups:
-                                        'Load Group labels from a saved groups file',}
+                                        'Load Group labels from a saved groups file',
+                                    self.button_save_session:
+                                        'Save the entire application state (files, groups, plots)',
+                                    self.button_load_session:
+                                        'Load a session file'}
         for button in self.hover_text_one_dict.keys():
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
@@ -315,6 +326,8 @@ class FED3_Viz(tk.Tk):
         self.button_edit_group.grid(row=0,column=6,sticky='sew')
         self.button_save_groups.grid(row=0,column=7,sticky='sew')
         self.button_load_groups.grid(row=0,column=8,sticky='sew')
+        self.button_save_session.grid(row=0,column=9,sticky='sew')
+        self.button_load_session.grid(row=0,column=10,sticky='sew')
         
         #labels
         self.home_buttons_help.grid(row=0,column=0,sticky='nsw',padx=(0,20),
@@ -928,16 +941,19 @@ class FED3_Viz(tk.Tk):
         self.r_menu_plot_multi.add_command(label='Delete',command= self.delete_plot,)
                 
     #---HOME TAB BUTTON FUNCTIONS
-    def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False):
-        if from_folder:
-            folder = tk.filedialog.askdirectory(title='Select folder to search for FEDs')
-            files = self.walk_filenames(folder)
+    def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False, file_paths=None):
+        if file_paths:
+            files = file_paths
         else:
-            file_types = [('All', '*.*'),
-                          ('Comma-Separated Values', '*.csv'),
-                          ('Excel', '*.xls, *.xslx'),]
-            files = tk.filedialog.askopenfilenames(title='Select FED3 Data',
-                                                   filetypes=file_types)
+            if from_folder:
+                folder = tk.filedialog.askdirectory(title='Select folder to search for FEDs')
+                files = self.walk_filenames(folder)
+            else:
+                file_types = [('All', '*.*'),
+                              ('Comma-Separated Values', '*.csv'),
+                              ('Excel', '*.xls, *.xslx'),]
+                files = tk.filedialog.askopenfilenames(title='Select FED3 Data',
+                                                       filetypes=file_types)
         loaded_filenames = [fed.basename for fed in self.LOADED_FEDS]
         pass_FEDs = []
         failed_FEDs = []
@@ -1091,6 +1107,48 @@ class FED3_Viz(tk.Tk):
         self.update_file_view()
         self.update_group_view()
     
+    def save_session(self, dialog=True):
+        if dialog:
+            savepath = tk.filedialog.asksaveasfilename(title='Select where to save session file',
+                                                       defaultextension='.fed',
+                                                       filetypes = [('FED Session (pickled file)', '*.FED')],
+                                                       initialdir='sessions')
+        else:
+            savepath = 'sessions/LAST_USED.fed'
+        if savepath:
+            jarred = {}
+            jarred['feds'] = self.LOADED_FEDS
+            jarred_plots = OrderedDict()
+            for name, obj in self.PLOTS.items():
+                jarred_plots[name] = FED_Plot(figure=obj.figure, frame=None,
+                                              figname=obj.figname,
+                                              plotfunc=obj.plotfunc,
+                                              arguments=obj.arguments,
+                                              plotdata=obj.plotdata,)
+            jarred['plots'] = jarred_plots
+            jarred['settings'] = self.save_settings(return_df = True)
+            pickle.dump(jarred, open(savepath, 'wb'))
+    
+    def load_session(self):
+        session_file = tk.filedialog.askopenfilenames(title='Select a session file to load',
+                                                      initialdir='sessions',
+                                                      multiple=False)
+        if session_file:
+            unjarred = pickle.load(open(session_file[0],'rb'))
+            self.LOADED_FEDS = unjarred['feds']
+            self.update_file_view()
+            self.update_group_view()
+            self.update_all_buttons()
+            self.delete_plot(all=True, raise_plots=False)
+            self.PLOTS = unjarred['plots']
+            for name, plot in self.PLOTS.items():
+                new_frame = ttk.Frame(self.plot_container)
+                plot.frame = new_frame
+                self.draw_figure(plot)
+                # self.raise_figure(plot.figname)
+                self.update()
+            self.load_settings(dialog=False, from_df=unjarred['settings'])
+        
     def init_plot(self):
         selection = self.plot_treeview.selection()
         self.plotting = True
@@ -1505,6 +1563,8 @@ class FED3_Viz(tk.Tk):
                 self.home_buttons_help.configure(text=self.plot_nodes_help[text])
             else:
                 self.home_buttons_help.configure(text='')
+        else:
+                self.home_buttons_help.configure(text='')      
 
     def sort_FEDs(self, event, reverse):
         where_clicked = self.files_spreadsheet.identify_region(event.x,event.y)
@@ -1736,8 +1796,15 @@ class FED3_Viz(tk.Tk):
         self.ok_button.grid(row=2,column=0,sticky='ew',padx=(20,20),pady=(20,20))
         self.cancel_button.grid(row=2,column=1,sticky='ew',padx=(20,20),pady=(20,20))
          
-    def delete_plot(self):
+    def delete_plot(self, **kwargs):
+        raise_plots = True
         clicked=sorted(list(self.plot_listbox.curselection()), reverse=True)
+        if 'all' in kwargs:
+            if kwargs.get('all'):
+                clicked = sorted(list(range(len(self.PLOTS))), reverse=True)   
+        if 'raise_plots' in kwargs:
+            if not kwargs.get('raise_plots'):
+                raise_plots = False
         for i in clicked:
             selection=self.plot_listbox.get(i)
             self.plot_listbox.delete(i)
@@ -1745,7 +1812,7 @@ class FED3_Viz(tk.Tk):
             plt.close(self.PLOTS[selection].figure)
             del(self.PLOTS[selection])
             new_plot_index=self.plot_listbox.size()-1
-            if new_plot_index>=0:
+            if new_plot_index>=0 and raise_plots:
                 new_plot=self.plot_listbox.get(new_plot_index)
                 self.raise_figure(new_plot)
         self.update_buttons_plot(None)
@@ -1848,7 +1915,8 @@ class FED3_Viz(tk.Tk):
         frame = self.PLOTS[fig_name].frame
         for graph in self.PLOTS:
             if graph != fig_name:
-                self.PLOTS[graph].frame.grid_remove()
+                if self.PLOTS[graph].frame:
+                    self.PLOTS[graph].frame.grid_remove()
         self.tabcontrol.select(self.plot_tab)
         width = str(self.PLOTS[fig_name].width + self.w_offset)
         height = str(self.PLOTS[fig_name].height + self.h_offset)
@@ -2024,13 +2092,6 @@ class FED3_Viz(tk.Tk):
             self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.check_average_align()
             self.check_pellet_type()
-                
-    def save_last_used(self):
-        settingsdir = 'settings'
-        last_used = 'settings/LAST_USED.csv'
-        if os.path.isdir(settingsdir):
-            self.save_settings(dialog=False,savepath=last_used)
-        self.destroy()
  
     #---SETTINGS HELPER FUNCTIONS
     def get_current_settings(self):
@@ -2100,6 +2161,16 @@ class FED3_Viz(tk.Tk):
             settings_dict['retrieval_threshold'] = 'None'
         settingsdf = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])
         return settingsdf
+    
+    def on_close(self):
+        #save last used settings
+        settingsdir = 'settings'
+        last_used = 'settings/LAST_USED.csv'
+        if os.path.isdir(settingsdir):
+            self.save_settings(dialog=False,savepath=last_used)
+        #save current session
+        self.save_session(dialog=False)        
+        self.destroy()
     
     #---ERROR MESSAGES
     def raise_average_warning(self):
@@ -2224,7 +2295,7 @@ class FED3_Viz(tk.Tk):
         self.tabcontrol.select(self.home_tab)
             
 root = FED3_Viz()
-root.protocol("WM_DELETE_WINDOW", root.save_last_used)
+root.protocol("WM_DELETE_WINDOW", root.on_close)
 root.bind('<Escape>', root.escape)
 root.minsize(1050,20)
 if __name__=="__main__":
