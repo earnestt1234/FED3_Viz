@@ -2169,7 +2169,8 @@ class FED3_Viz(tk.Tk):
         if os.path.isdir(settingsdir):
             self.save_settings(dialog=False,savepath=last_used)
         #save current session
-        self.save_session(dialog=False)        
+        if os.path.isdir('sessions'):
+            self.save_session(dialog=False)        
         self.destroy()
     
     #---ERROR MESSAGES
