@@ -36,6 +36,16 @@ class FED_Plot():
         self.fednames = []
         self.width  = width
         self.height = height
+        
+class New_Window_Figure():
+    def __init__(self, toplevel, fig, ax, frame, canvas, toolbar, in_use,):
+        self.toplevel = toplevel
+        self.fig = fig
+        self.ax = ax
+        self.frame = frame
+        self.canvas = canvas
+        self.toolbar = toolbar
+        self.in_use = in_use
 
 class FED3_Viz(tk.Tk):
     def __init__(self):
@@ -51,7 +61,8 @@ class FED3_Viz(tk.Tk):
         self.mac_color = '#E2E2E2'
         self.colors =  ['blue','red','green','yellow','purple','orange',
                         'black',]
-        self.FIGURE, self.AX = plt.subplots(dpi=150)
+        self.FIGURE, self.AX = plt.subplots(dpi=150) #fig/axes used in plot tab
+        self.NEW_WINDOW_FIGS  = [] 
         times = []
         for xm in [' am', ' pm']:
             for num in range(0,12):
@@ -1832,10 +1843,62 @@ class FED3_Viz(tk.Tk):
         self.update_buttons_plot(None)
                 
     def new_window_plot(self):
+        in_use = [obj.in_use for obj in self.NEW_WINDOW_FIGS]
+        if sum(in_use) == 5:
+            print("warning here")
+            return
         clicked=self.plot_listbox.curselection()
-        for i in clicked:
-            graph_name=self.plot_listbox.get(i)
-            self.draw_figure(self.PLOTS[graph_name], pop_window=True)
+        graph_name=self.plot_listbox.get(clicked)
+        plot_obj = self.PLOTS[graph_name]
+        if not self.NEW_WINDOW_FIGS:
+            self.create_new_window_figure(plot_obj)
+        else:
+            if all(in_use):
+                self.create_new_window_figure(plot_obj)
+            else:
+                self.reuse_new_window_figure(plot_obj)               
+            
+    def create_new_window_figure(self, plot_obj):
+        new_window = tk.Toplevel()
+        new_window.title(plot_obj.figname)
+        if not platform.system() == 'Darwin': 
+            new_window.iconbitmap('img/graph_icon.ico')
+        new_window.protocol("WM_DELETE_WINDOW", lambda: self.close_new_window(new_window))
+        new_fig, new_ax = plt.subplots(dpi=150)
+        new_frame = ttk.Frame(new_window)
+        new_frame.pack(fill=tk.BOTH, expand=1)
+        canvas = FigureCanvasTkAgg(new_fig, master=new_frame)
+        canvas.draw_idle()
+        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        nav_toolbar = NavigationToolbar2Tk(canvas, new_frame)
+        nav_toolbar.update()
+        canvas._tkcanvas.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        created = New_Window_Figure(toplevel = new_window, fig=new_fig,
+                                    ax=new_ax, frame=new_frame, canvas=canvas,
+                                    toolbar=nav_toolbar, in_use=True)
+        new_arguments = {key:val for key,val in plot_obj.arguments.items() if key != 'ax'}
+        new_arguments['ax'] = new_ax
+        plot_obj.plotfunc(**new_arguments)
+        self.NEW_WINDOW_FIGS.append(created)
+     
+    def reuse_new_window_figure(self, plot_obj):
+        obj_to_reuse = next(x for x in self.NEW_WINDOW_FIGS if x.in_use == False)
+        obj_to_reuse.in_use = True
+        new_arguments = {key:val for key,val in plot_obj.arguments.items() if key != 'ax'}
+        obj_to_reuse.ax.clear()
+        new_arguments['ax'] = obj_to_reuse.ax
+        plot_obj.plotfunc(**new_arguments)
+        obj_to_reuse.toplevel.deiconify()
+        obj_to_reuse.canvas.draw_idle()
+        obj_to_reuse.toolbar.update()
+        
+    def close_new_window(self, toplevel):
+        #set in_use of New_Window_Figure 
+        for obj in self.NEW_WINDOW_FIGS:
+            if obj.toplevel == toplevel:
+                obj.in_use = False
+        #close, but use withdraw
+        toplevel.withdraw()
             
     def save_plots(self):
         clicked=self.plot_listbox.curselection()
