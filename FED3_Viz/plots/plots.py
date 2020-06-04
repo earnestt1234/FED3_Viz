@@ -429,8 +429,11 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
     -------
     fig : matplotlib.figure.Figure
     """
-    assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_plot_single()'   
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_plot_single()'
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     df = FED.data
     x = df.index
     y = df['Pellet_Count']
@@ -446,7 +449,7 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
                        lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
                        lights_off, pellet_color, **kwargs):

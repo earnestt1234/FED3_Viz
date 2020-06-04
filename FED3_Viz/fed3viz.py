@@ -27,17 +27,15 @@ from load.load import FED3_File
 from plots import plots
 
 class FED_Plot():
-    def __init__(self, figure, frame, figname,
-                 plotfunc, arguments, plotdata=None,):       
-        self.figure = figure
-        self.frame  = frame
+    def __init__(self, figname, plotfunc, arguments, plotdata=None,
+                 width=7, height=3.5):
         self.figname = figname
         self.arguments = arguments
         self.plotfunc = plotfunc
         self.plotdata = plotdata
         self.fednames = []
-        self.width  = int(self.figure.get_size_inches()[0] *self.figure.dpi)
-        self.height = int(self.figure.get_size_inches()[1] *self.figure.dpi)
+        self.width  = width
+        self.height = height
 
 class FED3_Viz(tk.Tk):
     def __init__(self):
@@ -53,6 +51,7 @@ class FED3_Viz(tk.Tk):
         self.mac_color = '#E2E2E2'
         self.colors =  ['blue','red','green','yellow','purple','orange',
                         'black',]
+        self.FIGURE, self.AX = plt.subplots(dpi=150)
         times = []
         for xm in [' am', ' pm']:
             for num in range(0,12):
@@ -82,6 +81,8 @@ class FED3_Viz(tk.Tk):
         self.tabcontrol = ttk.Notebook(self)
         self.home_tab   = tk.Frame(self.tabcontrol)
         self.plot_tab   = tk.Frame(self.tabcontrol)
+        self.plot_tab.rowconfigure(0,weight=1)
+        self.plot_tab.columnconfigure(2,weight=1)
         self.settings_tab = tk.Frame(self.tabcontrol)
         self.about_tab = tk.Frame(self.tabcontrol)
         self.tabcontrol.add(self.home_tab, text='Home')
@@ -351,6 +352,16 @@ class FED3_Viz(tk.Tk):
         self.plot_container = tk.Frame(self.plot_tab)
         self.plot_container.grid_columnconfigure(0,weight=1)
         self.plot_container.grid_rowconfigure(0,weight=1)
+        self.plot_frame = ttk.Frame(self.plot_container)
+        self.plot_frame.grid(row=0,column=0, sticky='nsew')
+        self.plot_frame.grid_rowconfigure(0,weight=1)
+        self.plot_frame.grid_columnconfigure(0,weight=1)
+        self.canvas = FigureCanvasTkAgg(self.FIGURE, master=self.plot_frame)
+        self.canvas.draw_idle()
+        self.canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        self.nav_toolbar = NavigationToolbar2Tk(self.canvas, self.plot_frame)
+        self.nav_toolbar.update()
+        self.canvas._tkcanvas.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         self.plot_listbox = tk.Listbox(self.plot_tab, selectmode=tk.EXTENDED,
                                        activestyle=tk.NONE,)
         self.plot_listbox.config(width=40)
@@ -1143,7 +1154,7 @@ class FED3_Viz(tk.Tk):
             self.PLOTS = unjarred['plots']
             for name, plot in self.PLOTS.items():
                 new_frame = ttk.Frame(self.plot_container)
-                plot.frame = new_frame
+                # plot.frame = new_frame
                 self.draw_figure(plot)
                 # self.raise_figure(plot.figname)
                 self.update()
@@ -1169,9 +1180,10 @@ class FED3_Viz(tk.Tk):
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for obj in FEDs_to_plot:
             if self.plotting == True:
+                self.AX.clear()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
-                new_plot_frame = ttk.Frame(self.plot_container)
+                arg_dict['ax'] = self.AX
                 func_choices = {'Cumulative': plots.pellet_plot_single,
                                 'Frequency' : plots.pellet_freq_single}
                 name_choices = {'Cumulative': 'Cumulative pellet plot for ' + obj.filename,
@@ -1182,13 +1194,13 @@ class FED3_Viz(tk.Tk):
                 basename = name_choices[self.pelletplottype_menu.get()]
                 plotdata = plotdata_choices[self.pelletplottype_menu.get()](**arg_dict)
                 fig_name = self.create_plot_name(basename)
-                fig = plotfunc(**arg_dict)
-                new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
-                                    figname=fig_name, plotfunc=plotfunc,
+                plotfunc(**arg_dict)
+                new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                                     plotdata=plotdata, arguments=arg_dict,)
                 self.PLOTS[fig_name] = new_plot
-                self.draw_figure(new_plot)
-                self.raise_figure(fig_name)
+                self.display_plot(new_plot, new=True)
+                # self.draw_figure(new_plot)
+                # self.raise_figure(fig_name)
                 self.update()
             
     def pellet_plot_multi_TK(self):
@@ -1808,13 +1820,15 @@ class FED3_Viz(tk.Tk):
         for i in clicked:
             selection=self.plot_listbox.get(i)
             self.plot_listbox.delete(i)
-            self.PLOTS[selection].frame.destroy()
-            plt.close(self.PLOTS[selection].figure)
             del(self.PLOTS[selection])
             new_plot_index=self.plot_listbox.size()-1
             if new_plot_index>=0 and raise_plots:
                 new_plot=self.plot_listbox.get(new_plot_index)
-                self.raise_figure(new_plot)
+                self.raise_figure(new_plot)        
+            else:
+                self.AX.clear()
+                self.canvas.draw_idle()
+                self.nav_toolbar.update()
         self.update_buttons_plot(None)
                 
     def new_window_plot(self):
@@ -1894,38 +1908,34 @@ class FED3_Viz(tk.Tk):
                                                           overwrite=overwrite)
                         df.to_csv(full_save)
         
-    #---PLOT HELPER FUNCTIONS                
+    #---PLOT HELPER FUNCTIONS
+    def display_plot(self, plot_obj, new=False):
+        # self.FIGURE.set_size_inches(plot_obj.width, plot_obj.height, forward=True)
+        self.canvas.draw_idle()
+        self.nav_toolbar.update()
+        self.tabcontrol.select(self.plot_tab)
+        if new:
+            self.plot_listbox.insert(tk.END,plot_obj.figname)
+                
     def draw_figure(self, plot_obj, pop_window=False):
-        frame = plot_obj.frame
+        frame = self.plot_frame
         if pop_window:
             frame = tk.Toplevel(self)
             frame.title(plot_obj.figname)
             if not platform.system() == 'Darwin': 
                 frame.iconbitmap('img/graph_icon.ico')        
-        canvas = FigureCanvasTkAgg(plot_obj.figure, master=frame)
-        canvas.draw_idle()
-        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-        toolbar = NavigationToolbar2Tk(canvas, frame)
-        toolbar.update()
-        canvas._tkcanvas.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        
         if not pop_window:
             self.plot_listbox.insert(tk.END,plot_obj.figname)
                 
     def raise_figure(self, fig_name):
-        frame = self.PLOTS[fig_name].frame
-        for graph in self.PLOTS:
-            if graph != fig_name:
-                if self.PLOTS[graph].frame:
-                    self.PLOTS[graph].frame.grid_remove()
-        self.tabcontrol.select(self.plot_tab)
-        width = str(self.PLOTS[fig_name].width + self.w_offset)
-        height = str(self.PLOTS[fig_name].height + self.h_offset)
-        self.geometry(width+'x'+height)
-        frame.grid()
-        frame.tkraise()
-        fig_index = list(self.PLOTS).index(fig_name)
+        plot_obj = self.PLOTS[fig_name]
+        self.AX.clear()
+        plot_obj.plotfunc(**plot_obj.arguments)
+        self.display_plot(plot_obj)
+        plot_index = list(self.PLOTS).index(fig_name)
         self.plot_listbox.selection_clear(0,self.plot_listbox.size())
-        self.plot_listbox.selection_set(fig_index)
+        self.plot_listbox.selection_set(plot_index)
         self.update_all_buttons()
         
     def raise_figure_from_listbox(self, event):
@@ -2169,8 +2179,8 @@ class FED3_Viz(tk.Tk):
         if os.path.isdir(settingsdir):
             self.save_settings(dialog=False,savepath=last_used)
         #save current session
-        if os.path.isdir('sessions'):
-            self.save_session(dialog=False)        
+        # if os.path.isdir('sessions'):
+        #     self.save_session(dialog=False)        
         self.destroy()
     
     #---ERROR MESSAGES
