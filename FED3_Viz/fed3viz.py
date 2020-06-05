@@ -28,7 +28,7 @@ from plots import plots
 
 class FED_Plot():
     def __init__(self, figname, plotfunc, arguments, plotdata=None,
-                 width=7, height=3.5):
+                 width=6.4, height=4.8):
         self.figname = figname
         self.arguments = arguments
         self.plotfunc = plotfunc
@@ -1179,6 +1179,7 @@ class FED3_Viz(tk.Tk):
             if self.is_plottable(text):
                 if self.plotting:
                     if text in self.plot_nodes_func:
+                        self.AX.clear()
                         plotting_function = self.plot_nodes_func[text]
                         if plotting_function == self.avg_plot_TK:
                             plotting_function(text)
@@ -1209,9 +1210,7 @@ class FED3_Viz(tk.Tk):
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                                     plotdata=plotdata, arguments=arg_dict,)
                 self.PLOTS[fig_name] = new_plot
-                self.display_plot(new_plot, new=True)
-                # self.draw_figure(new_plot)
-                # self.raise_figure(fig_name)
+                self.display_plot(new_plot)
                 self.update()
             
     def pellet_plot_multi_TK(self):
@@ -1289,20 +1288,18 @@ class FED3_Viz(tk.Tk):
        
     def interpellet_plot_TK(self):
         arg_dict = self.get_current_settings_as_args()
+        arg_dict['ax'] = self.AX
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
         basename = 'Inter-pellet Interval Plot'
         fig_name = self.create_plot_name(basename)
-        new_plot_frame = ttk.Frame(self.plot_container)
-        fig = plots.interpellet_interval_plot(**arg_dict)
+        plots.interpellet_interval_plot(**arg_dict)
         plotdata = getdata.interpellet_interval_plot(**arg_dict)
-        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,figname=fig_name,
-                            plotfunc=plots.interpellet_interval_plot,
+        new_plot = FED_Plot(figname=fig_name,plotfunc=plots.interpellet_interval_plot,
                             plotdata=plotdata,arguments=arg_dict,)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
 
     def group_ipi_TK(self):
         args_dict = self.get_current_settings_as_args()
@@ -1835,7 +1832,7 @@ class FED3_Viz(tk.Tk):
             new_plot_index=self.plot_listbox.size()-1
             if new_plot_index>=0 and raise_plots:
                 new_plot=self.plot_listbox.get(new_plot_index)
-                self.raise_figure(new_plot)        
+                self.raise_figure(new_plot, new=False)        
             else:
                 self.AX.clear()
                 self.canvas.draw_idle()
@@ -1907,7 +1904,7 @@ class FED3_Viz(tk.Tk):
             if savepath:
                 for i in clicked:
                     graph_name=self.plot_listbox.get(i)
-                    fig = self.PLOTS[graph_name].figure
+                    self.raise_figure(graph_name, new=False)          
                     save_name = graph_name+'.png'
                     full_save = os.path.join(savepath,save_name)
                     if not self.overwrite_checkbox_val.get():
@@ -1916,7 +1913,11 @@ class FED3_Viz(tk.Tk):
                             save_name = graph_name +  ' (' + str(c) + ').png'
                             full_save = os.path.join(savepath,save_name)
                             c+=1
-                    fig.savefig(full_save, dpi=300)
+                    self.FIGURE.savefig(full_save,dpi=300)
+                    self.FIGURE.set_dpi(150)
+                    self.canvas.draw_idle()
+                    self.nav_toolbar.update()
+                    self.update()
                     
     def show_plot_code(self):
         clicked = self.plot_listbox.curselection()
@@ -1972,13 +1973,16 @@ class FED3_Viz(tk.Tk):
                         df.to_csv(full_save)
         
     #---PLOT HELPER FUNCTIONS
-    def display_plot(self, plot_obj, new=False):
-        # self.FIGURE.set_size_inches(plot_obj.width, plot_obj.height, forward=True)
+    def display_plot(self, plot_obj, new=True):
+        self.update()
         self.canvas.draw_idle()
-        self.nav_toolbar.update()
-        self.tabcontrol.select(self.plot_tab)
+        self.nav_toolbar.update()        
         if new:
             self.plot_listbox.insert(tk.END,plot_obj.figname)
+            self.plot_listbox.selection_clear(0,self.plot_listbox.size())
+            self.plot_listbox.selection_set(self.plot_listbox.size()-1)
+        self.tabcontrol.select(self.plot_tab)
+        self.update_buttons_plot()
                 
     def draw_figure(self, plot_obj, pop_window=False):
         frame = self.plot_frame
@@ -1991,11 +1995,11 @@ class FED3_Viz(tk.Tk):
         if not pop_window:
             self.plot_listbox.insert(tk.END,plot_obj.figname)
                 
-    def raise_figure(self, fig_name):
+    def raise_figure(self, fig_name, new=True):
         plot_obj = self.PLOTS[fig_name]
         self.AX.clear()
         plot_obj.plotfunc(**plot_obj.arguments)
-        self.display_plot(plot_obj)
+        self.display_plot(plot_obj, new)
         plot_index = list(self.PLOTS).index(fig_name)
         self.plot_listbox.selection_clear(0,self.plot_listbox.size())
         self.plot_listbox.selection_set(plot_index)
@@ -2005,7 +2009,7 @@ class FED3_Viz(tk.Tk):
         clicked=self.plot_listbox.curselection()
         if len(clicked) == 1:
             selection=self.plot_listbox.get(clicked[0])
-            self.raise_figure(selection)
+            self.raise_figure(selection, new=False)
 
     def create_plot_name(self, basename):
         fig_name = basename

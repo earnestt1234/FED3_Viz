@@ -449,6 +449,7 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
                        lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()
+    
     return fig if 'ax' not in kwargs else None
 
 def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
@@ -737,8 +738,10 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File),'Non FED3_File passed to interpellet_interval_plot()'
-        
-    fig, ax = plt.subplots(figsize=(4,5), dpi=125)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(4,5), dpi=125)
+    else:
+        ax = kwargs['ax']
     lowest = -2
     highest = 5
     ylabel = 'Density Estimation' if kde else 'Count'
@@ -761,7 +764,7 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
     ax.legend(fontsize=8)
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
     """
