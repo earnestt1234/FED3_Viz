@@ -1,5 +1,5 @@
 # FED3 Viz (Beta)
-a GUI for plotting FED3 data
+a GUI for plotting FED3 data 
 
 <p align="center">
 	<img src="img/fedviz_textlogo.png" width="500">
