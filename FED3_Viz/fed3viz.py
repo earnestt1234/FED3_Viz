@@ -1179,7 +1179,7 @@ class FED3_Viz(tk.Tk):
             if self.is_plottable(text):
                 if self.plotting:
                     if text in self.plot_nodes_func:
-                        self.AX.clear()
+                        self.clear_axes()
                         plotting_function = self.plot_nodes_func[text]
                         if plotting_function == self.avg_plot_TK:
                             plotting_function(text)
@@ -1192,7 +1192,7 @@ class FED3_Viz(tk.Tk):
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for obj in FEDs_to_plot:
             if self.plotting == True:
-                self.AX.clear()
+                self.clear_axes()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
                 arg_dict['ax'] = self.AX
@@ -1218,8 +1218,8 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
+        arg_dict['ax'] = self.AX
         fig_name = self.create_plot_name('Multi-FED Pellet Plot')
-        new_plot_frame = ttk.Frame(self.plot_container)
         multi_plot_choices = {('Cumulative',True) :plots.pellet_plot_multi_aligned,
                               ('Cumulative',False):plots.pellet_plot_multi_unaligned,
                                ('Frequency',True)  :plots.pellet_freq_multi_aligned,
@@ -1231,13 +1231,12 @@ class FED3_Viz(tk.Tk):
         choice = (self.pelletplottype_menu.get(),self.pelletplotalign_checkbox_val.get())
         plotfunc = multi_plot_choices[choice]
         plotdata = plotdata_choices[choice](**arg_dict)
-        figure = plotfunc(**arg_dict)
-        new_plot = FED_Plot(frame=new_plot_frame, figure=figure,
-                            figname=fig_name, plotfunc=plotfunc, 
+        plotfunc(**arg_dict)
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc, 
                             arguments=arg_dict, plotdata=plotdata)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
+        self.update()
            
     def avg_plot_TK(self, plot_name):
         args_dict = self.get_current_settings_as_args()
@@ -1254,6 +1253,7 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
+        args_dict['ax'] = self.AX
         choices = {'Average Pellet Plot':'pellets',
                    'Average Poke Plot (Correct)':'correct pokes',
                    'Average Poke Plot (Error)':'errors',
@@ -1278,13 +1278,11 @@ class FED3_Viz(tk.Tk):
             self.raise_average_warning()
             return
         fig_name = self.create_plot_name('Average Plot of ' + args_dict['dependent'].capitalize())
-        new_plot_frame = ttk.Frame(self.plot_container)
-        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
-                            figname=fig_name, plotfunc=plotfunc,
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                             plotdata=plotdata,arguments=args_dict)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
+        self.update()
        
     def interpellet_plot_TK(self):
         arg_dict = self.get_current_settings_as_args()
@@ -1316,16 +1314,14 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        fig = plots.group_interpellet_interval_plot(**args_dict)
+        args_dict['ax'] = self.AX
         plotdata = getdata.group_interpellet_interval_plot(**args_dict)
         fig_name = self.create_plot_name('Group Interpellet Interval Plot')
-        new_plot_frame = ttk.Frame(self.plot_container)
-        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
-                            figname=fig_name, plotfunc=plots.group_interpellet_interval_plot,
+        plots.group_interpellet_interval_plot(**args_dict)
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.group_interpellet_interval_plot,
                             arguments=args_dict, plotdata=plotdata,)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
 
     def diagnostic_plot_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
@@ -1423,18 +1419,17 @@ class FED3_Viz(tk.Tk):
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for obj in FEDs_to_plot:
             if self.plotting == True:
+                self.clear_axes()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
-                new_plot_frame = ttk.Frame(self.plot_container)
+                arg_dict['ax'] = self.AX
                 fig_name = self.create_plot_name('Poke plot for ' + obj.filename)
-                fig = plots.poke_plot(**arg_dict)
+                plots.poke_plot(**arg_dict)
                 plotdata=getdata.poke_plot(**arg_dict)
-                new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
-                                    figname=fig_name, plotfunc=plots.poke_plot,
+                new_plot = FED_Plot(figname=fig_name, plotfunc=plots.poke_plot,
                                     plotdata=plotdata, arguments=arg_dict,)
                 self.PLOTS[fig_name] = new_plot
-                self.draw_figure(new_plot)
-                self.raise_figure(fig_name)
+                self.display_plot(new_plot)
                 self.update()
         
     def poke_bias_single_TK(self):
@@ -1442,19 +1437,18 @@ class FED3_Viz(tk.Tk):
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for obj in FEDs_to_plot:
             if self.plotting == True:
+                self.clear_axes()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
-                new_plot_frame = ttk.Frame(self.plot_container)
+                arg_dict['ax'] = self.AX
                 fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)
-                fig = plots.poke_bias(**arg_dict)
+                plots.poke_bias(**arg_dict)
                 plotdata=getdata.poke_bias(**arg_dict)
-                new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
-                                    figname=fig_name, plotfunc=plots.poke_bias,
+                new_plot = FED_Plot(figname=fig_name, plotfunc=plots.poke_bias,
                                     plotdata=plotdata, 
                                     arguments=arg_dict,)
                 self.PLOTS[fig_name] = new_plot
-                self.draw_figure(new_plot)
-                self.raise_figure(fig_name)
+                self.display_plot(new_plot)
                 self.update()
                 
     def breakpoint_plot(self):
@@ -1462,16 +1456,15 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
+        arg_dict['ax'] = self.AX
         fig_name = self.create_plot_name('Breakpoint Plot')
-        new_plot_frame = ttk.Frame(self.plot_container)
-        figure = plots.pr_plot(**arg_dict)
+        plots.pr_plot(**arg_dict)
         plotdata = getdata.pr_plot(**arg_dict)
-        new_plot = FED_Plot(frame=new_plot_frame, figure=figure,
-                            figname=fig_name, plotfunc=plots.pr_plot, 
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.pr_plot, 
                             arguments=arg_dict, plotdata=plotdata)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
+        self.update()
     
     def group_breakpoint_plot(self):
         args_dict = self.get_current_settings_as_args()
@@ -1488,34 +1481,32 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        fig = plots.group_pr_plot(**args_dict)
+        args_dict['ax'] = self.AX
+        plots.group_pr_plot(**args_dict)
         plotdata = getdata.group_pr_plot(**args_dict)
         fig_name = self.create_plot_name('Group Breakpoint Plot')
-        new_plot_frame = ttk.Frame(self.plot_container)
-        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
-                            figname=fig_name, plotfunc=plots.group_pr_plot,
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.group_pr_plot,
                             arguments=args_dict, plotdata=plotdata,)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
+        self.update()
         
     def retrieval_plot_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for obj in FEDs_to_plot:
             if self.plotting == True:
+                self.clear_axes()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
-                new_plot_frame = ttk.Frame(self.plot_container)
+                arg_dict['ax'] = self.AX
                 plotdata = getdata.retrieval_time_single(**arg_dict)
                 fig_name = self.create_plot_name('Retrieval Time Plot for ' + obj.filename)
-                fig = plots.retrieval_time_single(**arg_dict)
-                new_plot = FED_Plot(frame=new_plot_frame,figure=fig,
-                                    figname=fig_name, plotfunc=plots.retrieval_time_single,
+                plots.retrieval_time_single(**arg_dict)
+                new_plot = FED_Plot(figname=fig_name, plotfunc=plots.retrieval_time_single,
                                     plotdata=plotdata, arguments=arg_dict,)
                 self.PLOTS[fig_name] = new_plot
-                self.draw_figure(new_plot)
-                self.raise_figure(fig_name)
+                self.display_plot(new_plot)
                 self.update()
     
     def retrieval_plot_multi_TK(self):
@@ -1523,16 +1514,15 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
+        arg_dict['ax'] = self.AX
         fig_name = self.create_plot_name('Multi Retrieval Time Plot')
-        new_plot_frame = ttk.Frame(self.plot_container)
         plotfunc = plots.retrieval_time_multi
         plotdata = getdata.retrieval_time_multi(**arg_dict)
-        figure = plotfunc(**arg_dict)
-        new_plot = FED_Plot(frame=new_plot_frame, figure=figure,
-                            figname=fig_name, plotfunc=plotfunc, 
+        plotfunc(**arg_dict)
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc, 
                             arguments=arg_dict, plotdata=plotdata)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
+        self.display_plot(new_plot)
         self.raise_figure(fig_name)
     
     #---HOME HELPER FUNCTIONS
@@ -1834,7 +1824,7 @@ class FED3_Viz(tk.Tk):
                 new_plot=self.plot_listbox.get(new_plot_index)
                 self.raise_figure(new_plot, new=False)        
             else:
-                self.AX.clear()
+                self.clear_axes()
                 self.canvas.draw_idle()
                 self.nav_toolbar.update()
         self.update_buttons_plot(None)
@@ -1997,7 +1987,7 @@ class FED3_Viz(tk.Tk):
                 
     def raise_figure(self, fig_name, new=True):
         plot_obj = self.PLOTS[fig_name]
-        self.AX.clear()
+        self.clear_axes()
         plot_obj.plotfunc(**plot_obj.arguments)
         self.display_plot(plot_obj, new)
         plot_index = list(self.PLOTS).index(fig_name)
@@ -2170,6 +2160,12 @@ class FED3_Viz(tk.Tk):
             self.check_average_align()
             self.check_pellet_type()
  
+    def clear_axes(self):
+        for ax in self.FIGURE.axes:
+            ax.clear()
+            if ax != self.AX:
+                ax.remove()
+            
     #---SETTINGS HELPER FUNCTIONS
     def get_current_settings(self):
         settings_dict = dict(shade_dark         =self.nightshade_checkbox_val.get(),

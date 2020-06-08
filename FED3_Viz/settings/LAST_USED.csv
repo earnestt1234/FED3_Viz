@@ -3,18 +3,18 @@ shade_dark,True
 lights_on,7 am
 lights_off,7 pm
 allgroups,False
-abs_group,True
+abs_group,False
 skip_duplicates,True
 overwrite,False
 weirdwarn,True
-pellet_values,Cumulative
-pellet_bins,1 hour
+pellet_values,Frequency
+pellet_bins,4 hours
 pellet_color,blue
-pellet_align,False
+pellet_align,True
 average_error,SEM
 average_bins,4 hours
 load_last_used,True
-average_method,elapsed time
+average_method,shared date & time
 average_align_start,5 pm
 average_align_days,1
 circ_value,correct pokes (%)
@@ -28,10 +28,10 @@ poke_show_correct,True
 poke_show_error,True
 poke_show_left,False
 poke_show_right,False
-bias_style,correct (%)
+bias_style,left (%)
 dynamic_color,True
 break_style,pellets
 break_hours,1
 break_mins,0
 break_error,SEM
-break_show_indvl,False
+break_show_indvl,True
