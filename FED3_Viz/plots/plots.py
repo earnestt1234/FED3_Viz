@@ -2009,7 +2009,7 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     ax.get_yticklabels()[-1].set_weight('bold')
     ax.set_xlabel('Hours (since start of light cycle)')
     ax.set_xticks([0,6,12,18,])
-    plt.colorbar(im, ax=ax)
+    plt.colorbar(im, use_gridspec=True)
     plt.tight_layout()
     
     return fig if 'ax' not in kwargs else None

@@ -365,8 +365,6 @@ class FED3_Viz(tk.Tk):
         self.plot_container.grid_rowconfigure(0,weight=1)
         self.plot_frame = ttk.Frame(self.plot_container)
         self.plot_frame.grid(row=0,column=0, sticky='nsew')
-        self.plot_frame.grid_rowconfigure(0,weight=1)
-        self.plot_frame.grid_columnconfigure(0,weight=1)
         self.canvas = FigureCanvasTkAgg(self.FIGURE, master=self.plot_frame)
         self.canvas.draw_idle()
         self.canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
@@ -1967,6 +1965,7 @@ class FED3_Viz(tk.Tk):
             self.plot_listbox.selection_set(self.plot_listbox.size()-1)
         self.tabcontrol.select(self.plot_tab)
         self.update_buttons_plot()
+        self.update()
                 
     def draw_figure(self, plot_obj, pop_window=False):
         frame = self.plot_frame
@@ -2074,7 +2073,7 @@ class FED3_Viz(tk.Tk):
             ax.clear()
             if ax != self.AX:
                 ax.remove()
-                # del(ax)
+                # self.FIGURE.delaxes(ax)
     
     #---SETTINGS TAB FUNCTIONS           
     def check_pellet_type(self, *event):
