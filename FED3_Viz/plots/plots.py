@@ -1765,7 +1765,10 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
     circ_show_indvl : bool
         Whether to show individual observations overlaid on bars.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -1775,7 +1778,10 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
-    fig, ax = plt.subplots(figsize=(5,5), dpi=125)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(5,5), dpi=125)
+    else:
+        ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     bar_width = (.7/len(groups))
     bar_offsets = np.array([bar_width*i for i in range(len(groups))])
@@ -1849,7 +1855,7 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
     ax.legend(handles, labels, bbox_to_anchor=(1,1),loc='upper left')
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
                     lights_on, lights_off, **kwargs):
@@ -1880,7 +1886,10 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
     pellet_color : str
         matplotlib named color string to color line
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -1892,7 +1901,10 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
     if circ_show_indvl:
         circ_error = "None"
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     for i, group in enumerate(groups):
         group_vals = []
@@ -1939,7 +1951,7 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
     ax.legend(bbox_to_anchor=(1,1),loc='upper left')
     plt.tight_layout()
         
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     """
@@ -1956,13 +1968,19 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     lights_on : int
         Integer between 0 and 23 denoting the start of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    else:
+        ax = kwargs['ax']
     matrix = []
     index = []
     for FED in FEDs:       
@@ -1991,10 +2009,10 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     ax.get_yticklabels()[-1].set_weight('bold')
     ax.set_xlabel('Hours (since start of light cycle)')
     ax.set_xticks([0,6,12,18,])
-    plt.colorbar(im)
+    plt.colorbar(im, ax=ax)
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 #---Other Plots
 

@@ -1358,17 +1358,15 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        fig = plots.daynight_plot(**args_dict)
+        args_dict['ax'] = self.AX
+        plots.daynight_plot(**args_dict)
         plotdata = getdata.daynight_plot(**args_dict)
         value = args_dict['circ_value'].capitalize()
         fig_name = self.create_plot_name(value + ' Day Night Plot')
-        new_plot_frame = ttk.Frame(self.plot_container)
-        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
-                            figname=fig_name, plotfunc=plots.daynight_plot,
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.daynight_plot,
                             arguments=args_dict, plotdata=plotdata,)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
     
     def chronogram_line_TK(self):
         args_dict = self.get_current_settings_as_args()
@@ -1385,34 +1383,30 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        fig = plots.line_chronogram(**args_dict)
+        args_dict['ax'] = self.AX
+        plots.line_chronogram(**args_dict)
         plotdata = getdata.line_chronogram(**args_dict)
         value = args_dict['circ_value'].capitalize()
         fig_name = self.create_plot_name(value + ' Chronogram (Line)')
-        new_plot_frame = ttk.Frame(self.plot_container)
-        new_plot = FED_Plot(figure=fig, frame=new_plot_frame,
-                            figname=fig_name, plotfunc=plots.line_chronogram,
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.line_chronogram,
                             arguments=args_dict, plotdata=plotdata,)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
     
     def chronogram_heatmap_TK(self):
         arg_dict = self.get_current_settings_as_args()
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
+        arg_dict['ax'] = self.AX
         value = arg_dict['circ_value'].capitalize()
         fig_name = self.create_plot_name(value + ' Chronogram (Heatmap)')
-        new_plot_frame = ttk.Frame(self.plot_container)
-        figure = plots.heatmap_chronogram(**arg_dict)
+        plots.heatmap_chronogram(**arg_dict)
         plotdata = getdata.heatmap_chronogram(**arg_dict)
-        new_plot = FED_Plot(frame=new_plot_frame, figure=figure,
-                            figname=fig_name, plotfunc=plots.heatmap_chronogram, 
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.heatmap_chronogram, 
                             arguments=arg_dict, plotdata=plotdata)
         self.PLOTS[fig_name] = new_plot
-        self.draw_figure(new_plot)
-        self.raise_figure(fig_name)
+        self.display_plot(new_plot)
     
     def poke_plot_single_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
@@ -2075,6 +2069,13 @@ class FED3_Viz(tk.Tk):
                 file.write(text)
                 file.close()    
         
+    def clear_axes(self):
+        for ax in self.FIGURE.axes:
+            ax.clear()
+            if ax != self.AX:
+                ax.remove()
+                # del(ax)
+    
     #---SETTINGS TAB FUNCTIONS           
     def check_pellet_type(self, *event):
         if self.pelletplottype_menu.get() == 'Frequency':
@@ -2159,12 +2160,6 @@ class FED3_Viz(tk.Tk):
             self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.check_average_align()
             self.check_pellet_type()
- 
-    def clear_axes(self):
-        for ax in self.FIGURE.axes:
-            ax.clear()
-            if ax != self.AX:
-                ax.remove()
             
     #---SETTINGS HELPER FUNCTIONS
     def get_current_settings(self):
