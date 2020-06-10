@@ -28,15 +28,11 @@ from load.load import FED3_File
 from plots import plots
 
 class FED_Plot():
-    def __init__(self, figname, plotfunc, arguments, plotdata=None,
-                 width=6.4, height=4.8):
+    def __init__(self, figname, plotfunc, arguments, plotdata=None,):
         self.figname = figname
         self.arguments = arguments
         self.plotfunc = plotfunc
         self.plotdata = plotdata
-        self.fednames = []
-        self.width  = width
-        self.height = height
         
 class New_Window_Figure():
     def __init__(self, toplevel, fig, ax, frame, canvas, toolbar, in_use,):
@@ -958,7 +954,6 @@ class FED3_Viz(tk.Tk):
         self.r_menu_plot_single.add_command(label='Delete',command= self.delete_plot,)
         
         self.r_menu_plot_multi = tkinter.Menu(self, tearoff=0,)
-        self.r_menu_plot_multi.add_command(label='New Window',command= self.new_window_plot,)
         self.r_menu_plot_multi.add_command(label='Plot Code',command= self.show_plot_code,)
         self.r_menu_plot_multi.add_command(label='Save Figure',command= self.save_plots,)
         self.r_menu_plot_multi.add_command(label='Save Data',command= self.save_plot_data,)
@@ -1145,10 +1140,10 @@ class FED3_Viz(tk.Tk):
             jarred['feds'] = self.LOADED_FEDS
             jarred_plots = OrderedDict()
             for name, obj in self.PLOTS.items():
-                jarred_plots[name] = FED_Plot(figure=obj.figure, frame=None,
-                                              figname=obj.figname,
+                saved_args = {key:val for key, val in obj.arguments.items() if key != 'ax'}
+                jarred_plots[name] = FED_Plot(figname=obj.figname,
                                               plotfunc=obj.plotfunc,
-                                              arguments=obj.arguments,
+                                              arguments=saved_args,
                                               plotdata=obj.plotdata,)
             jarred['plots'] = jarred_plots
             jarred['settings'] = self.save_settings(return_df = True)
@@ -1166,12 +1161,9 @@ class FED3_Viz(tk.Tk):
             self.update_all_buttons()
             self.delete_plot(all=True, raise_plots=False)
             self.PLOTS = unjarred['plots']
-            for name, plot in self.PLOTS.items():
-                new_frame = ttk.Frame(self.plot_container)
-                # plot.frame = new_frame
-                self.draw_figure(plot)
-                # self.raise_figure(plot.figname)
-                self.update()
+            for plot in self.PLOTS:
+                self.PLOTS[plot].arguments['ax'] = self.AX
+                self.raise_figure(plot)
             self.load_settings(dialog=False, from_df=unjarred['settings'])
         
     def init_plot(self):
@@ -1501,7 +1493,6 @@ class FED3_Viz(tk.Tk):
                             arguments=arg_dict, plotdata=plotdata)
         self.PLOTS[fig_name] = new_plot
         self.display_plot(new_plot)
-        self.raise_figure(fig_name)
     
     def battery_life_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
@@ -1848,7 +1839,7 @@ class FED3_Viz(tk.Tk):
     def new_window_plot(self):
         in_use = [obj.in_use for obj in self.NEW_WINDOW_FIGS]
         if sum(in_use) == 5:
-            print("warning here")
+            self.raise_new_window_warning()
             return
         clicked=self.plot_listbox.curselection()
         graph_name=self.plot_listbox.get(clicked)
@@ -1991,17 +1982,6 @@ class FED3_Viz(tk.Tk):
         self.update_buttons_plot()
         self.update()
                 
-    def draw_figure(self, plot_obj, pop_window=False):
-        frame = self.plot_frame
-        if pop_window:
-            frame = tk.Toplevel(self)
-            frame.title(plot_obj.figname)
-            if not platform.system() == 'Darwin': 
-                frame.iconbitmap('img/graph_icon.ico')        
-        
-        if not pop_window:
-            self.plot_listbox.insert(tk.END,plot_obj.figname)
-                
     def raise_figure(self, fig_name, new=True):
         plot_obj = self.PLOTS[fig_name]
         self.clear_axes()
@@ -2042,18 +2022,18 @@ class FED3_Viz(tk.Tk):
     def update_buttons_plot(self,*event):
         if self.plot_listbox.curselection():
             self.plot_delete.configure(state=tk.NORMAL)
-            self.plot_popout.configure(state=tk.NORMAL)
             self.plot_save.configure(state=tk.NORMAL)
             self.plot_data.configure(state=tk.NORMAL)
             self.plot_inspect.configure(state=tk.NORMAL)
             if len(self.plot_listbox.curselection()) == 1:
-                self.plot_rename.configure(state=tk.NORMAL)              
+                self.plot_rename.configure(state=tk.NORMAL) 
+                self.plot_popout.configure(state=tk.NORMAL)
             else:
-                self.plot_rename.configure(state=tk.DISABLED)                
+                self.plot_rename.configure(state=tk.DISABLED)     
+                self.plot_popout.configure(state=tk.DISABLED)
         else:
             self.plot_rename.configure(state=tk.DISABLED)
             self.plot_delete.configure(state=tk.DISABLED)
-            self.plot_popout.configure(state=tk.DISABLED)
             self.plot_save.configure(state=tk.DISABLED)
             self.plot_inspect.configure(state=tk.DISABLED)
             self.plot_data.configure(state=tk.DISABLED)
@@ -2266,8 +2246,8 @@ class FED3_Viz(tk.Tk):
         if os.path.isdir(settingsdir):
             self.save_settings(dialog=False,savepath=last_used)
         #save current session
-        # if os.path.isdir('sessions'):
-        #     self.save_session(dialog=False)        
+        if os.path.isdir('sessions'):
+            self.save_session(dialog=False)        
         self.destroy()
     
     #---ERROR MESSAGES
@@ -2327,6 +2307,18 @@ class FED3_Viz(tk.Tk):
     def canvas_config(self, event):
         self.warn_canvas.configure(scrollregion=self.warn_canvas.bbox("all"),)
         
+    def raise_new_window_warning(self,):
+        warn_window = tk.Toplevel(self)
+        warn_window.grab_set()
+        warn_window.title('Error: maximum new window limit reached')
+        if not platform.system() == 'Darwin':
+            warn_window.iconbitmap('img/exclam.ico')
+        text = ("Only 5 New Windows can be opened at one time, in order to" +
+                '\nprevent memory leak.  Please close one of the open windows.')
+                
+        warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
+        warning.pack(padx=(20,20),pady=(20,20))
+        
     #---RIGHT CLICK FUNCS
     def r_raise_menu(self, event):
         widget = event.widget
@@ -2364,7 +2356,8 @@ class FED3_Viz(tk.Tk):
         clicked=self.plot_listbox.curselection()
         graph_name=self.plot_listbox.get(clicked)
         plot_obj = self.PLOTS[graph_name]
-        plot_settings_dict = copy.deepcopy(plot_obj.arguments)
+        plot_settings_dict = {key:val for key,val in plot_obj.arguments.items()
+                              if key != 'ax'}
         plot_settings_df = self.convert_settingsdict_to_df(plot_settings_dict)
         plot_arguments = fed_inspect.get_arguments(plot_obj)
         output_df = current_settings_df

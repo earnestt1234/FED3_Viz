@@ -14,7 +14,7 @@ pellet_align,True
 average_error,SEM
 average_bins,4 hours
 load_last_used,True
-average_method,shared date & time
+average_method,shared time
 average_align_start,5 pm
 average_align_days,1
 circ_value,pellets
