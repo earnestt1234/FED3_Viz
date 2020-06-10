@@ -1971,6 +1971,9 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        return_cb : bool
+            return the matplotlib colorbar; really only useful
+            within the GUI
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2009,8 +2012,11 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     ax.get_yticklabels()[-1].set_weight('bold')
     ax.set_xlabel('Hours (since start of light cycle)')
     ax.set_xticks([0,6,12,18,])
-    plt.colorbar(im, use_gridspec=True)
+    cb = plt.colorbar(im, ax=ax)
     plt.tight_layout()
+    if 'return_cb' in kwargs:
+        if 'return_cb':
+            return cb
     
     return fig if 'ax' not in kwargs else None
 
@@ -2034,7 +2040,10 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     pellet_color : str
         matplotlib named color string to color line
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -2043,20 +2052,28 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     assert isinstance(FED, FED3_File),'Non FED3_File passed to diagnostic_plot()'
     df = FED.data
     
-    fig, (ax1,ax2,ax3) = plt.subplots(3,1,figsize=(7,5),sharex=True, dpi=125)
+    if 'ax' not in kwargs:
+        fig = plt.figure(figsize=(7,5),dpi=125)
+        ax1 = fig.add_subplot(3,1,1)
+        ax2 = fig.add_subplot(3,1,2)
+        ax3 = fig.add_subplot(3,1,3)  
+    else:
+        ax1,ax2,ax3 = kwargs['ax']
+    ax1.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     plt.subplots_adjust(hspace=.1)
     y = df['Pellet_Count'].drop_duplicates()
     x = y.index
     ax1.scatter(x,y,s=1,c='green')
     ax1.set_ylabel('Cumulative Pellets')
-    
+       
+    ax2.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     x = df.index
     y = df['Motor_Turns']
     ax2.scatter(x,y,s=3,c=y,cmap='cool',vmax=100)
     ax2.set_ylabel('Motor Turns')
     if max(y) < 100:
         ax2.set_ylim(0,100)
-    
+        
     x = df.index
     y = df['Battery_Voltage']
     ax3.plot(x,y,c='orange')
@@ -2072,4 +2089,4 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
                        lights_on=lights_on,
                        lights_off=lights_off)
     
-    return fig
+    return fig if 'ax' not in kwargs else None

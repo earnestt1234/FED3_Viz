@@ -6,6 +6,7 @@ FED3 Viz: A tkinter program for visualizing FED3 Data
 """
 import copy
 import emoji
+import matplotlib
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
@@ -62,6 +63,7 @@ class FED3_Viz(tk.Tk):
         self.colors =  ['blue','red','green','yellow','purple','orange',
                         'black',]
         self.FIGURE, self.AX = plt.subplots(dpi=150) #fig/axes used in plot tab
+        self.CB = None
         self.NEW_WINDOW_FIGS  = [] 
         times = []
         for xm in [' am', ' pm']:
@@ -1326,19 +1328,19 @@ class FED3_Viz(tk.Tk):
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         for FED in FEDs_to_plot:
             if self.plotting == True:
+                self.clear_axes()
+                self.convert_axes(3)
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = FED
+                arg_dict['ax'] = self.AX
                 basename = 'Diagnostic Plot for ' + FED.filename
                 fig_name = self.create_plot_name(basename)
-                new_plot_frame = ttk.Frame(self.plot_container)
-                fig = plots.diagnostic_plot(**arg_dict)
+                plots.diagnostic_plot(**arg_dict)
                 plotdata = getdata.diagnostic_plot(**arg_dict)
-                new_plot = FED_Plot(figure=fig, frame=new_plot_frame,figname=fig_name,
-                                    plotfunc=plots.diagnostic_plot,
+                new_plot = FED_Plot(figname=fig_name,plotfunc=plots.diagnostic_plot,
                                     plotdata=plotdata, arguments=arg_dict,)
                 self.PLOTS[fig_name] = new_plot
-                self.draw_figure(new_plot)
-                self.raise_figure(fig_name)
+                self.display_plot(new_plot)
                 self.update()
             
     def daynight_plot_TK(self):
@@ -1397,9 +1399,10 @@ class FED3_Viz(tk.Tk):
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
         arg_dict['ax'] = self.AX
+        arg_dict['return_cb'] = True
         value = arg_dict['circ_value'].capitalize()
         fig_name = self.create_plot_name(value + ' Chronogram (Heatmap)')
-        plots.heatmap_chronogram(**arg_dict)
+        self.CB = plots.heatmap_chronogram(**arg_dict)
         plotdata = getdata.heatmap_chronogram(**arg_dict)
         new_plot = FED_Plot(figname=fig_name, plotfunc=plots.heatmap_chronogram, 
                             arguments=arg_dict, plotdata=plotdata)
@@ -1981,7 +1984,10 @@ class FED3_Viz(tk.Tk):
     def raise_figure(self, fig_name, new=True):
         plot_obj = self.PLOTS[fig_name]
         self.clear_axes()
-        plot_obj.plotfunc(**plot_obj.arguments)
+        if plot_obj.plotfunc.__name__ == 'heatmap_chronogram':
+            self.CB = plot_obj.plotfunc(**plot_obj.arguments)
+        else:
+            plot_obj.plotfunc(**plot_obj.arguments)
         self.display_plot(plot_obj, new)
         plot_index = list(self.PLOTS).index(fig_name)
         self.plot_listbox.selection_clear(0,self.plot_listbox.size())
@@ -2069,11 +2075,26 @@ class FED3_Viz(tk.Tk):
                 file.close()    
         
     def clear_axes(self):
+        if self.CB:
+            self.CB.remove()
+            self.CB = None
         for ax in self.FIGURE.axes:
             ax.clear()
             if ax != self.AX:
                 ax.remove()
                 # self.FIGURE.delaxes(ax)
+    
+    def convert_axes(self, num):
+        for ax in self.FIGURE.axes:
+            ax.remove()
+        if num == 1:
+            self.AX = self.FIGURE.add_axes()
+        else:
+            holder = []
+            for i in range(num):
+                ax = self.FIGURE.add_subplot(num,1,i+1)
+                holder.append(ax)
+            self.AX = holder
     
     #---SETTINGS TAB FUNCTIONS           
     def check_pellet_type(self, *event):
