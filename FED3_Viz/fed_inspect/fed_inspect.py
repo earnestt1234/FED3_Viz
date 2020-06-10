@@ -29,14 +29,15 @@ shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'average_plot_ontime','average_plot_ondatetime',
                     'average_plot_onstart',
                     'diagnostic_plot','poke_plot','poke_bias',
-                    'retrieval_time_single']
+                    'retrieval_time_single', 'battery_plot','motor_plot']
 avg_funcs = ['average_plot_ontime','average_plot_ondatetime',
              'average_plot_onstart',]
 circ_funcs = ['daynight_plot', 'line_chronogram', 'heatmap_chronogram']
 date_format_funcs = ['pellet_plot_single','pellet_freq_single',
                      'average_plot_ondatetime','poke_plot','poke_bias',
                      'diagnostic plot','pellet_plot_multi_unaligned',
-                     'pellet_freq_multi_unaligned','retrieval_time_single']
+                     'pellet_freq_multi_unaligned','retrieval_time_single',
+                     'battery_plot','motor_plot']
 pr_funcs = ['pr_plot','group_pr_plot']
 
 def add_quotes(string):

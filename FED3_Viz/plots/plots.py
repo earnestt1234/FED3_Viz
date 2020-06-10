@@ -2020,9 +2020,105 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     
     return fig if 'ax' not in kwargs else None
 
-#---Other Plots
+#---Diagnostic
+def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
+    """
+    FED3 Viz: Plot the battery life for a device.
 
-def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
+    Parameters
+    ----------
+    FED : FED3_File object
+        FED3 data (from load.FED3_File)
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    assert isinstance(FED, FED3_File),'Non FED3_File passed to battery_plot()'
+    df = FED.data
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    else:
+        ax = kwargs['ax']
+    x = df.index
+    y = df['Battery_Voltage']
+    ax.plot(x,y,c='orange')
+    title = ('Battery Life for ' + FED.filename)
+    ax.set_title(title)
+    ax.set_ylabel('Battery (V)')  
+    ax.set_ylim(0,4.5)
+    date_format_x(ax, x[0], x[-1])
+    ax.set_xlabel('Date')
+    if shade_dark:
+        shade_darkness(ax, FED.start_time, FED.end_time,
+                   lights_on=lights_on,
+                   lights_off=lights_off)
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
+    
+    return fig if 'ax' not in kwargs else None
+
+def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
+    """
+    FED3 Viz: Plot the motor turns for each pellet release.
+
+    Parameters
+    ----------
+    FED : FED3_File object
+        FED3 data (from load.FED3_File)
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    assert isinstance(FED, FED3_File),'Non FED3_File passed to battery_plot()'
+    df = FED.data
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    else:
+        ax = kwargs['ax']
+    x = df.index
+    y = df['Motor_Turns']
+    ax.scatter(x,y,s=3,c=y,cmap='cool',vmax=100)
+    title = ('Motor Turns for ' + FED.filename)
+    ax.set_title(title)
+    ax.set_ylabel('Motor Turns')  
+    if max(y) < 100:
+        ax.set_ylim(0,100)
+    date_format_x(ax, x[0], x[-1])
+    ax.set_xlabel('Date')
+    if shade_dark:
+        shade_darkness(ax, FED.start_time, FED.end_time,
+                   lights_on=lights_on,
+                   lights_off=lights_off)
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
+
+#---Unused by FED3 Viz
+
+def old_diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     """
     FED3 Viz: Make a 3-panel plot showing the pellet retrieval, motor turns,
     and battery life over time.
@@ -2037,8 +2133,6 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
         Integer between 0 and 23 denoting the start of the light cycle.
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
-    pellet_color : str
-        matplotlib named color string to color line
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
@@ -2050,15 +2144,8 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     fig : matplotlib.figure.Figure
     """
     assert isinstance(FED, FED3_File),'Non FED3_File passed to diagnostic_plot()'
-    df = FED.data
-    
-    if 'ax' not in kwargs:
-        fig = plt.figure(figsize=(7,5),dpi=125)
-        ax1 = fig.add_subplot(3,1,1)
-        ax2 = fig.add_subplot(3,1,2)
-        ax3 = fig.add_subplot(3,1,3)  
-    else:
-        ax1,ax2,ax3 = kwargs['ax']
+    df = FED.data   
+    fig, (ax1,ax2,ax3) = plt.subplots(3,1,sharex=True, figsize=(7,5),dpi=125)
     ax1.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     plt.subplots_adjust(hspace=.1)
     y = df['Pellet_Count'].drop_duplicates()

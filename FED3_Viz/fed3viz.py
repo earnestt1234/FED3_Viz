@@ -192,8 +192,9 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_circadian, 1, text='Day/Night Plot')
         self.plot_treeview.insert(self.ps_circadian, 2, text='Chronogram (Line)')
         self.plot_treeview.insert(self.ps_circadian, 3, text='Chronogram (Heatmap)')
-        self.ps_other = self.plot_treeview.insert("", 5, text='Other')
-        self.plot_treeview.insert(self.ps_other, 1, text='Diagnostic Plot')
+        self.ps_other = self.plot_treeview.insert("", 5, text='Diagnostic')
+        self.plot_treeview.insert(self.ps_other, 1, text='Battery Life')
+        self.plot_treeview.insert(self.ps_other, 2, text='Motor Turns')
         self.plot_treeview.bind('<<TreeviewSelect>>', self.handle_plot_selelection)
         
         self.plot_tree_scroll = ttk.Scrollbar(self.plot_selector, command=self.plot_treeview.yview)
@@ -295,14 +296,15 @@ class FED3_Viz(tk.Tk):
                                 'Average Poke Bias Plot (Correct %)':'Plot the average Group tendency to poke the active poke (Groups make individual curves)',
                                 'Average Poke Bias Plot (Left %)':'Plot the average Group tendency to poke the left poke (Groups make individual curves)',
                                 'Day/Night Plot':'Plot group averages for day/night on a bar chart',
-                                'Diagnostic Plot':'Plot battery life and motor turns',
                                 'Chronogram (Line)':'Plot average 24-hour curves for groups',
                                 'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
                                 'Group Breakpoint Plot':'Plot the average breakpoint for Groups (maximum pellets or pokes reached before a period of inactivity)',
                                 'Retrieval Time Plot':'Plot the retrieval time for each pellet (along with pellets retrieved) for a single device',
                                 'Multi Retrieval Time Plot':'Plot pellet retrieval times for multiple devices (aligned to the same start point)',
-                                'Average Retrieval Time Plot':'Plot mean pellet retrieval time for Groups (Groups make individual curves)'}
+                                'Average Retrieval Time Plot':'Plot mean pellet retrieval time for Groups (Groups make individual curves)',
+                                'Battery Life':'Plot the battery voltage for a device over time.',
+                                'Motor Turns':'Plot the amount of motor turns for each pellet dispensed.'}
             
     #---PLOT TREEVIEW > PLOT FUNCTION
         #associate each plot_treeview entry with a plotting function
@@ -312,7 +314,6 @@ class FED3_Viz(tk.Tk):
                                 'Interpellet Interval':self.interpellet_plot_TK,
                                 'Group Interpellet Interval':self.group_ipi_TK,
                                 'Day/Night Plot':self.daynight_plot_TK,
-                                'Diagnostic Plot':self.diagnostic_plot_TK,
                                 'Single Poke Plot':self.poke_plot_single_TK,
                                 'Average Poke Plot (Correct)':self.avg_plot_TK,
                                 'Average Poke Plot (Error)':self.avg_plot_TK,
@@ -327,7 +328,9 @@ class FED3_Viz(tk.Tk):
                                 'Group Breakpoint Plot':self.group_breakpoint_plot,
                                 'Retrieval Time Plot':self.retrieval_plot_TK,
                                 'Multi Retrieval Time Plot':self.retrieval_plot_multi_TK,
-                                'Average Retrieval Time Plot':self.avg_plot_TK}   
+                                'Average Retrieval Time Plot':self.avg_plot_TK,
+                                'Battery Life': self.battery_life_TK,
+                                'Motor Turns': self.motor_turns_TK}   
                
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
@@ -1322,26 +1325,6 @@ class FED3_Viz(tk.Tk):
                             arguments=args_dict, plotdata=plotdata,)
         self.PLOTS[fig_name] = new_plot
         self.display_plot(new_plot)
-
-    def diagnostic_plot_TK(self):
-        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
-        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
-        for FED in FEDs_to_plot:
-            if self.plotting == True:
-                self.clear_axes()
-                self.convert_axes(3)
-                arg_dict = self.get_current_settings_as_args()
-                arg_dict['FED'] = FED
-                arg_dict['ax'] = self.AX
-                basename = 'Diagnostic Plot for ' + FED.filename
-                fig_name = self.create_plot_name(basename)
-                plots.diagnostic_plot(**arg_dict)
-                plotdata = getdata.diagnostic_plot(**arg_dict)
-                new_plot = FED_Plot(figname=fig_name,plotfunc=plots.diagnostic_plot,
-                                    plotdata=plotdata, arguments=arg_dict,)
-                self.PLOTS[fig_name] = new_plot
-                self.display_plot(new_plot)
-                self.update()
             
     def daynight_plot_TK(self):
         args_dict = self.get_current_settings_as_args()
@@ -1520,6 +1503,44 @@ class FED3_Viz(tk.Tk):
         self.display_plot(new_plot)
         self.raise_figure(fig_name)
     
+    def battery_life_TK(self):
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        for obj in FEDs_to_plot:
+            if self.plotting == True:
+                self.clear_axes()
+                arg_dict = self.get_current_settings_as_args()
+                arg_dict['FED'] = obj
+                arg_dict['ax'] = self.AX
+                plotfunc = plots.battery_plot   
+                fig_name = self.create_plot_name('Battery Life for ' + obj.filename)                  
+                plotdata = getdata.battery_plot(**arg_dict)
+                plotfunc(**arg_dict)
+                new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
+                                    plotdata=plotdata, arguments=arg_dict,)
+                self.PLOTS[fig_name] = new_plot
+                self.display_plot(new_plot)
+                self.update()
+        
+    def motor_turns_TK(self):
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        for obj in FEDs_to_plot:
+            if self.plotting == True:
+                self.clear_axes()
+                arg_dict = self.get_current_settings_as_args()
+                arg_dict['FED'] = obj
+                arg_dict['ax'] = self.AX
+                plotfunc = plots.motor_plot   
+                fig_name = self.create_plot_name('Motor Turns for ' + obj.filename)                  
+                plotdata = getdata.motor_plot(**arg_dict)
+                plotfunc(**arg_dict)
+                new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
+                                    plotdata=plotdata, arguments=arg_dict,)
+                self.PLOTS[fig_name] = new_plot
+                self.display_plot(new_plot)
+                self.update()
+                
     #---HOME HELPER FUNCTIONS
     def update_file_view(self):
         self.files_spreadsheet.delete(*self.files_spreadsheet.get_children())
@@ -1596,10 +1617,10 @@ class FED3_Viz(tk.Tk):
     
     def is_plottable(self, plot_name):
         plottable = False
-        if plot_name in ['Single Pellet Plot', 'Multi Pellet Plot', 'Diagnostic Plot',
+        if plot_name in ['Single Pellet Plot', 'Multi Pellet Plot',
                          'Interpellet Interval', 'Poke Bias Plot',
                          'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot',
-                         'Multi Retrieval Time Plot']:
+                         'Multi Retrieval Time Plot', 'Battery Life', 'Motor Turns']:
             if self.files_spreadsheet.selection():
                 plottable = True
             else:
@@ -2083,18 +2104,6 @@ class FED3_Viz(tk.Tk):
             if ax != self.AX:
                 ax.remove()
                 # self.FIGURE.delaxes(ax)
-    
-    def convert_axes(self, num):
-        for ax in self.FIGURE.axes:
-            ax.remove()
-        if num == 1:
-            self.AX = self.FIGURE.add_axes()
-        else:
-            holder = []
-            for i in range(num):
-                ax = self.FIGURE.add_subplot(num,1,i+1)
-                holder.append(ax)
-            self.AX = holder
     
     #---SETTINGS TAB FUNCTIONS           
     def check_pellet_type(self, *event):

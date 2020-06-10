@@ -240,14 +240,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
     output.index.name = 'Elapsed Hours'
     return output
 
-def diagnostic_plot(FED, *args, **kwargs):
-    df = FED.data
-    dic = {'Pellets':df['Pellet_Count'],
-           'Motor Turns':df['Motor_Turns'],
-           'Battery (V)':df['Battery_Voltage']}
-    output = pd.DataFrame(dic, index=df.index)
-    output.index.name = 'Time'
-    return output
+
 
 def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
     kde_output = pd.DataFrame()
@@ -608,4 +601,31 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         elif break_error == 'STD':
             group_output.loc[break_style, group + " STD"] = np.nanstd(group_vals)
     output = output.merge(group_output, left_index=True, right_index=True)
+    return output
+
+def battery_plot(FED,*args, **kwargs):
+    df = FED.data
+    x = df.index.values
+    y = df['Battery_Voltage']
+    y = y.rename('Battery (V)')
+    output = pd.DataFrame(y, index=x)
+    return output
+
+def motor_plot(FED,*args, **kwargs):
+    df = FED.data
+    x = df.index.values
+    y = df['Motor_Turns']
+    y = y.rename('Motor Turns')
+    output = pd.DataFrame(y, index=x)
+    return output
+
+#---Old functions
+
+def diagnostic_plot(FED, *args, **kwargs):
+    df = FED.data
+    dic = {'Pellets':df['Pellet_Count'],
+           'Motor Turns':df['Motor_Turns'],
+           'Battery (V)':df['Battery_Voltage']}
+    output = pd.DataFrame(dic, index=df.index)
+    output.index.name = 'Time'
     return output
