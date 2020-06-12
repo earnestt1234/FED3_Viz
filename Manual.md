@@ -7,9 +7,9 @@
 </p>
 
 
-**Written for version**: v0.2.0 (beta)
+**Written for version**: v0.3.0 (Beta)
 
-**Date of creation**: May 25th, 2020
+**Date of creation**: 
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
@@ -61,6 +61,9 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Average Pellet Plot](#average-pellet-plot)
   - [Interpellet Interval Plot](#interpellet-interval-plot)
   - [Group Interpellet Interval Plot](#group-interpellet-interval-plot)
+  - [Retrieval Time Plot](#retrieval-time-plot)
+  - [Multi Retrieval Time Plot](#multi-retrieval-time-plot)
+  - [Average Retrieval Time Plot](#average-retrieval-time-plot)
   - [Single Poke Plot](#single-poke-plot)
   - [Average Poke Plot](#average-poke-plot)
   - [Poke Bias Plot](#poke-bias-plot)
@@ -82,10 +85,11 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
     - [Saving Code](#saving-code)
   - [Deleting Plots](#deleting-plots)
 - [Settings](#settings)
-
-  - [Saving Settings](#saving-settings)
+- [Saving Settings](#saving-settings)
   - [Default Settings](#default-settings)
   - [Last Used Settings](#last-used-settings)
+- [Sessions](#sessions)
+- [Quick Tips](#quick-tips)
 - [FAQ](#faq)
 - [Appendix](#appendix)
 - [Averaging Methods Diagram](#averaging-methods-diagram)
@@ -375,6 +379,44 @@ Note that Interpellet Interval Plots use logarithmically spaced x-axes (in minut
 
 Same as the Interpellet Interval Plot (see above), except this version plots groups as separate curves.  The Interpellet Intervals from the files of every group are appended to one array, and then plotted.  The KDE line can also be turned on or off.
 
+### Retrieval Time Plot
+
+*Can use night shading* :new_moon_with_face:
+
+*Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
+
+<p align="center">
+	<img src="img/manual/retsingle.png" width="600">
+</p>
+
+Retrieval Time Plots show the cumulative pellet retrieval, as well as the time (in seconds) it took for the pellet to be retrieved (since dispensing).  Retrieval time is a potential index of learning, as quicker retrieval times may be associated with understanding of the operant task.
+
+ Retrieval times can become very high when mice abandon the task temporarily (like when they go to sleep).  To exclude long retrieval times, you can toggle a threshold for excluding data under **Settings > Retrieval Time > Threshold for excluding retrieval times (seconds).**
+
+### Multi Retrieval Time Plot
+
+*Combines all highlighted files into a single plot* :bar_chart:
+
+<p align="center">
+	<img src="img/manual/retmulti.png" width="600">
+</p>
+
+Raw retrieval times for multiple devices can be plotted with the Multi Retrieval Time Plot.  The values are plotted against elapsed time; x=0 is the start time of each recording.  The retrieval time exclusion threshold also applies to these plots (see Retrieval Time Plot).
+
+### Average Retrieval Time Plot
+
+*Can use night shading* :new_moon_with_face:
+
+*Uses groups* :paperclip:
+
+*Uses averaging methods* 🧮
+
+<p align="center">
+	<img src="img/manual/retavg.png" width="600">
+</p>
+
+The Average Retrieval Time Plot creates an average line plot of the pellet retrieval times for Grouped devices.  The retrieval time exclusion threshold also applies to these plots (see Retrieval Time Plot).
+
 ### Single Poke Plot
 
 *Can use night shading* :new_moon_with_face:
@@ -507,19 +549,30 @@ Note that this plot type does not use Groups; it plots what is selected in the F
 
 Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods; those values represent the individual FED data points, and they are averaged to create the value for the bar.  Note that both individual values and error bars can be shown for these plots.
 
-### Diagnostic Plot
+### Battery Life Plot
 
 *Can use night shading* :new_moon_with_face:
 
 *Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
 
 <p align="center">
-	<img src="img/examples/diagnostic plot.png" width="500">
+	<img src="img/manual/battery.png" width="600">
 </p>
 
-The Diagnostic Plot is used to help identify problems with the FED over the course of its recording.  It is a 3 panel plot, which shows the pellets retrieved, motor turns, and battery life over time.
 
-The motor should only need to turn a few times (under 10) for each pellet dispensed.  Slightly higher values than this (10-50) may represent the FED's mechanism to try and unjam, while much higher values (>100) may represent a longer pellet jam.
+The Battery Life plot simply shows the battery life of the FED over the course of the recording.
+
+### Motor Turns Plot
+
+*Can use night shading* :new_moon_with_face:
+
+*Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
+
+<p align="center">
+	<img src="img/manual/motorturns.png" width="600">
+</p>
+
+The Motor Turns Plot shows how many turns were used by the device to dispense each pellet.  The motor should only need to turn a few times (under 10) for each pellet dispensed.  Slightly higher values than this (10-50) may represent the FED's mechanism to try and unjam, while much higher values (>100) may represent a longer pellet jam.
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
@@ -535,7 +588,7 @@ To rename a plot, select a **single** plot from the Plot List, and click the **R
 
 ### New Window:
 
-To show plots in a new window, select one or more graphs from the Plot List and click the  **New Window Button**.  This feature allows for viewing of multiple graphs simultaneously.
+To show plots in a new window, select one or more graphs from the Plot List and click the  **New Window Button**.  This feature allows for viewing of multiple graphs simultaneously.  There can only be 5 open New Windows at one time (in order to prevent memory consumption, see [FAQ](#faq)); if you try to open another New Window while 5 are open, you will receive a warning.
 
 ### Navigation Toolbar:
 
@@ -576,7 +629,7 @@ Each plot type in FED3 Viz is associated with one or more plotting functions def
 
 All this makes the code somewhat verbose, but it aims to make the script run-able without modification.
 
-Plot Code is displayed in a new window, and can be saved as a `.py` or `.txt` file using the Save As... Button at the bottom of the window.
+Plot Code is displayed in a new window, and can be saved as a `.py` or `.txt` file using the Save As... Button at the bottom of the window.  Note that the dimensions of plots created in FED3 Viz is dynamic, and that plots created with Plot Code scripts may have different aspect ratios (though this is easily tweakable within the script).
 
 **Saving Data**
 
@@ -613,6 +666,36 @@ There is also an option to remember the settings used the last time the applicat
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
+# Sessions
+
+A **Session** is a saved application state within FED3 Viz.  Sessions allow for users to save their work in a broader way than just saving settings or Groups.  Saving a Session will preserve the loaded FED3 files, their Group Labels, all the created plots, and the settings in a file.  This works by using Python's `pickle` library to write objects to a file.  
+
+You can save a Session (at any time) by clicking the **Save Session Button** on the Home Tab.  This will open a file dialog, which defaults to a `sessions` folder, whose location depends on your FED3 Viz installation: 
+
+- **Windows or Mac Executable:** `fed3viz/sessions/`
+- **Python Script** (i.e. GitHub source code): `FED3_Viz/FED3_Viz/sessions/`
+
+The saved file will have the extension `.fed`.   You can then load these files later by clicking the **Load Session Button**.  Loading the session will populate the Home Tab with files and Groups, and then will show you the plots being drawn on the Plot Tab.  Settings are also loaded.  
+
+Session files created on one computer can be opened on another,  but there will likely be issues if the FED files referenced aren't in the same file path.  You also can't open a Session file created in an `.exe` version of FED3 Viz on a Python script version, and vice versa.  
+
+**Do not open/unpickle any files from unknown or untrusted sources, as they can be malicious.**
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
+# Quick Tips
+
+Here are some features and tips not covered elsewhere that may improve your experience with FED3 Viz:
+
+- Highlighting multiple choices from the Plot Selector and hitting Create Plot will try to create each plot selected (based on the files selected).
+- Selecting a Group will also select all the FED3 files in that Group; this can be useful for rooting Grouped devices to functions that don't explicitly consider Groups (such as many plots, or deleting files).
+- There are right-click menus for the File View and Plot List.  Most of the functions correspond the buttons of the Home Tab and Plot Tab, but there are some additional features.  From the File View, you can right-click a highlighted file to open its file location or open it externally.  You can highlight a created plot to either re-select the FED files it uses, or to reload the settings that were used to create it.
+- A Session called "LAST_USED.fed" is saved every time the application is closed; you can open this file to continue working where you left off.
+- Resizing the application window will also change the aspect ratio of the Plot Display - and these changes will be reflected in the saved image.  If you want to be more explicit about plot dimensions and DPI, I would recommend getting the Plot Code and making small modifications to the `fig, ax = plt.subplots()` line.
+- Changes made with the Navigation Toolbar (zooming/panning/resizing) will be saved using the Saved Plots Button, but only if one plot is selected to save.  Selecting a different plot will reset the changes made by the Navigation Toolbar.
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
 # FAQ
 
 This section will mainly cover troubleshooting and issues; please also check the manual for discussion of specific functions and features.
@@ -646,6 +729,10 @@ This section will mainly cover troubleshooting and issues; please also check the
 
 - **Will there be more plots/features added?**  Yes!  FED3 Viz will likely be worked on through Summer 2020.  There are more features in the works, particularly in regards to the operant functions of FED3 Viz.  Please share any suggestions for development on GitHub or the FED3 Google Group.
 
+- **Why can't I open more than 5 plots in a New Window?**  As of v0.3.0, a limit of 5 was placed on New Windows in order to prevent memory consumption.  In previous versions of FED3 Viz, there was no limit, but there was also a memory leak issue: creation of any new plots (in a New Window or not) would increase the memory used by the application (by several megabytes).  This memory usage was *un-recoverable* until the application closed; deleting plots or closing windows would not lower the memory usage.  This would be a potential issue if one was to create many plots, or have FED3 Viz running in tandem with other applications.
+
+  Now, this issue has been fixed; instead of creating a new "figure" (`matplotlib.figure.Figure`) with each plot, a single one is reused.  New Windows create additional "figures", but they can be reused when after is closed.  A limit of 5 is used to prevent the same memory leak from occurring.  There is no limit on the amount of plots that can be created; only how many can be visible at one time.
+
 - **I saved the Python code for a plot and it doesn't run.**  This could be due to many issues, but some possible causes are:
   
   - You are not using Python 3
@@ -657,9 +744,7 @@ This section will mainly cover troubleshooting and issues; please also check the
 
   That being said, I would enjoy discussing (on GitHub) and possibly including any proposed changes which significantly contribute to the readable or speed of the code.  Aside from that, sharing code may be useful for other users.
 
-- __What are the `**kwargs` doing in plot function definitions? __  [These are "star keyword arguments"](https://realpython.com/python-kwargs-and-args/).  In general, they allow Python functions to accept a variable number of arguments.  Every time FED3 Viz creates a plot, it gets the current state of *all* settings and converts them into a dictionary of arguments (where the key is an argument name and the value is an argument value, like a number or a string); these arguments are passed to the selected plotting function.  Arguments that aren't explicitly named in that function definition will be passed as  `**kwargs`; they do not get used but they also do not produce an error.  This system allows FED3 Viz settings to easily affect multiple plotting functions, and saves some verbosity in the GUI code.  *Basically, `**kwargs` are needed in the context of the application, but they are unnecessary (and can be deleted\*) in the returned Plot Code*.  In general, it's confusing and redundant to include `**kwargs` (or `*args`) if they are not being used (hence), but this is a peculiar case.
-
-  *The only exceptions to this are the average line plot functions (`average_plot_ondatetime()`, `average_plot_ontime()`, and `average_plot_onstart()`, which do treat `retrieval_threshold` as a genuine additional key-word argument!
+- __What are the `**kwargs` doing in plot function definitions? __  [These are "star keyword arguments"](https://realpython.com/python-kwargs-and-args/).  In general, they allow Python functions to accept a variable number of arguments.  Every time FED3 Viz creates a plot, it gets the current state of *all* settings and converts them into a dictionary (`dict`) of arguments (where the key is an argument name and the value is an argument value, like a number or a string); these arguments are passed to the selected plotting function.  Arguments that aren't explicitly named in that function definition will be passed as  `**kwargs`; they do not get used but they also do not produce an error.  This system allows FED3 Viz settings to easily affect multiple plotting functions, and saves some verbosity in the GUI code.  Previously, this was their only function in FED3 Viz, but as of v0.3.0, all plotting functions can take an `ax` keyword argument, which can be a preexisting `matplotlib.axes.Axes` to draw the plot on.  There are other small cases where the application genuinely passes arguments as `**kwargs`. 
 
 - **I can't load some settings, or my settings look weird.**  This could be an issue with altered setting files, or settings files with which have entries that don't match the application.  Please redownload the `DEFAULT.CSV` and `LAST_USED.CSV` files from GitHub and replace them in your FED3 Viz folder.  Alternatively, try to save new settings from the application to overwrite the `DEFAULT.CSV` file.
 
@@ -709,10 +794,13 @@ This table shows which columns of a FED3 data file are used by FED3 Viz to creat
 | Multi Pellet Plot                                            | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
 | Average Pellet Plot                                          | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
 | Inter Pellet  Interval Plots                                 | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
+| Single Retrieval Time Plot                                   | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |
+| Multi Retrieval Time and Average Retrieval Time Plots        | :heavy_check_mark:      |                    |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |
 | Any Plot of Correct / Error Pokes (Single Poke, Average Poke, Poke Bias) | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: | :heavy_check_mark: |                    |                     |                    |
 | Any Plot of Left / Right Pokes (Single Poke, Average Poke, Poke Bias) | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   |                    |                    |                    |                     |                    |
 | Circadian (Pellets or IPI)                                   | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
 | Circadian (Correct / Error Pokes)                            | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: | :heavy_check_mark: |                    |                     |                    |
 | Circadian (Retrieval Time)                                   | :heavy_check_mark:      |                    |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |
-| Diagnostic Plot                                              | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    | :heavy_check_mark:  | :heavy_check_mark: |
+| Battery Life Plot                                            | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    | :heavy_check_mark:  |                    |
+| Motor Turns Plot                                             | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    |                     | :heavy_check_mark: |
 

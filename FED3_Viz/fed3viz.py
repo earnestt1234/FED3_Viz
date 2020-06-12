@@ -1827,13 +1827,13 @@ class FED3_Viz(tk.Tk):
             self.plot_listbox.delete(i)
             del(self.PLOTS[selection])
             new_plot_index=self.plot_listbox.size()-1
-            if new_plot_index>=0 and raise_plots:
-                new_plot=self.plot_listbox.get(new_plot_index)
-                self.raise_figure(new_plot, new=False)        
-            else:
-                self.clear_axes()
-                self.canvas.draw_idle()
-                self.nav_toolbar.update()
+        if new_plot_index>=0 and raise_plots:
+            new_plot=self.plot_listbox.get(new_plot_index)
+            self.raise_figure(new_plot, new=False)        
+        else:
+            self.clear_axes()
+            self.canvas.draw_idle()
+            self.nav_toolbar.update()
         self.update_buttons_plot(None)
                 
     def new_window_plot(self):
@@ -1901,7 +1901,8 @@ class FED3_Viz(tk.Tk):
             if savepath:
                 for i in clicked:
                     graph_name=self.plot_listbox.get(i)
-                    self.raise_figure(graph_name, new=False)          
+                    if len(clicked) > 1:
+                        self.raise_figure(graph_name, new=False)          
                     save_name = graph_name+'.png'
                     full_save = os.path.join(savepath,save_name)
                     if not self.overwrite_checkbox_val.get():

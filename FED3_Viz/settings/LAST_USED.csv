@@ -14,14 +14,14 @@ pellet_align,True
 average_error,SEM
 average_bins,4 hours
 load_last_used,True
-average_method,shared time
+average_method,elapsed time
 average_align_start,5 pm
 average_align_days,1
 circ_value,pellets
 circ_error,SEM
-circ_show_indvl,True
+circ_show_indvl,False
 kde,True
-retrieval_threshold,None
+retrieval_threshold,60
 poke_style,Cumulative
 poke_bins,1 hour
 poke_show_correct,True

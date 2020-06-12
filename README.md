@@ -35,19 +35,19 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
   - pellet retrieval
   - correct and incorrect pokes
   - intervals between pellet retrieval
+  - pellet retrieval time
+  - progressive ratio breakpoints
   - circadian patterns of activity
   - grouped averages for multiple devices
   - motor turns & battery life
-  
 - Toolbar for live plot editing (from [`matplotlib`](https://matplotlib.org/3.1.1/users/navigation_toolbar.html))
-
 - Savable code and data for each plot
-
 - Sortable viewer showing recording properties
-
 - Group labels for averaging data
-
 - Savable settings
+- Savable "Sessions" (for reloading files, plots, and settings)
+
+See the Releases tab for specific notes about new each version.
 
 ## Gallery
 
@@ -55,10 +55,10 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
   <p align="center">
       <img src="img/examples/pelletplot.png" width="700">
   </p>
-
   <p align="center">
-      <img src="img/examples/diagnostic plot.png" width="600">
+      <img src="img/examples/chronoheat.png" width="600">
   </p>
+
 
   <p align="center">
       <img src="img/examples/daynightplot.png" width="500">
@@ -67,6 +67,10 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
   <p align="center">
       <img src="img/examples/ipi.png" width="500">
   </p>  
+  <p align="center">
+      <img src="img/examples/pokebias.png" width="600">
+  </p>
+
 
 ## Installation
 
@@ -76,14 +80,7 @@ FED3 Viz can either be run from a packaged application file, or from a Python in
 
 **This program is currently in "beta"**: it has only been tested by a few individuals on their machines, with a small selection of data files.  Additionally, the program is still being actively worked on, and likely will be through summer 2020.  I am eager to have other people try the application and report bugs, preferably [through GitHub](https://github.com/earnestt1234/FED3_Viz/issues) or the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  
 
-Moreover, we will certainly consider and try to meet any requests for additional features/graphs! I greatly appreciate the [input so far*](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c), and would love more.
-
-*The user-requested features so far have not been implemented, but working on it :sweat_smile:
-
-Some features that I aim to integrate:
-
-- recognition of recording mode
-- progressive ratio breakpoint
+Moreover, we will certainly consider and try to meet any requests for additional features/graphs! I greatly appreciate the [input so far, some of which have been added to FED3 Viz](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c), and would love more.
 
 Things that would be great to get feedback on:
  - If you encounter any issue while using the program, like crashes or errors
