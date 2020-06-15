@@ -4,9 +4,7 @@ FED3 Viz: A tkinter program for visualizing FED3 Data
 
 @author: https://github.com/earnestt1234
 """
-import copy
 import emoji
-import matplotlib
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
@@ -58,7 +56,7 @@ class FED3_Viz(tk.Tk):
         self.mac_color = '#E2E2E2'
         self.colors =  ['blue','red','green','yellow','purple','orange',
                         'black',]
-        self.FIGURE, self.AX = plt.subplots(dpi=150) #fig/axes used in plot tab
+        self.FIGURE, self.AX = plt.subplots(figsize=(7,3.5),dpi=150) #fig/axes used in plot tab
         self.CB = None
         self.NEW_WINDOW_FIGS  = [] 
         times = []
@@ -368,7 +366,7 @@ class FED3_Viz(tk.Tk):
         self.plot_frame.grid(row=0,column=0, sticky='nsew')
         self.canvas = FigureCanvasTkAgg(self.FIGURE, master=self.plot_frame)
         self.canvas.draw_idle()
-        self.canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        self.canvas.get_tk_widget().pack(side=tkinter.BOTTOM, fill=tkinter.BOTH, expand=1)
         self.nav_toolbar = NavigationToolbar2Tk(self.canvas, self.plot_frame)
         self.nav_toolbar.update()
         self.canvas._tkcanvas.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
@@ -1822,6 +1820,7 @@ class FED3_Viz(tk.Tk):
         if 'raise_plots' in kwargs:
             if not kwargs.get('raise_plots'):
                 raise_plots = False
+        new_plot_index = 0
         for i in clicked:
             selection=self.plot_listbox.get(i)
             self.plot_listbox.delete(i)
@@ -1858,7 +1857,7 @@ class FED3_Viz(tk.Tk):
         if not platform.system() == 'Darwin': 
             new_window.iconbitmap('img/graph_icon.ico')
         new_window.protocol("WM_DELETE_WINDOW", lambda: self.close_new_window(new_window))
-        new_fig, new_ax = plt.subplots(dpi=150)
+        new_fig, new_ax = plt.subplots(dpi=125)
         new_frame = ttk.Frame(new_window)
         new_frame.pack(fill=tk.BOTH, expand=1)
         canvas = FigureCanvasTkAgg(new_fig, master=new_frame)

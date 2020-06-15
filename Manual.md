@@ -9,7 +9,7 @@
 
 **Written for version**: v0.3.0 (Beta)
 
-**Date of creation**: 
+**Version/Manual Date**: 6/15/2020  
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
@@ -688,10 +688,10 @@ Session files created on one computer can be opened on another,  but there will 
 Here are some features and tips not covered elsewhere that may improve your experience with FED3 Viz:
 
 - Highlighting multiple choices from the Plot Selector and hitting Create Plot will try to create each plot selected (based on the files selected).
-- Selecting a Group will also select all the FED3 files in that Group; this can be useful for rooting Grouped devices to functions that don't explicitly consider Groups (such as many plots, or deleting files).
+- Selecting a Group will also select all the FED3 files in that Group in the File View; this can be useful for routing Grouped devices to functions that don't explicitly consider Groups (such as creating many plots, or deleting files).
 - There are right-click menus for the File View and Plot List.  Most of the functions correspond the buttons of the Home Tab and Plot Tab, but there are some additional features.  From the File View, you can right-click a highlighted file to open its file location or open it externally.  You can highlight a created plot to either re-select the FED files it uses, or to reload the settings that were used to create it.
 - A Session called "LAST_USED.fed" is saved every time the application is closed; you can open this file to continue working where you left off.
-- Resizing the application window will also change the aspect ratio of the Plot Display - and these changes will be reflected in the saved image.  If you want to be more explicit about plot dimensions and DPI, I would recommend getting the Plot Code and making small modifications to the `fig, ax = plt.subplots()` line.
+- Resizing the application window will also change the aspect ratio of the Plot Display - and these changes will be reflected in the saved image.  If you want to be more explicit about plot dimensions and DPI, I would recommend getting the Plot Code and setting a `figsize` and `dpi` in the `fig, ax = plt.subplots()` line.  If elements get cut off when resizing, you can re-click the graph name in the Plot List to render it again, which should make all elements fit.
 - Changes made with the Navigation Toolbar (zooming/panning/resizing) will be saved using the Saved Plots Button, but only if one plot is selected to save.  Selecting a different plot will reset the changes made by the Navigation Toolbar.
 
 <div style="page-break-after: always; break-after: page;"></div> 
@@ -727,16 +727,16 @@ This section will mainly cover troubleshooting and issues; please also check the
 
 - **I'm encountering issues when using files with the same name**.  Please report these; there could be some errors with duplicate files or files with exactly matching names which need to be resolved.  The easiest workaround before a fix is to rename files (outside of FED3 Viz) to be unique. 
 
-- **Will there be more plots/features added?**  Yes!  FED3 Viz will likely be worked on through Summer 2020.  There are more features in the works, particularly in regards to the operant functions of FED3 Viz.  Please share any suggestions for development on GitHub or the FED3 Google Group.
+- **Will there be more plots/features added?**  Possibly!  FED3 Viz will likely be worked on through Summer 2020.  Please share any suggestions for development on GitHub or the FED3 Google Group.
 
-- **Why can't I open more than 5 plots in a New Window?**  As of v0.3.0, a limit of 5 was placed on New Windows in order to prevent memory consumption.  In previous versions of FED3 Viz, there was no limit, but there was also a memory leak issue: creation of any new plots (in a New Window or not) would increase the memory used by the application (by several megabytes).  This memory usage was *un-recoverable* until the application closed; deleting plots or closing windows would not lower the memory usage.  This would be a potential issue if one was to create many plots, or have FED3 Viz running in tandem with other applications.
+- **Why can't I open more than 5 plots in a New Window?**  As of v0.3.0, a limit of 5 was placed on New Windows in order to prevent memory consumption.  In previous versions of FED3 Viz, there was no limit, but there was also a memory leak issue: creation of any new plot (in a New Window or not) would increase the memory used by the application (by several megabytes).  This memory usage was *un-recoverable* until the application closed; deleting plots or closing windows would not lower the memory usage.  This would be a potential issue if one was to create many plots, or have FED3 Viz running in tandem with other applications.
 
   Now, this issue has been fixed; instead of creating a new "figure" (`matplotlib.figure.Figure`) with each plot, a single one is reused.  New Windows create additional "figures", but they can be reused when after is closed.  A limit of 5 is used to prevent the same memory leak from occurring.  There is no limit on the amount of plots that can be created; only how many can be visible at one time.
 
-- **I saved the Python code for a plot and it doesn't run.**  This could be due to many issues, but some possible causes are:
+- **I saved the Python code for a plot and it doesn't run or my plot looks different.**  This could be due to many issues, but some possible causes are:
   
-  - You are not using Python 3
-  - You do not have the necessary packages installed, or their versions are incompatible with FED3 Viz.  The packages used by FED3 Viz are documented in the `requirements.txt` file on GitHub
+  - You are not using Python 3 to run the script
+  - You do not have the necessary packages installed to run the script, or their versions are incompatible with FED3 Viz.  The packages used by FED3 Viz are documented in the `requirements.txt` file on GitHub
   - Your IDE is not showing the plot (sometimes an issue with how inline plotting is handled; sometimes this causes plots not to show on the first run)
   - There is an error in the output plot script, which is certainly possible!  The most likely issues are that some of the necessary helper functions were not included or the arguments are improperly formatted.  Please report these errors on GitHub with the specific context, both to help solve your specific case and to improve the application.
   

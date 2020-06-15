@@ -61,6 +61,7 @@ def generate_code(PLOTOBJ):
 import datetime as dt
 import os
 
+import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np

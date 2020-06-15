@@ -55,9 +55,11 @@ See the Releases tab for specific notes about new each version.
   <p align="center">
       <img src="img/examples/pelletplot.png" width="700">
   </p>
+
   <p align="center">
-      <img src="img/examples/chronoheat.png" width="600">
+      <img src="img/examples/chronoheat.png" width="700">
   </p>
+
 
 
   <p align="center">
@@ -87,4 +89,3 @@ Things that would be great to get feedback on:
  - Any confusing/unexpected behavior (whether my intention or not)
  - Any additional features you feel it is lacking
  - Little issues with the interface (like window size, buttons being grayed out, selection highlighting)
- - The "Plot Code" function specifically; I encountered a confusing issue with this prior to releasing that I think I have fixed, but it may still be broken.  Additionally, do generated plot codes actually generate the plot in a new Python environment?
