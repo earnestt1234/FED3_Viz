@@ -777,7 +777,7 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
     else:
         ax = kwargs['ax']
     bins = []
-    logx = False
+    logx = True
     if logx:
         lowest = -2
         highest = 5

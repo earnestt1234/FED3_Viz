@@ -17,11 +17,11 @@ load_last_used,False
 average_method,shared date & time
 average_align_start,7 am
 average_align_days,3
-circ_value,retrieval time
+circ_value,pellets
 circ_error,SEM
-circ_show_indvl,True
+circ_show_indvl,False
 kde,True
-retrieval_threshold,60
+retrieval_threshold,None
 poke_style,Cumulative
 poke_bins,1 hour
 poke_show_correct,True

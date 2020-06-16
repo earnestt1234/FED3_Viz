@@ -28,11 +28,17 @@ from load.load import FED3_File
 from plots import plots
 
 class FED_Plot():
-    def __init__(self, figname, plotfunc, arguments, plotdata=None,):
+    def __init__(self, figname, plotfunc, arguments, plotdata=None,
+                 x=7, y=3.5, dpi=150):
         self.figname = figname
         self.arguments = arguments
         self.plotfunc = plotfunc
         self.plotdata = plotdata
+        self.x = x
+        self.y = y
+        self.dpi = dpi
+        self.x_pix = int(self.x * self.dpi) + 300
+        self.y_pix = int(self.y * self.dpi) + 100
         
 class New_Window_Figure():
     def __init__(self, toplevel, fig, ax, frame, canvas, toolbar, in_use,):
@@ -1208,7 +1214,8 @@ class FED3_Viz(tk.Tk):
                 fig_name = self.create_plot_name(basename)
                 plotfunc(**arg_dict)
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
-                                    plotdata=plotdata, arguments=arg_dict,)
+                                    plotdata=plotdata, arguments=arg_dict,
+                                    x=7,y=3.5)
                 self.PLOTS[fig_name] = new_plot
                 self.display_plot(new_plot)
                 self.update()
@@ -1295,7 +1302,8 @@ class FED3_Viz(tk.Tk):
         plots.interpellet_interval_plot(**arg_dict)
         plotdata = getdata.interpellet_interval_plot(**arg_dict)
         new_plot = FED_Plot(figname=fig_name,plotfunc=plots.interpellet_interval_plot,
-                            plotdata=plotdata,arguments=arg_dict,)
+                            plotdata=plotdata,arguments=arg_dict,
+                            x=3, y=5)
         self.PLOTS[fig_name] = new_plot
         self.display_plot(new_plot)
 
@@ -1997,7 +2005,7 @@ class FED3_Viz(tk.Tk):
     def display_plot(self, plot_obj, new=True):
         self.update()
         self.canvas.draw_idle()
-        self.nav_toolbar.update()        
+        self.nav_toolbar.update()             
         if new:
             self.plot_listbox.insert(tk.END,plot_obj.figname)
             self.plot_listbox.selection_clear(0,self.plot_listbox.size())
@@ -2009,6 +2017,8 @@ class FED3_Viz(tk.Tk):
     def raise_figure(self, fig_name, new=True):
         plot_obj = self.PLOTS[fig_name]
         self.clear_axes()
+        self.geometry('{0}x{1}'.format(plot_obj.x_pix, plot_obj.y_pix))
+        self.update()   
         if plot_obj.plotfunc.__name__ == 'heatmap_chronogram':
             self.CB = plot_obj.plotfunc(**plot_obj.arguments)
         else:
