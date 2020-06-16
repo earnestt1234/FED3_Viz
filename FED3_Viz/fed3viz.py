@@ -10,6 +10,8 @@ import os
 import pandas as pd
 import pickle
 import platform
+import subprocess
+import sys
 import tkinter as tk
 import tkinter.filedialog
 import webbrowser
@@ -48,6 +50,7 @@ class FED3_Viz(tk.Tk):
         self.title('FED3 Viz')
         if not platform.system() == 'Darwin': 
             self.iconbitmap('img/fedviz_logo.ico')
+        self.r_click = '<Button-3>'
         self.LOADED_FEDS = []
         self.PLOTS = OrderedDict()
         self.GROUPS = []
@@ -905,17 +908,18 @@ class FED3_Viz(tk.Tk):
                     config_color_mac(i)
         
         if platform.system() == 'Darwin':
-            self.plot_listbox.config(width=20)
+            self.plot_treeview.column('#0', width=250)
+            self.plot_listbox.config(width=30)
             self.w_offset = 350
             self.h_offset = 100
+            self.r_click = '<Button-2>'
             for widget in [self.home_tab, self.plot_tab,
                             self.settings_tab, self.about_tab]:
                 config_color_mac(widget)
      
-    #---RIGHT CLICK MENUS   
-        r_click = '<Button-3>'
+    #---RIGHT CLICK MENUS
         #file_view_single
-        self.files_spreadsheet.bind(r_click, self.r_raise_menu)
+        self.files_spreadsheet.bind(self.r_click, self.r_raise_menu)
         self.r_menu_file_empty = tkinter.Menu(self, tearoff=0,)
         self.r_menu_file_empty.add_command(label='Load files',
                                             command=lambda:self.load_FEDs(skip_duplicates=self.loadduplicates_checkbox_val.get()))
@@ -938,7 +942,7 @@ class FED3_Viz(tk.Tk):
         self.r_menu_file_multi.add_separator()
         self.r_menu_file_multi.add_command(label='Delete', command=self.delete_FEDs)
         
-        self.plot_listbox.bind(r_click, self.r_raise_menu)
+        self.plot_listbox.bind(self.r_click, self.r_raise_menu)
         self.r_menu_plot_single = tkinter.Menu(self, tearoff=0,)
         self.r_menu_plot_single.add_command(label='Load settings used in this graph',command= self.r_load_plot_settings,)
         self.r_menu_plot_single.add_command(label='Select files used in this graph',command= self.r_select_from_plot,)
@@ -2343,12 +2347,20 @@ class FED3_Viz(tk.Tk):
         selected = self.files_spreadsheet.selection()
         fed = self.LOADED_FEDS[int(selected[0])]
         dirname = os.path.dirname(fed.directory)
-        os.startfile(dirname)
+        try:
+            os.startfile(dirname)
+        except:
+            opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+            subprocess.call([opener,dirname])
         
     def r_open_externally(self):
         selected = self.files_spreadsheet.selection()
         fed = self.LOADED_FEDS[int(selected[0])]
-        os.startfile(fed.directory)
+        try:
+            os.startfile(fed.directory)
+        except:
+            opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+            subprocess.call([opener,fed.directory])
         
     def r_load_plot_settings(self):
         current_settings_dict = self.get_current_settings_as_args()
