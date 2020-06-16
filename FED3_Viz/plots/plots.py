@@ -776,23 +776,31 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
         fig, ax = plt.subplots(figsize=(4,5), dpi=125)
     else:
         ax = kwargs['ax']
-    lowest = -2
-    highest = 5
+    bins = []
+    logx = False
+    if logx:
+        lowest = -2
+        highest = 5
+        ax.set_xticks(range(lowest,highest))
+        ax.set_xticklabels([10**num for num in range(-2,5)])
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        ax.set_xticks([0,250,500,750,1000])
+        div = 1000/50
+        bins = [i*div for i in range(50)]
+        ax.set_xlim(-100,1100)
     ylabel = 'Density Estimation' if kde else 'Count'
     ax.set_ylabel(ylabel)
     ax.set_xlabel('minutes between pellets')
-    ax.set_xticks(range(lowest,highest))
-    ax.set_xticklabels([10**num for num in range(-2,5)])
-    ax.set_title('Interpellet Interval Plot')
-    c=0
-    bins = []
-    while c <= highest:
-        bins.append(lowest+c)
-        c+=0.1
+    ax.set_title('Interpellet Interval Plot')   
     for FED in FEDs:
         df = FED.data
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
-        y = [np.log10(val) for val in y if not pd.isna(val)]
+        if logx:
+            y = [np.log10(val) for val in y if not pd.isna(val)]
         sns.distplot(y,bins=bins,label=FED.filename,ax=ax,norm_hist=False,
                      kde=kde)
     ax.legend(fontsize=8)
@@ -1768,12 +1776,17 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     for FED in FEDs:
@@ -1798,10 +1811,12 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 night_vals = []
                 for start, end in days:
                     day_slice = df[(df.index>start) & (df.index<end)].copy()
-                    day_vals.append(resample_get_yvals(day_slice,circ_value))
+                    day_vals.append(resample_get_yvals(day_slice,circ_value,
+                                                       retrieval_threshold))
                 for start, end in nights:
                     night_slice = df[(df.index>start) & (df.index<end)].copy()
-                    night_vals.append(resample_get_yvals(night_slice,circ_value))
+                    night_vals.append(resample_get_yvals(night_slice,circ_value,
+                                                         retrieval_threshold))
                 group_day_values.append(np.nanmean(day_vals))
                 group_night_values.append(np.nanmean(night_vals))
         group_day_mean = np.nanmean(group_day_values)
@@ -1889,12 +1904,17 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     for FED in FEDs:
@@ -1912,7 +1932,7 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
             if group in FED.group:
                 df = FED.data
                 byhour = df.groupby([df.index.hour])
-                byhour = byhour.apply(resample_get_yvals,value=circ_value)
+                byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
                 new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
                 reindexed = byhour.reindex(new_index)
                 reindexed.index.name = 'hour'
@@ -1974,12 +1994,17 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
         return_cb : bool
             return the matplotlib colorbar; really only useful
             within the GUI
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     if 'ax' not in kwargs:   
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
     else:
@@ -1989,7 +2014,7 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     for FED in FEDs:       
         df = FED.data
         byhour = df.groupby([df.index.hour])
-        byhour = byhour.apply(resample_get_yvals,value=circ_value)
+        byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
         new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
         reindexed = byhour.reindex(new_index)
         if circ_value in ['pellets', 'correct pokes','errors']:
@@ -2020,6 +2045,80 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     
     return fig if 'ax' not in kwargs else None
 
+def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
+    '''
+    FED3 Viz: Create a histogram of interpellet intervals aggregated for
+    multiple FEDs and separated by day and night.
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    kde : bool
+        Whether or not to include kernel density estimation, which plots
+        probability density (rather than count) and includes a fit line (see
+        seaborn.distplot)
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    '''
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for FED in FEDs:
+        assert isinstance(FED, FED3_File),'Non FED3_File passed to interpellet_interval_plot()'
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(4,5), dpi=125)
+    else:
+        ax = kwargs['ax']
+    bins = []
+    lowest = -2
+    highest = 5
+    ax.set_xticks(range(lowest,highest))
+    ax.set_xticklabels([10**num for num in range(-2,5)])
+    c=0
+    while c <= highest:
+        bins.append(round(lowest+c,2))
+        c+=0.1
+    ylabel = 'Density Estimation' if kde else 'Count'
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel('minutes between pellets')
+    ax.set_title('Day Night Interpellet Interval Plot')   
+    all_day = []
+    all_night = []
+    for FED in FEDs:
+        df = FED.data
+        y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
+        nights = night_intervals(df.index, lights_on, lights_off)
+        days = night_intervals(df.index, lights_on, lights_off, 
+                               instead_days=True)
+        day_vals = []
+        night_vals = []
+        for start, end in days:
+            day_vals.append(y[(y.index >= start) & (y.index < end)].copy())
+        for start, end in nights:
+            night_vals.append(y[(y.index >= start) & (y.index < end)].copy())
+        all_day.append(pd.concat(day_vals))
+        all_night.append(pd.concat(night_vals))
+    all_day = pd.concat(all_day)
+    all_day = [np.log10(val) for val in all_day if not pd.isna(val)]
+    all_night = pd.concat(all_night)
+    all_night = [np.log10(val) for val in all_night if not pd.isna(val)]
+    sns.distplot(all_day,bins=bins,label='Day',ax=ax,norm_hist=False,
+                 kde=kde, color='gold')
+    sns.distplot(all_night,bins=bins,label='Night',ax=ax,norm_hist=False,
+                 kde=kde, color='indigo')
+    ax.legend(fontsize=8)
+    plt.tight_layout()
+    
+    return fig if 'ax' not in kwargs else None
 #---Diagnostic
 def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     """

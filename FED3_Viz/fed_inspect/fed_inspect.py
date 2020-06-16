@@ -29,7 +29,8 @@ shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'average_plot_ontime','average_plot_ondatetime',
                     'average_plot_onstart',
                     'diagnostic_plot','poke_plot','poke_bias',
-                    'retrieval_time_single', 'battery_plot','motor_plot']
+                    'retrieval_time_single', 'battery_plot','motor_plot',
+                    'day_night_ipi_plot']
 avg_funcs = ['average_plot_ontime','average_plot_ondatetime',
              'average_plot_onstart',]
 circ_funcs = ['daynight_plot', 'line_chronogram', 'heatmap_chronogram']
@@ -50,6 +51,9 @@ def generate_code(PLOTOBJ):
     args_ordered = inspect.getfullargspec(plotfunc).args
     if PLOTOBJ.plotfunc.__name__ in avg_funcs:
         if used_args['dependent'] == 'retrieval time':
+            args_ordered.append('retrieval_threshold')
+    elif PLOTOBJ.plotfunc.__name__ in circ_funcs:
+        if used_args['circ_value'] == 'retrieval time':
             args_ordered.append('retrieval_threshold')
 
     output = ""

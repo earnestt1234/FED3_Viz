@@ -187,8 +187,9 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_pr, 2, text = 'Group Breakpoint Plot')
         self.ps_circadian = self.plot_treeview.insert("", 4, text='Circadian')
         self.plot_treeview.insert(self.ps_circadian, 1, text='Day/Night Plot')
-        self.plot_treeview.insert(self.ps_circadian, 2, text='Chronogram (Line)')
-        self.plot_treeview.insert(self.ps_circadian, 3, text='Chronogram (Heatmap)')
+        self.plot_treeview.insert(self.ps_circadian, 2, text='Day/Night Interpellet Interval Plot')
+        self.plot_treeview.insert(self.ps_circadian, 3, text='Chronogram (Line)')
+        self.plot_treeview.insert(self.ps_circadian, 4, text='Chronogram (Heatmap)')
         self.ps_other = self.plot_treeview.insert("", 5, text='Diagnostic')
         self.plot_treeview.insert(self.ps_other, 1, text='Battery Life')
         self.plot_treeview.insert(self.ps_other, 2, text='Motor Turns')
@@ -293,6 +294,7 @@ class FED3_Viz(tk.Tk):
                                 'Average Poke Bias Plot (Correct %)':'Plot the average Group tendency to poke the active poke (Groups make individual curves)',
                                 'Average Poke Bias Plot (Left %)':'Plot the average Group tendency to poke the left poke (Groups make individual curves)',
                                 'Day/Night Plot':'Plot group averages for day/night on a bar chart',
+                                'Day/Night Interpellet Interval Plot':'Plot intervals between pellet retrieval for multiple animals, grouping by day and night',
                                 'Chronogram (Line)':'Plot average 24-hour curves for groups',
                                 'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
@@ -327,7 +329,8 @@ class FED3_Viz(tk.Tk):
                                 'Multi Retrieval Time Plot':self.retrieval_plot_multi_TK,
                                 'Average Retrieval Time Plot':self.avg_plot_TK,
                                 'Battery Life': self.battery_life_TK,
-                                'Motor Turns': self.motor_turns_TK}   
+                                'Motor Turns': self.motor_turns_TK,
+                                'Day/Night Interpellet Interval Plot': self.dn_ipi_TK}   
                
     #---PLACE WIDGETS FOR HOME TAB     
         #fed_buttons/group buttons
@@ -1386,6 +1389,21 @@ class FED3_Viz(tk.Tk):
         self.PLOTS[fig_name] = new_plot
         self.display_plot(new_plot)
     
+    def dn_ipi_TK(self):
+        arg_dict = self.get_current_settings_as_args()
+        arg_dict['ax'] = self.AX
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        arg_dict['FEDs'] = FEDs_to_plot
+        basename = 'Day Night Interpellet Interval Plot'
+        fig_name = self.create_plot_name(basename)
+        plots.day_night_ipi_plot(**arg_dict)
+        plotdata = getdata.day_night_ipi_plot(**arg_dict)
+        new_plot = FED_Plot(figname=fig_name,plotfunc=plots.day_night_ipi_plot,
+                            plotdata=plotdata,arguments=arg_dict,)
+        self.PLOTS[fig_name] = new_plot
+        self.display_plot(new_plot)
+    
     def poke_plot_single_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
@@ -1613,7 +1631,8 @@ class FED3_Viz(tk.Tk):
         if plot_name in ['Single Pellet Plot', 'Multi Pellet Plot',
                          'Interpellet Interval', 'Poke Bias Plot',
                          'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot',
-                         'Multi Retrieval Time Plot', 'Battery Life', 'Motor Turns']:
+                         'Multi Retrieval Time Plot', 'Battery Life', 'Motor Turns',
+                         'Day/Night Interpellet Interval Plot']:
             if self.files_spreadsheet.selection():
                 plottable = True
             else:
@@ -1954,7 +1973,8 @@ class FED3_Viz(tk.Tk):
                     df = plot.plotdata
                     overwrite = self.overwrite_checkbox_val.get()
                     if plot.plotfunc in [plots.interpellet_interval_plot,
-                                         plots.group_interpellet_interval_plot]:
+                                         plots.group_interpellet_interval_plot,
+                                         plots.day_night_ipi_plot]:
                         if not df[0].empty:
                             kde_name = graph_name + ' KDE'
                             kde_save = self.create_file_name(savepath, kde_name,

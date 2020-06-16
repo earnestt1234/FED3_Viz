@@ -311,7 +311,7 @@ def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
         plt.close()      
     kde_output.index.name = 'log10(minutes)'
     bar_output.index.name = 'log10(minutes)'
-    return kde_output, bar_output       
+    return kde_output, bar_output
 
 def retrieval_time_single(FED, retrieval_threshold, **kwargs):
     output=pd.DataFrame()
@@ -346,6 +346,9 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
 
 def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                   *args, **kwargs):
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     output = pd.DataFrame()
     group_avg_df = pd.DataFrame()
     used = []
@@ -364,10 +367,12 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 night_vals = []
                 for start, end in days:
                     day_slice = df[(df.index>start) & (df.index<end)].copy()
-                    day_vals.append(resample_get_yvals(day_slice, circ_value))
+                    day_vals.append(resample_get_yvals(day_slice, circ_value,
+                                                       retrieval_threshold))
                 for start, end in nights:
                     night_slice = df[(df.index>start) & (df.index<end)].copy()
-                    night_vals.append(resample_get_yvals(night_slice, circ_value))
+                    night_vals.append(resample_get_yvals(night_slice, circ_value,
+                                                         retrieval_threshold))
                 group_day_values.append(np.nanmean(day_vals))
                 group_night_values.append(np.nanmean(night_vals))
                 if fed.basename not in used:
@@ -468,12 +473,15 @@ def poke_bias(FED, poke_bins, bias_style, *args, **kwargs):
     return output
 
 def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     matrix = []
     index = []
     for FED in FEDs:       
         df = FED.data
         byhour = df.groupby([df.index.hour])
-        byhour = byhour.apply(resample_get_yvals,value=circ_value)
+        byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
         new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
         reindexed = byhour.reindex(new_index)
         if circ_value in ['pellets', 'correct pokes','errors']:
@@ -489,6 +497,9 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
 
 def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
                     lights_on, lights_off, *args, **kwargs):
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     output = pd.DataFrame()
     avgs = pd.DataFrame()
     for i, group in enumerate(groups):
@@ -497,7 +508,7 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
             if group in FED.group:
                 df = FED.data
                 byhour = df.groupby([df.index.hour])
-                byhour = byhour.apply(resample_get_yvals,value=circ_value)
+                byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
                 new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
                 reindexed = byhour.reindex(new_index)
                 if circ_value in ['pellets', 'correct pokes','errors']:
@@ -520,6 +531,50 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
     output.index.name = "Hours"
         
     return output
+
+def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
+    kde_output = pd.DataFrame()
+    bar_output = pd.DataFrame()
+    bins = []
+    lowest = -2
+    highest = 5
+    c=0
+    while c <= highest:
+        bins.append(round(lowest+c,2))
+        c+=0.1
+    
+    for val in [False, True]:
+        fig = plt.figure()
+        plt.clf()
+        all_vals = []
+        for FED in FEDs:
+            df = FED.data
+            y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
+            periods = night_intervals(df.index, lights_on, lights_off,
+                                      instead_days=val)
+            vals = []
+            for start, end in periods:
+                vals.append(y[(y.index >= start) & (y.index < end)].copy())
+            all_vals.append(pd.concat(vals))
+        all_vals = pd.concat(all_vals)
+        all_vals = [np.log10(val) for val in all_vals if not pd.isna(val)]
+        label = 'Day' if val else 'Night'
+        plot = sns.distplot(all_vals,bins=bins,label=label,norm_hist=False,
+                            kde=kde,)
+        if kde:
+            kde = plot.get_lines()[0].get_data()
+            kde_dic = {label:kde[1]}
+            kde_df = pd.DataFrame(kde_dic, index=kde[0])
+            kde_output = kde_output.join(kde_df, how='outer')
+        bar_x = [v.get_x() for v in plot.patches]
+        bar_h = [v.get_height() for v in plot.patches]
+        bar_dic = {label:bar_h}
+        bar_df = pd.DataFrame(bar_dic, index=bar_x)
+        bar_output = bar_output.join(bar_df, how='outer')
+        plt.close()
+    kde_output.index.name = 'log10(minutes)'
+    bar_output.index.name = 'log10(minutes)'      
+    return kde_output, bar_output
 
 def pr_plot(FEDs, break_hours, break_mins, break_style, *args, **kwargs):
     delta = dt.timedelta(hours=break_hours, minutes=break_mins)
