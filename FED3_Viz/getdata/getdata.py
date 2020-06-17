@@ -261,10 +261,13 @@ def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
         plot = sns.distplot(y,bins=bins,label=FED.basename,kde=kde,
                             norm_hist=False)
         if kde:
-            kde = plot.get_lines()[0].get_data()
-            kde_dic = {FED.basename:kde[1]}
-            kde_df = pd.DataFrame(kde_dic, index=kde[0])  
-            kde_output = kde_output.join(kde_df, how='outer')
+            if plot.get_lines():
+                kde = plot.get_lines()[0].get_data()
+                kde_dic = {FED.basename:kde[1]}
+                kde_df = pd.DataFrame(kde_dic, index=kde[0])
+                kde_output = kde_output.join(kde_df, how='outer')
+            else:
+                kde_output[FED.basename] = np.nan                 
         bar_x = [v.get_x() for v in plot.patches]
         bar_h = [v.get_height() for v in plot.patches]
         bar_dic = {FED.basename:bar_h}
@@ -299,10 +302,13 @@ def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
         plot = sns.distplot(all_vals,bins=bins,label=group,kde=kde,
                             norm_hist=False)
         if kde:
-            kde = plot.get_lines()[0].get_data()
-            kde_dic = {group:kde[1]}
-            kde_df = pd.DataFrame(kde_dic, index=kde[0])
-            kde_output = kde_output.join(kde_df, how='outer')
+            if plot.get_lines():
+                kde = plot.get_lines()[0].get_data()
+                kde_dic = {group:kde[1]}
+                kde_df = pd.DataFrame(kde_dic, index=kde[0])
+                kde_output = kde_output.join(kde_df, how='outer')
+            else:
+                kde_output[group] = np.nan
         bar_x = [v.get_x() for v in plot.patches]
         bar_h = [v.get_height() for v in plot.patches]
         bar_dic = {group:bar_h}
@@ -555,17 +561,22 @@ def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
             vals = []
             for start, end in periods:
                 vals.append(y[(y.index >= start) & (y.index < end)].copy())
-            all_vals.append(pd.concat(vals))
-        all_vals = pd.concat(all_vals)
+            if vals:
+                all_vals.append(pd.concat(vals))
+        if all_vals:
+            all_vals = pd.concat(all_vals)
         all_vals = [np.log10(val) for val in all_vals if not pd.isna(val)]
         label = 'Day' if val else 'Night'
         plot = sns.distplot(all_vals,bins=bins,label=label,norm_hist=False,
                             kde=kde,)
         if kde:
-            kde = plot.get_lines()[0].get_data()
-            kde_dic = {label:kde[1]}
-            kde_df = pd.DataFrame(kde_dic, index=kde[0])
-            kde_output = kde_output.join(kde_df, how='outer')
+            if plot.get_lines():
+                kde = plot.get_lines()[0].get_data()
+                kde_dic = {label:kde[1]}
+                kde_df = pd.DataFrame(kde_dic, index=kde[0])
+                kde_output = kde_output.join(kde_df, how='outer')
+            else:
+                kde_output[label] = np.nan            
         bar_x = [v.get_x() for v in plot.patches]
         bar_h = [v.get_height() for v in plot.patches]
         bar_dic = {label:bar_h}

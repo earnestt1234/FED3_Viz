@@ -2105,11 +2105,15 @@ def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
             day_vals.append(y[(y.index >= start) & (y.index < end)].copy())
         for start, end in nights:
             night_vals.append(y[(y.index >= start) & (y.index < end)].copy())
-        all_day.append(pd.concat(day_vals))
-        all_night.append(pd.concat(night_vals))
-    all_day = pd.concat(all_day)
-    all_day = [np.log10(val) for val in all_day if not pd.isna(val)]
-    all_night = pd.concat(all_night)
+        if day_vals:
+            all_day.append(pd.concat(day_vals))
+        if night_vals:
+            all_night.append(pd.concat(night_vals))
+    if all_day:
+        all_day = pd.concat(all_day)
+    if all_night:
+        all_night = pd.concat(all_night)
+    all_day = [np.log10(val) for val in all_day if not pd.isna(val)]    
     all_night = [np.log10(val) for val in all_night if not pd.isna(val)]
     sns.distplot(all_day,bins=bins,label='Day',ax=ax,norm_hist=False,
                  kde=kde, color='gold')
