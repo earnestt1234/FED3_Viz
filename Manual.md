@@ -9,7 +9,7 @@
 
 **Written for version**: v0.3.0 (Beta)
 
-**Version/Manual Date**: 6/15/2020  
+**Version/Manual Date**: 6/18/2020  
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
@@ -53,9 +53,9 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Creating Groups](#creating-groups)
   - [Editing Groups](#editing-groups)
   - [Deleting Groups](#deleting-groups)
-- [Saving Groups](#saving-groups)
+  - [Saving Groups](#saving-groups)
+- [Sessions](#sessions)
 - [Plots](#plots)
-  
   - [Single Pellet Plot](#single-pellet-plot)
   - [Multi Pellet Plot](#multi-pellet-plot)
   - [Average Pellet Plot](#average-pellet-plot)
@@ -71,6 +71,7 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Breakpoint Plot](#breakpoint-plot)
   - [Group Breakpoint Plot](#group-breakpoint-plot)
   - [Day/Night Plot](#daynight-plot)
+  - [Day/Night Interpellet Interval Plot](#daynight-interpellet-interval-plot)
   - [Chronogram (Line)](#chronogram-line)
   - [Chronogram (Heatmap)](#chronogram-heatmap)
   - [Diagnostic Plot](#diagnostic-plot)
@@ -88,7 +89,6 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
 - [Saving Settings](#saving-settings)
   - [Default Settings](#default-settings)
   - [Last Used Settings](#last-used-settings)
-- [Sessions](#sessions)
 - [Quick Tips](#quick-tips)
 - [FAQ](#faq)
 - [Appendix](#appendix)
@@ -116,7 +116,7 @@ The **Home Tab** is the tab that is open when FED3 Viz starts up.  On this tab, 
 Elements of the Home Tab:
 
 1. The **Info Bar** shows helpful text for the Home Tab.  Hover over a button or select a plot to show a brief description.  A progress bar will also display here when loading FED data.
-2. The top row of buttons, which are tools for loading and managing data files within FED3 Viz.
+2. A column of buttons, which are tools for loading and managing data files within FED3 Viz.
 3. The **File View** is the largest element of the Home Tab.  When a FED data file is loaded, it will appear as a row in the File View.  Each column will show data associated with that data file.
 4. The **Group View** lists all the currently loaded Groups, used for combining data from multiple FEDs (see the Groups section below).
 5. The **Plot Selector** pane, where you can choose which plots to make for the loaded devices.
@@ -278,6 +278,23 @@ Group `.csv` files associate absolute file paths with Group labels.  By default,
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
+# Sessions
+
+A **Session** is a saved application state within FED3 Viz.  Sessions allow for users to save their work in a broader way than just saving settings or Groups.  Saving a Session will preserve the loaded FED3 files, their Group Labels, all the created plots, and the settings in a file.  This works by using Python's `pickle` library to write objects to a file.  
+
+You can save a Session (at any time) by clicking the **Save Session Button** on the Home Tab.  This will open a file dialog, which defaults to a `sessions` folder, whose location depends on your FED3 Viz installation: 
+
+- **Windows or Mac Executable:** `fed3viz/sessions/`
+- **Python Script** (i.e. GitHub source code): `FED3_Viz/FED3_Viz/sessions/`
+
+The saved file will have the extension `.fed`.   You can then load these files later by clicking the **Load Session Button**.  Loading the session will populate the Home Tab with files and Groups, and then will show you the plots being drawn on the Plot Tab.  Settings are also loaded.  
+
+Session files created on one computer can be opened on another,  but there will likely be issues if the FED files referenced aren't in the same file path.  You also can't open a Session file created in an `.exe` version of FED3 Viz on a Python script version, and vice versa.  
+
+**Do not open/unpickle any files from unknown or untrusted sources, as they can be malicious.**
+
+<div style="page-break-after: always; break-after: page;"></div>
+
 # Plots
 
 The general steps to create a plot are:
@@ -362,12 +379,12 @@ Average Pellet Plots average the pellets retrieved for each file in a Group.  Ea
 
 The Interpellet Interval Plot is a histogram where the values counted are the time between each pellet retrieval event.  This plot can give you a sense of how the mouse feeds or earns pellets, and it show changes in meal or eating frequencies.
 
-This plot is a fairly unaltered use of [`seaborn.distplot`](https://seaborn.pydata.org/generated/seaborn.distplot.html).  The only option, **Settings > Interpellet Interval Plots > Use kernel density estimation** toggles the `kde` argument of this function:
+This plot is a fairly unaltered use of [`seaborn.distplot`](https://seaborn.pydata.org/generated/seaborn.distplot.html).  **Settings > Interpellet Interval Plots > Use kernel density estimation** toggles the `kde` argument of this function:
 
 - When ticked, a kernel density estimation (KDE) is used to model the probability density function of the interepellet intervals.  The density estimation is plotted on the y-axis: the area under the whole curve of the KDE is 1, and the area under a certain portion estimates the probability of observations occurring within that portion.
 - When unticked, a raw histogram is parted, the KDE line is removed, and the y-axis represents counts in each bin.
 
-Note that Interpellet Interval Plots use logarithmically spaced x-axes (in minutes).
+By default, Interpellet Interval Plots use logarithmically spaced x-axes (in minutes), but you can change this with **Settings > Interpellet Interval Plots > Plot on a logarithmic axis**.  The logarithmic axis will show interpellet intervals from 1/100 to 10,000 minutes (over 150 hours, more than enough to show all the data), while the linear axis will only show data from 0 to 900 minutes (15 hours), which may cut off some data.
 
 ### Group Interpellet Interval Plot
 
@@ -377,7 +394,7 @@ Note that Interpellet Interval Plots use logarithmically spaced x-axes (in minut
 	<img src="img/manual/group_ipi.png" width="500">
 </p>
 
-Same as the Interpellet Interval Plot (see above), except this version plots groups as separate curves.  The Interpellet Intervals from the files of every group are appended to one array, and then plotted.  The KDE line can also be turned on or off.
+Same as the Interpellet Interval Plot (see above), except this version plots groups as separate curves.  The Interpellet Intervals from the files of every group are appended to one array, and then plotted.  The KDE line and logarithmic axis can also be turned on or off (see above).
 
 ### Retrieval Time Plot
 
@@ -519,7 +536,7 @@ The Group Breakpoint Plot averages breakpoints (see Breakpoint Plot) for Grouped
 
 The "Chronogram" is one way of visualizing circadian activity in FED3 Viz.  The line plot shows the average 24-hour pattern of a variable for a Group of devices.  The data are resampled to hour-long bins, and matching hours across multiple days are averaged for each device to create 24 points (one for each hour of the day).  The individual files within each Group are then averaged and plotted.
 
-There are a few settings which affect these plots, as well as the other Circadian Plots ([Chronogram (Heatmap)](#chronogram-heatmap) and [Day/Night](#daynight-plot)]):
+There are a few settings which affect these plots, as well as Circadian Plots ([Chronogram (Heatmap)](#chronogram-heatmap) and [Day/Night](#daynight-plot)]):
 
 - **Values to plot**: What values are being plotted on the y-axis.  Options are pellets, interpellet intervals, retrieval time (of pellets), correct pokes, and errors; the latter two can also be expressed as a percent.
 - **Error value**: What values to use to create error bars; options are SEM (standard error of the mean), STD (standard deviation), or None.
@@ -546,8 +563,17 @@ Note that this plot type does not use Groups; it plots what is selected in the F
 <p align="center">
 	<img src="img/examples/daynightplot.png" width="500">
 </p>
-
 Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods; those values represent the individual FED data points, and they are averaged to create the value for the bar.  Note that both individual values and error bars can be shown for these plots.
+
+### Day/Night Interpellet Interval Plot
+
+*Combines all highlighted files into a single plot* :bar_chart:
+
+<p align="center">
+	<img src="img/manual/dn_ipi.png" width="400">
+</p>
+
+This plot shows the interpellet-interval histogram, but makes separate curves for pellets retrieved during the day and during the night (based on the set light cycle).  When multiple files are selected, the values from each file are concatenated to form the overall data, which is then split by time of day.  These plots are also affected by the settings under **Settings > Interpellet Interval Plots**.
 
 ### Battery Life Plot
 
@@ -666,23 +692,6 @@ There is also an option to remember the settings used the last time the applicat
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
-# Sessions
-
-A **Session** is a saved application state within FED3 Viz.  Sessions allow for users to save their work in a broader way than just saving settings or Groups.  Saving a Session will preserve the loaded FED3 files, their Group Labels, all the created plots, and the settings in a file.  This works by using Python's `pickle` library to write objects to a file.  
-
-You can save a Session (at any time) by clicking the **Save Session Button** on the Home Tab.  This will open a file dialog, which defaults to a `sessions` folder, whose location depends on your FED3 Viz installation: 
-
-- **Windows or Mac Executable:** `fed3viz/sessions/`
-- **Python Script** (i.e. GitHub source code): `FED3_Viz/FED3_Viz/sessions/`
-
-The saved file will have the extension `.fed`.   You can then load these files later by clicking the **Load Session Button**.  Loading the session will populate the Home Tab with files and Groups, and then will show you the plots being drawn on the Plot Tab.  Settings are also loaded.  
-
-Session files created on one computer can be opened on another,  but there will likely be issues if the FED files referenced aren't in the same file path.  You also can't open a Session file created in an `.exe` version of FED3 Viz on a Python script version, and vice versa.  
-
-**Do not open/unpickle any files from unknown or untrusted sources, as they can be malicious.**
-
-<div style="page-break-after: always; break-after: page;"></div> 
-
 # Quick Tips
 
 Here are some features and tips not covered elsewhere that may improve your experience with FED3 Viz:
@@ -691,7 +700,7 @@ Here are some features and tips not covered elsewhere that may improve your expe
 - Selecting a Group will also select all the FED3 files in that Group in the File View; this can be useful for routing Grouped devices to functions that don't explicitly consider Groups (such as creating many plots, or deleting files).
 - There are right-click menus for the File View and Plot List.  Most of the functions correspond the buttons of the Home Tab and Plot Tab, but there are some additional features.  From the File View, you can right-click a highlighted file to open its file location or open it externally.  You can highlight a created plot to either re-select the FED files it uses, or to reload the settings that were used to create it.
 - A Session called "LAST_USED.fed" is saved every time the application is closed; you can open this file to continue working where you left off.
-- Resizing the application window will also change the aspect ratio of the Plot Display - and these changes will be reflected in the saved image.  If you want to be more explicit about plot dimensions and DPI, I would recommend getting the Plot Code and setting a `figsize` and `dpi` in the `fig, ax = plt.subplots()` line.  If elements get cut off when resizing, you can re-click the graph name in the Plot List to render it again, which should make all elements fit.
+- Resizing the application window will also change the aspect ratio of the Plot Display - and these changes will be reflected in the saved image.  If you want to be more explicit about plot dimensions and DPI, I would recommend getting the Plot Code and setting a `figsize` and `dpi` in the `fig, ax = plt.subplots()` line.  If elements get cut off when resizing, you can re-click the graph name in the Plot List to render it again (with original dimensions), or you can use the Navigation toolbar to shape the axes.
 - Changes made with the Navigation Toolbar (zooming/panning/resizing) will be saved using the Saved Plots Button, but only if one plot is selected to save.  Selecting a different plot will reset the changes made by the Navigation Toolbar.
 
 <div style="page-break-after: always; break-after: page;"></div> 
