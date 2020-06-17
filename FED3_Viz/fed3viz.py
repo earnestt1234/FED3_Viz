@@ -1963,7 +1963,8 @@ class FED3_Viz(tk.Tk):
             scrollbar = tk.Scrollbar(new_window, command=textview.yview)
             textview['yscrollcommand'] = scrollbar.set
             save_button = tk.Button(new_window, text='Save as...',
-                                    command=lambda: self.save_code(plotname, code))
+                                    command=lambda plotname=plotname, code=code:
+                                        self.save_code(plotname, code))
             textview.grid(row=0,column=0,sticky='nsew')
             scrollbar.grid(row=0,column=1,sticky='nsew')
             save_button.grid(row=1,column=0,sticky='w')
