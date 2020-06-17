@@ -242,22 +242,27 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
 
 
 
-def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
+def interpellet_interval_plot(FEDs, kde, logx, *args, **kwargs):
     kde_output = pd.DataFrame()
     bar_output = pd.DataFrame()
-    lowest = -2
-    highest = 5
-    c=0
     bins = []
-    while c <= highest:
-        bins.append(lowest+c)
-        c+=0.1
+    if logx:
+        lowest = -2
+        highest = 5
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        div = 900/50
+        bins = [i*div for i in range(50)]
     for FED in FEDs:
         fig = plt.figure() #made to not disrupt fig in app
         plt.clf()
         df = FED.data
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
-        y = [np.log10(val) for val in y if not pd.isna(val)]
+        if logx:
+            y = [np.log10(val) for val in y if not pd.isna(val)]
         plot = sns.distplot(y,bins=bins,label=FED.basename,kde=kde,
                             norm_hist=False)
         if kde:
@@ -274,20 +279,24 @@ def interpellet_interval_plot(FEDs, kde, *args, **kwargs):
         bar_df = pd.DataFrame(bar_dic, index=bar_x)
         bar_output = bar_output.join(bar_df, how='outer')
         plt.close()      
-    kde_output.index.name = 'log10(minutes)'
-    bar_output.index.name = 'log10(minutes)'
+    kde_output.index.name = 'log10(minutes)' if logx else 'minutes'
+    bar_output.index.name = 'log10(minutes)' if logx else 'minutes'
     return kde_output, bar_output       
 
-def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
+def group_interpellet_interval_plot(FEDs, groups, kde, logx, *args, **kwargs):
     kde_output = pd.DataFrame()
     bar_output = pd.DataFrame()
-    lowest = -2
-    highest = 5
-    c=0
     bins = []
-    while c <= highest:
-        bins.append(lowest+c)
-        c+=0.1
+    if logx:
+        lowest = -2
+        highest = 5
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        div = 900/50
+        bins = [i*div for i in range(50)]
     for group in groups:
         #made to not disrupt fig in app            
         fig = plt.figure()
@@ -296,8 +305,9 @@ def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
         for FED in FEDs:
             if group in FED.group:             
                 df = FED.data
-                y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
-                y = [np.log10(val) for val in y if not pd.isna(val)]
+                y = list(df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0])
+                if logx:
+                    y = [np.log10(val) for val in y if not pd.isna(val)]
                 all_vals += y
         plot = sns.distplot(all_vals,bins=bins,label=group,kde=kde,
                             norm_hist=False)
@@ -315,8 +325,8 @@ def group_interpellet_interval_plot(FEDs, groups, kde, *args, **kwargs):
         bar_df = pd.DataFrame(bar_dic, index=bar_x)
         bar_output = bar_output.join(bar_df, how='outer')
         plt.close()      
-    kde_output.index.name = 'log10(minutes)'
-    bar_output.index.name = 'log10(minutes)'
+    kde_output.index.name = 'log10(minutes)' if logx else 'minutes'
+    bar_output.index.name = 'log10(minutes)' if logx else 'minutes'
     return kde_output, bar_output
 
 def retrieval_time_single(FED, retrieval_threshold, **kwargs):
@@ -538,17 +548,20 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         
     return output
 
-def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
+def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     kde_output = pd.DataFrame()
     bar_output = pd.DataFrame()
     bins = []
-    lowest = -2
-    highest = 5
-    c=0
-    while c <= highest:
-        bins.append(round(lowest+c,2))
-        c+=0.1
-    
+    if logx:
+        lowest = -2
+        highest = 5
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        div = 900/50
+        bins = [i*div for i in range(50)]
     for val in [False, True]:
         fig = plt.figure()
         plt.clf()
@@ -565,7 +578,8 @@ def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
                 all_vals.append(pd.concat(vals))
         if all_vals:
             all_vals = pd.concat(all_vals)
-        all_vals = [np.log10(val) for val in all_vals if not pd.isna(val)]
+        if logx:
+            all_vals = [np.log10(val) for val in all_vals if not pd.isna(val)]
         label = 'Day' if val else 'Night'
         plot = sns.distplot(all_vals,bins=bins,label=label,norm_hist=False,
                             kde=kde,)
@@ -583,8 +597,8 @@ def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
         bar_df = pd.DataFrame(bar_dic, index=bar_x)
         bar_output = bar_output.join(bar_df, how='outer')
         plt.close()
-    kde_output.index.name = 'log10(minutes)'
-    bar_output.index.name = 'log10(minutes)'      
+    kde_output.index.name = 'log10(minutes)' if logx else 'minutes'
+    bar_output.index.name = 'log10(minutes)' if logx else 'minutes'
     return kde_output, bar_output
 
 def pr_plot(FEDs, break_hours, break_mins, break_style, *args, **kwargs):

@@ -622,7 +622,8 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
         shade_darkness(ax, min_date, max_date,
                    lights_on=lights_on,
                    lights_off=lights_off)  
-    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
     return fig if 'ax' not in kwargs else None
@@ -679,7 +680,8 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
     ax.set_ylabel('Pellets')    
     title = ('Pellets Retrieved for Multiple FEDs')
     ax.set_title(title)   
-    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
     return fig if 'ax' not in kwargs else None
@@ -741,12 +743,13 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
         shade_darkness(ax, min_date, max_date,
                    lights_on=lights_on,
                    lights_off=lights_off)        
-    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
     return fig if 'ax' not in kwargs else None
 
-def interpellet_interval_plot(FEDs, kde, **kwargs):
+def interpellet_interval_plot(FEDs, kde, logx, **kwargs):
     """
     FED3 Viz: Plot a histogram of interpellet intervals for multiple devices.
 
@@ -758,6 +761,8 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
         Whether or not to include kernel density estimation, which plots
         probability density (rather than count) and includes a fit line (see
         seaborn.distplot)
+    logx : bool
+        When True, plots on a logarithmic x-axis
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
@@ -777,7 +782,6 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
     else:
         ax = kwargs['ax']
     bins = []
-    logx = True
     if logx:
         lowest = -2
         highest = 5
@@ -788,14 +792,10 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
             bins.append(round(lowest+c,2))
             c+=0.1
     else:
-        ax.set_xticks([0,250,500,750,1000])
-        div = 1000/50
+        ax.set_xticks([0,300,600,900])
+        div = 900/50
         bins = [i*div for i in range(50)]
-        ax.set_xlim(-100,1100)
-    ylabel = 'Density Estimation' if kde else 'Count'
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel('minutes between pellets')
-    ax.set_title('Interpellet Interval Plot')   
+        ax.set_xlim(-100,1000)
     for FED in FEDs:
         df = FED.data
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
@@ -804,11 +804,15 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
         sns.distplot(y,bins=bins,label=FED.filename,ax=ax,norm_hist=False,
                      kde=kde)
     ax.legend(fontsize=8)
+    ylabel = 'Density Estimation' if kde else 'Count' 
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel('minutes between pellets')
+    ax.set_title('Interpellet Interval Plot') 
     plt.tight_layout()
     
     return fig if 'ax' not in kwargs else None
 
-def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
+def group_interpellet_interval_plot(FEDs, groups, kde, logx, **kwargs):
     """
     FED3 Viz: Plot the interpellet intervals as a histogram, first aggregating
     the values for devices in a Groups.
@@ -823,6 +827,8 @@ def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
         Whether or not to include kernel density estimation, which plots
         probability density (rather than count) and includes a fit line (see
         seaborn.distplot)
+    logx : bool
+        When True, plots on a logarithmic x-axis
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
@@ -841,31 +847,38 @@ def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
         fig, ax = plt.subplots(figsize=(4,5), dpi=125)
     else:
         ax = kwargs['ax']
-    lowest = -2
-    highest = 5
-    ylabel = 'Density Estimation' if kde else 'Count'
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel('minutes between pellets')
-    ax.set_xticks(range(lowest,highest))
-    ax.set_xticklabels([10**num for num in range(-2,5)])
-    ax.set_title('Interpellet Interval Plot')
-    c=0
-    bins = []
-    while c <= highest:
-        bins.append(lowest+c)
-        c+=0.1
+    bins=[]
+    if logx:
+        lowest = -2
+        highest = 5
+        ax.set_xticks(range(lowest,highest))
+        ax.set_xticklabels([10**num for num in range(-2,5)])
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        ax.set_xticks([0,300,600,900])
+        div = 900/50
+        bins = [i*div for i in range(50)]
+        ax.set_xlim(-100,1000)
     for group in groups:
         all_vals = []
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
-                y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
-                y = [np.log10(val) for val in y if not pd.isna(val)]
+                y = list(df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0])
+                if logx:
+                    y = [np.log10(val) for val in y if not pd.isna(val)]
                 all_vals += y
         sns.distplot(all_vals,bins=bins,label=group,ax=ax,norm_hist=False,
                      kde=kde)
-        ax.legend(fontsize=8)
-        plt.tight_layout()
+    ax.legend(fontsize=8)
+    ylabel = 'Density Estimation' if kde else 'Count'
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel('minutes between pellets')
+    ax.set_title('Interpellet Interval Plot')
+    plt.tight_layout()
     
     return fig if 'ax' not in kwargs else None
 
@@ -2045,7 +2058,7 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     
     return fig if 'ax' not in kwargs else None
 
-def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
+def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     '''
     FED3 Viz: Create a histogram of interpellet intervals aggregated for
     multiple FEDs and separated by day and night.
@@ -2058,6 +2071,8 @@ def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
         Whether or not to include kernel density estimation, which plots
         probability density (rather than count) and includes a fit line (see
         seaborn.distplot)
+    logx : bool
+        When True, plots on a logarithmic x-axis
     lights_on : int
         Integer between 0 and 23 denoting the start of the light cycle.
     lights_off : int
@@ -2079,18 +2094,20 @@ def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
     else:
         ax = kwargs['ax']
     bins = []
-    lowest = -2
-    highest = 5
-    ax.set_xticks(range(lowest,highest))
-    ax.set_xticklabels([10**num for num in range(-2,5)])
-    c=0
-    while c <= highest:
-        bins.append(round(lowest+c,2))
-        c+=0.1
-    ylabel = 'Density Estimation' if kde else 'Count'
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel('minutes between pellets')
-    ax.set_title('Day Night Interpellet Interval Plot')   
+    if logx:
+        lowest = -2
+        highest = 5
+        ax.set_xticks(range(lowest,highest))
+        ax.set_xticklabels([10**num for num in range(-2,5)])
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        ax.set_xticks([0,300,600,900])
+        div = 900/50
+        bins = [i*div for i in range(50)]
+        ax.set_xlim(-100,1000) 
     all_day = []
     all_night = []
     for FED in FEDs:
@@ -2113,13 +2130,18 @@ def day_night_ipi_plot(FEDs, kde, lights_on, lights_off, **kwargs):
         all_day = pd.concat(all_day)
     if all_night:
         all_night = pd.concat(all_night)
-    all_day = [np.log10(val) for val in all_day if not pd.isna(val)]    
-    all_night = [np.log10(val) for val in all_night if not pd.isna(val)]
+    if logx:
+        all_day = [np.log10(val) for val in all_day if not pd.isna(val)]    
+        all_night = [np.log10(val) for val in all_night if not pd.isna(val)]
     sns.distplot(all_day,bins=bins,label='Day',ax=ax,norm_hist=False,
                  kde=kde, color='gold')
     sns.distplot(all_night,bins=bins,label='Night',ax=ax,norm_hist=False,
                  kde=kde, color='indigo')
     ax.legend(fontsize=8)
+    ylabel = 'Density Estimation' if kde else 'Count'
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel('minutes between pellets')
+    ax.set_title('Day Night Interpellet Interval Plot')  
     plt.tight_layout()
     
     return fig if 'ax' not in kwargs else None

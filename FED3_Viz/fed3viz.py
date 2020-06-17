@@ -428,8 +428,20 @@ class FED3_Viz(tk.Tk):
             
     #---INIT WIDGETS FOR SETTINGS TAB
         #organization frames
-        self.settings_col1 = tk.Frame(self.settings_tab)
-        self.settings_col2 = tk.Frame(self.settings_tab)
+        self.settings_tab.grid_rowconfigure(0,weight=1)
+        self.settings_tab.grid_columnconfigure(0,weight=1)
+        self.settings_canvas = tk.Canvas(self.settings_tab, highlightthickness=0)
+        self.settings_scroll = ttk.Scrollbar(self.settings_tab, orient='horizontal',
+                                             command=self.settings_canvas.xview)
+        self.all_settings_frame = tk.Frame(self.settings_canvas)
+        self.all_settings_frame.bind('<Configure>',self.settings_canvas_config)
+        self.settings_canvas.configure(xscrollcommand=self.settings_scroll.set)
+        self.settings_canvas.create_window((0,0),window=self.all_settings_frame,
+                                            anchor='nw')
+        self.settings_canvas.grid(row=0,column=0,sticky='nsew')
+        self.settings_scroll.grid(row=1,column=0,sticky='sew')
+        self.settings_col1 = tk.Frame(self.all_settings_frame)
+        self.settings_col2 = tk.Frame(self.all_settings_frame)
         self.settings_col1.grid(row=0,column=0, sticky='nw', padx=(5,0))
         self.settings_col2.grid(row=0,column=1, sticky='nw')
         
@@ -635,6 +647,11 @@ class FED3_Viz(tk.Tk):
         self.ipi_kde_checkbox = ttk.Checkbutton(self.ipi_settings_frame,
                                                 text='Use kernel density estimation',
                                                 var=self.ipi_kde_val)
+        self.ipi_log_val = tk.BooleanVar()
+        self.ipi_log_val.set(True)
+        self.ipi_log_checkbox = ttk.Checkbutton(self.ipi_settings_frame,
+                                                text='Plot on a logarithmic axis',
+                                                var=self.ipi_log_val)
         #   retrieval
         self.retrieval_threshold_menu = ttk.Combobox(self.retrieval_settings_frame,
                                                      values=['None',60,120,300,600,1800,3600],
@@ -759,6 +776,7 @@ class FED3_Viz(tk.Tk):
         
         self.ipi_settings_label.grid(row=0,column=0,sticky='w')
         self.ipi_kde_checkbox.grid(row=1,column=0,sticky='w',padx=(20,0))
+        self.ipi_log_checkbox.grid(row=2,column=0,sticky='w',padx=(20,0))
         
         self.retrieval_label.grid(row=0,column=0,sticky='w')
         self.retrieval_threshold_label.grid(row=1,column=0,sticky='w',padx=(20,150))
@@ -1463,15 +1481,15 @@ class FED3_Viz(tk.Tk):
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
                 arg_dict['ax'] = self.AX
-                fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)
-                plots.poke_bias(**arg_dict)                
+                fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)              
+                plotdata=getdata.poke_bias(**arg_dict)
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plots.poke_bias,
                                     plotdata=plotdata, 
                                     arguments=arg_dict,
                                     x=7,y=3.5)
                 self.PLOTS[fig_name] = new_plot
                 self.resize_plot(new_plot)
-                plotdata=getdata.poke_bias(**arg_dict)
+                plots.poke_bias(**arg_dict)  
                 self.display_plot(new_plot)
                 
     def breakpoint_plot(self):
@@ -2233,6 +2251,7 @@ class FED3_Viz(tk.Tk):
             self.daynight_error_menu.set(settings_df.loc['circ_error','Values'])
             self.daynight_show_indvl_val.set(settings_df.loc['circ_show_indvl','Values'])
             self.ipi_kde_val.set(settings_df.loc['kde','Values'])
+            self.ipi_log_val.set(settings_df.loc['logx','Values'])
             self.retrieval_threshold_menu.set(settings_df.loc['retrieval_threshold','Values'])
             self.pr_style_menu.set(settings_df.loc['break_style','Values'])
             self.pr_hours_menu.set(settings_df.loc['break_hours','Values'])
@@ -2275,6 +2294,7 @@ class FED3_Viz(tk.Tk):
                              circ_error         =self.daynight_error_menu.get(),
                              circ_show_indvl    =self.daynight_show_indvl_val.get(),
                              kde                =self.ipi_kde_val.get(),
+                             logx               =self.ipi_log_val.get(),
                              retrieval_threshold=self.retrieval_threshold_menu.get(),
                              poke_style         =self.poke_style_menu.get(),
                              poke_bins          =self.poke_bins_menu.get(),
@@ -2319,6 +2339,9 @@ class FED3_Viz(tk.Tk):
             settings_dict['retrieval_threshold'] = 'None'
         settingsdf = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])
         return settingsdf
+    
+    def settings_canvas_config(self, event):
+        self.settings_canvas.configure(scrollregion=self.settings_canvas.bbox("all"),)
     
     def on_close(self):
         #save last used settings
@@ -2387,6 +2410,7 @@ class FED3_Viz(tk.Tk):
 
     def canvas_config(self, event):
         self.warn_canvas.configure(scrollregion=self.warn_canvas.bbox("all"),)
+    
         
     def raise_new_window_warning(self,):
         warn_window = tk.Toplevel(self)
@@ -2477,6 +2501,7 @@ class FED3_Viz(tk.Tk):
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.on_close)
 root.bind('<Escape>', root.escape)
+root.geometry("1400x650")
 if __name__=="__main__":
     root.lift()
     root.attributes('-topmost',True)
