@@ -3,8 +3,8 @@
 block_cipher = None
 
 files = [('fed_inspect','fed_inspect'),('getdata','getdata'),('groups','groups'),
-         ('img','img'),('load','load'),('plots','plots'),('sessions','sessions'),
-	 ('settings','settings'),('_version.py', '.')]
+         ('img','img'),('load','load'),('plots','plots'),('settings','settings'),
+	 ('_version.py', '.'),('sessions','sessions')]
 
 a = Analysis(['fed3viz.py'],
              pathex=['C:\\Users\\earne\\Documents\\GitHub\\FED3_Viz\\FED3_Viz'],
@@ -29,7 +29,7 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=True )
+          console=False )
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
