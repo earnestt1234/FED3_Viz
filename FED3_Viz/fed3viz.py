@@ -2086,7 +2086,7 @@ class FED3_Viz(tk.Tk):
                 
     def raise_figure(self, fig_name, new=True):
         plot_obj = self.PLOTS[fig_name]
-        if platform.system == 'Windows':
+        if platform.system() == 'Windows':
             self.plot_cover.grid()
         self.resize_plot(plot_obj)
         if plot_obj.plotfunc.__name__ == 'heatmap_chronogram':
@@ -2098,7 +2098,7 @@ class FED3_Viz(tk.Tk):
                 self.clear_axes()
                 plot_obj.plotfunc(**plot_obj.arguments)              
         self.display_plot(plot_obj, new)
-        if platform.system == 'Windows':
+        if platform.system() == 'Windows':
             self.plot_cover.grid_remove()
         plot_index = list(self.PLOTS).index(fig_name)
         self.plot_listbox.selection_clear(0,self.plot_listbox.size())
