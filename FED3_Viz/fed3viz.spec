@@ -7,7 +7,7 @@ files = [('fed_inspect','fed_inspect'),('getdata','getdata'),('groups','groups')
 	 ('settings','settings'),('_version.py', '.')]
 
 a = Analysis(['fed3viz.py'],
-             pathex=['C:\\Users\\earne\\Documents\\GitHub\\FED3_Viz\\FED3_Viz'],
+             pathex=['/Users/phillipyetter/Desktop/FED3_Viz/FED3_Viz'],
              binaries=[],
              datas=files,
              hiddenimports=[],
