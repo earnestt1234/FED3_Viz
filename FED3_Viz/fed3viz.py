@@ -164,8 +164,13 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.bind('<ButtonRelease-1>', self.update_buttons_home)
         self.files_spreadsheet.bind('<Double-Button-1>', lambda event, reverse=True: 
                                     self.sort_FEDs(event,reverse))
-        self.files_spreadsheet.bind('<Control-a>',self.select_all_FEDs)
-        self.files_spreadsheet.bind('<Control-A>',self.select_all_FEDs)
+        ctrla1 = '<Control-a>'
+        ctrla2 = '<Control-A>'
+        if platform.system() == 'Darwin':
+            ctrla1 = '<Mod1-a>'
+            ctrla2 = '<Mod1-A>'           
+        self.files_spreadsheet.bind(ctrla1,self.select_all_FEDs)
+        self.files_spreadsheet.bind(ctrla2,self.select_all_FEDs)
         self.files_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.files_spreadsheet.yview,)
         self.files_spreadsheet.configure(yscrollcommand=self.files_scrollbar.set)
         self.group_view = tk.Listbox(self.home_sheets,selectmode=tk.EXTENDED,
@@ -1000,7 +1005,7 @@ class FED3_Viz(tk.Tk):
         self.r_menu_plot_multi.add_command(label='Save Data',command= self.save_plot_data,)
         self.r_menu_plot_multi.add_separator()
         self.r_menu_plot_multi.add_command(label='Delete',command= self.delete_plot,)
-                
+                    
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False, file_paths=None):
         if file_paths:
@@ -2081,7 +2086,8 @@ class FED3_Viz(tk.Tk):
                 
     def raise_figure(self, fig_name, new=True):
         plot_obj = self.PLOTS[fig_name]
-        self.plot_cover.grid()
+        if platform.system == 'Windows':
+            self.plot_cover.grid()
         self.resize_plot(plot_obj)
         if plot_obj.plotfunc.__name__ == 'heatmap_chronogram':
             self.CB = plot_obj.plotfunc(**plot_obj.arguments)
@@ -2092,7 +2098,8 @@ class FED3_Viz(tk.Tk):
                 self.clear_axes()
                 plot_obj.plotfunc(**plot_obj.arguments)              
         self.display_plot(plot_obj, new)
-        self.plot_cover.grid_remove()
+        if platform.system == 'Windows':
+            self.plot_cover.grid_remove()
         plot_index = list(self.PLOTS).index(fig_name)
         self.plot_listbox.selection_clear(0,self.plot_listbox.size())
         self.plot_listbox.selection_set(plot_index)
