@@ -66,9 +66,14 @@ class FED3_Viz(tk.Tk):
         self.mac_color = '#E2E2E2'
         self.colors =  ['blue','red','green','yellow','purple','orange',
                         'black',]
+        self.NEW_WINDOW_FIGS = [] #created before the main figure/ax to new window resizing bug!
+        for i in range(5):
+            fig, ax = plt.subplots(dpi=150)
+            self.NEW_WINDOW_FIGS.append(New_Window_Figure(toplevel=None,fig=fig,ax=ax,
+                                                         frame=None,canvas=None,
+                                                         toolbar=None,in_use=False))
         self.FIGURE, self.AX = plt.subplots(figsize=(5,3.5),dpi=150) #fig/axes used in plot tab
-        self.CB = None
-        self.NEW_WINDOW_FIGS  = [] 
+        self.CB = None      
         times = []
         for xm in [' am', ' pm']:
             for num in range(0,12):
@@ -1925,47 +1930,51 @@ class FED3_Viz(tk.Tk):
         clicked=self.plot_listbox.curselection()
         graph_name=self.plot_listbox.get(clicked)
         plot_obj = self.PLOTS[graph_name]
-        if not self.NEW_WINDOW_FIGS:
-            self.create_new_window_figure(plot_obj)
-        else:
-            if all(in_use):
-                self.create_new_window_figure(plot_obj)
-            else:
-                self.reuse_new_window_figure(plot_obj)               
+        self.reuse_new_window_figure(plot_obj)  
+        
+    def reuse_new_window_figure(self, plot_obj):
+        obj_to_reuse = next(x for x in self.NEW_WINDOW_FIGS if x.in_use == False)
+        if obj_to_reuse.canvas == None:
+            self.create_new_window_canvas(obj_to_reuse, plot_obj)
+        obj_to_reuse.in_use = True
+        new_arguments = {key:val for key,val in plot_obj.arguments.items() if key != 'ax'}
+        obj_to_reuse.ax.clear()
+        new_arguments['ax'] = obj_to_reuse.ax
+        for ax in obj_to_reuse.fig.axes:
+            ax.clear()
+            if ax != obj_to_reuse.ax:
+                ax.remove()
+        plot_obj.plotfunc(**new_arguments)
+        obj_to_reuse.toplevel.deiconify()
+        obj_to_reuse.toplevel.geometry('{0}x{1}'.format(int(plot_obj.x*plot_obj.dpi),
+                                             int(plot_obj.y*plot_obj.dpi)))
+        obj_to_reuse.canvas.draw_idle()
+        obj_to_reuse.toolbar.update()
             
-    def create_new_window_figure(self, plot_obj):
+    def create_new_window_canvas(self, new_window_fig, plot_obj):
+        obj_to_reuse = new_window_fig
         new_window = tk.Toplevel()
         new_window.title(plot_obj.figname)
         if not platform.system() == 'Darwin': 
             new_window.iconbitmap('img/graph_icon.ico')
         new_window.protocol("WM_DELETE_WINDOW", lambda: self.close_new_window(new_window))
-        new_fig, new_ax = plt.subplots(dpi=125)
         new_frame = ttk.Frame(new_window)
         new_frame.pack(fill=tk.BOTH, expand=1)
+        new_fig, new_ax = obj_to_reuse.fig, obj_to_reuse.ax
+        for ax in new_fig.axes:
+            ax.clear()
+            if ax != new_ax:
+                ax.remove()
         canvas = FigureCanvasTkAgg(new_fig, master=new_frame)
         canvas.draw_idle()
         canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         nav_toolbar = NavigationToolbar2Tk(canvas, new_frame)
         nav_toolbar.update()
         canvas._tkcanvas.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-        created = New_Window_Figure(toplevel = new_window, fig=new_fig,
-                                    ax=new_ax, frame=new_frame, canvas=canvas,
-                                    toolbar=nav_toolbar, in_use=True)
-        new_arguments = {key:val for key,val in plot_obj.arguments.items() if key != 'ax'}
-        new_arguments['ax'] = new_ax
-        plot_obj.plotfunc(**new_arguments)
-        self.NEW_WINDOW_FIGS.append(created)
-     
-    def reuse_new_window_figure(self, plot_obj):
-        obj_to_reuse = next(x for x in self.NEW_WINDOW_FIGS if x.in_use == False)
-        obj_to_reuse.in_use = True
-        new_arguments = {key:val for key,val in plot_obj.arguments.items() if key != 'ax'}
-        obj_to_reuse.ax.clear()
-        new_arguments['ax'] = obj_to_reuse.ax
-        plot_obj.plotfunc(**new_arguments)
-        obj_to_reuse.toplevel.deiconify()
-        obj_to_reuse.canvas.draw_idle()
-        obj_to_reuse.toolbar.update()
+        obj_to_reuse.toplevel = new_window
+        obj_to_reuse.frame = new_frame
+        obj_to_reuse.canvas = canvas
+        obj_to_reuse.toolbar = nav_toolbar    
         
     def close_new_window(self, toplevel):
         #set in_use of New_Window_Figure 
