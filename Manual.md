@@ -616,6 +616,8 @@ To rename a plot, select a **single** plot from the Plot List, and click the **R
 
 To show plots in a new window, select one or more graphs from the Plot List and click the  **New Window Button**.  This feature allows for viewing of multiple graphs simultaneously.  There can only be 5 open New Windows at one time (in order to prevent memory consumption, see [FAQ](#faq)); if you try to open another New Window while 5 are open, you will receive a warning.
 
+**NOTE THAT THIS FUNCTION IS A LITTLE BUGGY AS OF V 0.3.0,** following a change to the handling of multiple figures/axes (see FAQ, "Why can't I open more than 5 plots in a New Window?").  The main issue is that plots in the new window may have some elements chopped off.  This can be fixed using the axes adjustment in the navigation toolbar of the new window.  Though this is annoying, I have left the feature in (for now) as it may still be useful for showing data side by side (with a little extra work).
+
 ### Navigation Toolbar:
 
 <p align="center">
@@ -740,7 +742,7 @@ This section will mainly cover troubleshooting and issues; please also check the
 
 - **Why can't I open more than 5 plots in a New Window?**  As of v0.3.0, a limit of 5 was placed on New Windows in order to prevent memory consumption.  In previous versions of FED3 Viz, there was no limit, but there was also a memory leak issue: creation of any new plot (in a New Window or not) would increase the memory used by the application (by several megabytes).  This memory usage was *un-recoverable* until the application closed; deleting plots or closing windows would not lower the memory usage.  This would be a potential issue if one was to create many plots, or have FED3 Viz running in tandem with other applications.
 
-  Now, this issue has been fixed; instead of creating a new "figure" (`matplotlib.figure.Figure`) with each plot, a single one is reused.  New Windows create additional "figures", but they can be reused when after is closed.  A limit of 5 is used to prevent the same memory leak from occurring.  There is no limit on the amount of plots that can be created; only how many can be visible at one time.
+  Now, this issue has been fixed; instead of creating a new "figure" (`matplotlib.figure.Figure`) with each plot, a single one is reused.  There are also 5 "New Window" figures that are reused to show plots in new windows.  There is no limit on the amount of plots that can be created, only how many can be displayed simultaneously.
 
 - **I saved the Python code for a plot and it doesn't run or my plot looks different.**  This could be due to many issues, but some possible causes are:
   
