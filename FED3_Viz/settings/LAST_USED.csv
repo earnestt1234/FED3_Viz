@@ -2,7 +2,7 @@
 shade_dark,True
 lights_on,7 am
 lights_off,7 pm
-allgroups,False
+allgroups,True
 abs_group,True
 skip_duplicates,True
 overwrite,False
@@ -12,15 +12,17 @@ pellet_bins,1 hour
 pellet_color,blue
 pellet_align,False
 average_error,SEM
-average_bins,4 hours
+average_bins,1 hour
 load_last_used,False
-average_method,elapsed time
+average_method,shared date & time
 average_align_start,7 am
 average_align_days,3
 circ_value,pellets
 circ_error,SEM
 circ_show_indvl,False
 kde,True
+logx,True
+retrieval_threshold,None
 poke_style,Cumulative
 poke_bins,1 hour
 poke_show_correct,True

@@ -148,7 +148,7 @@ def shade_darkness(ax, min_date,max_date,lights_on,lights_off,
                            label='_'*i + 'lights off',
                            zorder=0)
 
-def resample_get_yvals(df, value):
+def resample_get_yvals(df, value, retrieval_threshold=None):
     """
     Function for passing to the apply() method of pandas Resampler or
     DataFrameGroupBy object.  Computes an output for each bin of binned
@@ -180,7 +180,10 @@ def resample_get_yvals(df, value):
     if value == 'pellets':
         output = df['Binary_Pellets'].sum()
     elif value == 'retrieval time':
-        output = df['Retrieval_Time'].mean()
+        output = df['Retrieval_Time'].copy()
+        if retrieval_threshold:
+            output.loc[output>=retrieval_threshold] = np.nan
+        output = output.mean()
     elif value == 'interpellet intervals':
         output = df['Interpellet_Intervals'].mean()
     elif value == 'correct pokes':
@@ -420,14 +423,20 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
     pellet_color : str
         matplotlib named color string to color line
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
-    assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_plot_single()'   
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_plot_single()'
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     df = FED.data
     x = df.index
     y = df['Pellet_Count']
@@ -443,7 +452,8 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
                        lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()
-    return fig
+    
+    return fig if 'ax' not in kwargs else None
 
 def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
                        lights_off, pellet_color, **kwargs):
@@ -465,15 +475,21 @@ def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
     pellet_color : str
         matplotlib named color string to color bars
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
     assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_freq_single()'
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     df = FED.data.resample(pellet_bins).sum()
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     x = df.index
     y = df['Binary_Pellets']    
     ax.bar(x, y,width=(x[1]-x[0]),
@@ -490,7 +506,7 @@ def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')   
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def pellet_plot_multi_aligned(FEDs, **kwargs):
     """
@@ -502,7 +518,10 @@ def pellet_plot_multi_aligned(FEDs, **kwargs):
     FEDs : list of FED3_File objects
         FED3 files (loaded by load.FED3_File)
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -512,9 +531,12 @@ def pellet_plot_multi_aligned(FEDs, **kwargs):
         FEDs = [FEDs]
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_multi()'
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     xmax = 0
     ymax = 0          
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     for file in FEDs:
         df = file.data
         x = [(time.total_seconds()/3600) for time in df['Elapsed_Time']]   
@@ -534,14 +556,17 @@ def pellet_plot_multi_aligned(FEDs, **kwargs):
         days_in_sixes = [6*quart for quart in range((number_of_days+1)*4)]
         ax.set_xticks(days_in_sixes)
     ax.xaxis.set_minor_locator(AutoMinorLocator()) 
+    x_offset = .05 * xmax
+    ax.set_xlim(0-x_offset,xmax+x_offset)
     ax.set_ylabel('Cumulative Pellets')     
     ax.set_ylim(0,ymax*1.1)    
     title = ('Pellets Retrieved for Multiple FEDs')
     ax.set_title(title)
-    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
                                 lights_off,**kwargs):
@@ -560,7 +585,10 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -570,10 +598,12 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
         FEDs = [FEDs]
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_multi()'
-    days = mdates.DayLocator()
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     min_date = np.datetime64('2100')
     max_date = np.datetime64('1970')    
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     for file in FEDs:
         df = file.data
         x = df.index
@@ -592,10 +622,11 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
         shade_darkness(ax, min_date, max_date,
                    lights_on=lights_on,
                    lights_off=lights_off)  
-    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
     """
@@ -610,7 +641,10 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
     pellet_bins : pandas date offset string
         how frequently to bin, passed to rule argument of DataFrame.resample()
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -620,9 +654,11 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
         FEDs = [FEDs]
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_multi()'
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
-    max_time = 0
-    
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
+    max_time = 0  
     for file in FEDs:
         df = file.data.resample(pellet_bins,base=0).sum()         
         times = []
@@ -644,10 +680,11 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
     ax.set_ylabel('Pellets')    
     title = ('Pellets Retrieved for Multiple FEDs')
     ax.set_title(title)   
-    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
                                 lights_on, lights_off, **kwargs):
@@ -668,7 +705,10 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -678,11 +718,12 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
         FEDs = [FEDs]
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_multi()'
-    days = mdates.DayLocator()
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     min_date = np.datetime64('2100')
     max_date = np.datetime64('1970')   
-        
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     for file in FEDs:
         df = file.data.resample(pellet_bins,base=0).sum()
         x = df.index
@@ -702,12 +743,13 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
         shade_darkness(ax, min_date, max_date,
                    lights_on=lights_on,
                    lights_off=lights_off)        
-    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
-def interpellet_interval_plot(FEDs, kde, **kwargs):
+def interpellet_interval_plot(FEDs, kde, logx, **kwargs):
     """
     FED3 Viz: Plot a histogram of interpellet intervals for multiple devices.
 
@@ -719,8 +761,13 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
         Whether or not to include kernel density estimation, which plots
         probability density (rather than count) and includes a fit line (see
         seaborn.distplot)
+    logx : bool
+        When True, plots on a logarithmic x-axis
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -730,33 +777,42 @@ def interpellet_interval_plot(FEDs, kde, **kwargs):
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File),'Non FED3_File passed to interpellet_interval_plot()'
-        
-    fig, ax = plt.subplots(figsize=(4,5), dpi=125)
-    lowest = -2
-    highest = 5
-    ylabel = 'Density Estimation' if kde else 'Count'
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel('minutes between pellets')
-    ax.set_xticks(range(lowest,highest))
-    ax.set_xticklabels([10**num for num in range(-2,5)])
-    ax.set_title('Interpellet Interval Plot')
-    c=0
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(4,5), dpi=125)
+    else:
+        ax = kwargs['ax']
     bins = []
-    while c <= highest:
-        bins.append(lowest+c)
-        c+=0.1
+    if logx:
+        lowest = -2
+        highest = 5
+        ax.set_xticks(range(lowest,highest))
+        ax.set_xticklabels([10**num for num in range(-2,5)])
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        ax.set_xticks([0,300,600,900])
+        div = 900/50
+        bins = [i*div for i in range(50)]
+        ax.set_xlim(-100,1000)
     for FED in FEDs:
         df = FED.data
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
-        y = [np.log10(val) for val in y if not pd.isna(val)]
+        if logx:
+            y = [np.log10(val) for val in y if not pd.isna(val)]
         sns.distplot(y,bins=bins,label=FED.filename,ax=ax,norm_hist=False,
                      kde=kde)
     ax.legend(fontsize=8)
+    ylabel = 'Density Estimation' if kde else 'Count' 
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel('minutes between pellets')
+    ax.set_title('Interpellet Interval Plot') 
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
-def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
+def group_interpellet_interval_plot(FEDs, groups, kde, logx, **kwargs):
     """
     FED3 Viz: Plot the interpellet intervals as a histogram, first aggregating
     the values for devices in a Groups.
@@ -771,8 +827,13 @@ def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
         Whether or not to include kernel density estimation, which plots
         probability density (rather than count) and includes a fit line (see
         seaborn.distplot)
+    logx : bool
+        When True, plots on a logarithmic x-axis
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -782,40 +843,174 @@ def group_interpellet_interval_plot(FEDs, groups, kde, **kwargs):
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File),'Non FED3_File passed to interpellet_interval_plot()'
-        
-    fig, ax = plt.subplots(figsize=(4,5), dpi=125)
-    lowest = -2
-    highest = 5
-    ylabel = 'Density Estimation' if kde else 'Count'
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel('minutes between pellets')
-    ax.set_xticks(range(lowest,highest))
-    ax.set_xticklabels([10**num for num in range(-2,5)])
-    ax.set_title('Interpellet Interval Plot')
-    c=0
-    bins = []
-    while c <= highest:
-        bins.append(lowest+c)
-        c+=0.1
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(4,5), dpi=125)
+    else:
+        ax = kwargs['ax']
+    bins=[]
+    if logx:
+        lowest = -2
+        highest = 5
+        ax.set_xticks(range(lowest,highest))
+        ax.set_xticklabels([10**num for num in range(-2,5)])
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        ax.set_xticks([0,300,600,900])
+        div = 900/50
+        bins = [i*div for i in range(50)]
+        ax.set_xlim(-100,1000)
     for group in groups:
         all_vals = []
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
-                y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
-                y = [np.log10(val) for val in y if not pd.isna(val)]
+                y = list(df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0])
+                if logx:
+                    y = [np.log10(val) for val in y if not pd.isna(val)]
                 all_vals += y
         sns.distplot(all_vals,bins=bins,label=group,ax=ax,norm_hist=False,
                      kde=kde)
-        ax.legend(fontsize=8)
-        plt.tight_layout()
+    ax.legend(fontsize=8)
+    ylabel = 'Density Estimation' if kde else 'Count'
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel('minutes between pellets')
+    ax.set_title('Interpellet Interval Plot')
+    plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
+
+def retrieval_time_single(FED, retrieval_threshold, shade_dark,
+                          lights_on, lights_off, **kwargs):
+    """
+    FED3 Viz: Create a scatter plot with a twin y-axis showing cumulative
+    pellets receieved and retrieval time (seconds) for each pellet.
+
+    Parameters
+    ----------
+    FED : FED3_File object
+        FED3 data (from load.FED3_File)
+    retrieval_threshold : int or float
+        maximum value of retrieval time to include (higher becomes np.nan)
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    pellet_color : str
+        matplotlib named color string to color line
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    assert isinstance(FED, FED3_File),'Non FED3_File passed to pellet_plot_single()'
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
+    df = FED.data
+    y1 = df['Pellet_Count'].drop_duplicates()
+    x1 = y1.index
+    y2 = df['Retrieval_Time'].copy()
+    x2 = y2.index
+    if retrieval_threshold:
+        y2.loc[y2>=retrieval_threshold] = np.nan
+    ax.scatter(x1, y1, s=5, color='coral', label='pellets')
+    ax.set_ylabel('Cumulative Pellets',)
+    ax2 = ax.twinx()
+    ax2.scatter(x2, y2, s=5, color='darkviolet', marker='s',label ='retrieval time')
+    ax2.set_ylabel('Retrieval Time (s)',)
+    if retrieval_threshold:
+        ax2.set_ylim(0,retrieval_threshold)
+    ax.set_title('Pellets and Retrieval Times for ' + FED.filename)
+    date_format_x(ax, df.index[0], df.index[-1])
+    ax.set_xlabel('Time')
+    if shade_dark:
+        shade_darkness(ax,min(df.index), max(df.index),
+                       lights_on=lights_on,
+                       lights_off=lights_off)
+    h1, l1 = ax.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    ax.legend(h1+h2, l1+l2, bbox_to_anchor=(1.15,1), loc='upper left')
+    plt.tight_layout()
+    
+    return fig if 'ax' not in kwargs else None
+
+def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
+    """
+    FED3 Viz: Create a scatter plot showing pelle retrieval time for
+    multiple devices, aligning them to the same start point.
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    retrieval_threshold : int or float
+        maximum value of retrieval time to include (higher becomes np.nan)
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for file in FEDs:
+        assert isinstance(file, FED3_File),'Non FED3_File passed to retrieval_time_multi()'
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
+    color_gradient_divisions = [(1/len(FEDs))*i for i in range(len(FEDs))]
+    cmap = mpl.cm.get_cmap('jet')
+    color_gradients = cmap(color_gradient_divisions)
+    xmax = 0
+    for i, fed in enumerate(FEDs):
+        df = fed.data
+        y = df['Retrieval_Time'].copy()
+        if retrieval_threshold:
+            y.loc[y>=retrieval_threshold] = np.nan
+        x = [t.total_seconds()/3600 for t in df['Elapsed_Time']]
+        ax.scatter(x, y, s=5, color=color_gradients[i], marker='s',
+                   alpha=.3, label=fed.filename)
+        if max(x) > xmax:
+            xmax = max(x)
+    ax.set_xlabel('Time (h)')
+    number_of_days = int(xmax//24)
+    if number_of_days > 2:
+        days_in_hours = [24*day for day in range(number_of_days+1)]
+        ax.set_xticks(days_in_hours)
+    else:
+        days_in_sixes = [6*quart for quart in range((number_of_days+1)*4)]
+        ax.set_xticks(days_in_sixes)
+    ax.xaxis.set_minor_locator(AutoMinorLocator()) 
+    x_offset = .05 * xmax
+    ax.set_xlim(0-x_offset,xmax+x_offset)
+    ax.set_ylabel('Retrieval Time (seconds)')
+    ax.set_title('Pellet Retrieval Time')
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
+    
+    return fig if 'ax' not in kwargs else None
 
 #---Average Pellet Plots
 
 def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error,
-                            shade_dark, lights_on, lights_off, **kwargs):
+                            shade_dark, lights_on, lights_off,**kwargs):
     """
     FED3 Viz: Create an average line plot for Grouped FED3 Files; averaging
     is only done for periods where all devices were active.  If there is no such
@@ -843,12 +1038,20 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     show_indvl=False
     if average_error == 'raw data':
         average_error = 'None'
@@ -864,7 +1067,10 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
             earliest_end = max(df.index)
     if earliest_end < latest_start:
         return 'NO_OVERLAP ERROR'
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     maxy = 0
     for i, group in enumerate(groups):
@@ -879,7 +1085,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
                     y = left_right_noncumulative(file.data,average_bins,side='r',version='ondatetime')
                 else:
                     df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
-                    y = df.apply(resample_get_yvals,dependent)
+                    y = df.apply(resample_get_yvals,dependent,retrieval_threshold)
                 y = y[(y.index > latest_start) &
                         (y.index < earliest_end)].copy()
                 avg.append(y)
@@ -910,6 +1116,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
             maxy = np.nanmax(np.abs(group_avg) + error_shade)
     ax.set_xlabel('Time')
     date_format_x(ax, latest_start, earliest_end)
+    ax.set_ylabel(dependent.capitalize())
     if "%" in dependent:
         ax.set_ylim(-5,105)
     if 'bias' in dependent:
@@ -922,12 +1129,12 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
     ax.legend(bbox_to_anchor=(1,1), loc='upper left')    
     plt.tight_layout() 
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 
 def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_start,
-                        average_align_days, average_error,
-                        shade_dark, lights_on, lights_off, **kwargs):
+                        average_align_days, average_error, shade_dark, lights_on,
+                        lights_off, **kwargs):
     """
     FED3 Viz: Create an average line plot for Grouped FED3 Files.  Data are
     first aligned by the time of day, and then averaged.
@@ -958,19 +1165,30 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     show_indvl=False
     if average_error == 'raw data':
         average_error = 'None'
         show_indvl=True
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_average_cumulative()'
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     start_datetime = dt.datetime(year=1970,
                                  month=1,
@@ -994,7 +1212,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                                                  starttime=average_align_start)
                 else:
                     df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
-                    y = df.apply(resample_get_yvals, dependent)
+                    y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)
@@ -1049,10 +1267,9 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()
 
-    return fig
+    return fig if 'ax' not in kwargs else None
 
-def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
-                         **kwargs):
+def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, **kwargs):
     """
     FED3 Viz: Create an average line plot for Grouped FED3 Files.  Data are
     first aligned by elapsed time, and then averaged.
@@ -1074,12 +1291,20 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         How to represent the spread of data around the average.  Options are
         "SEM", "STD", "raw data", or "None".
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     show_indvl=False
     if average_error == 'raw data':
         average_error = 'None'
@@ -1093,7 +1318,10 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
             longest_index = resampled.index
         elif len(resampled.index) > len(longest_index):
             longest_index = resampled.index
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     maxy=0
     maxx=0
@@ -1110,7 +1338,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                 else:
                     df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
-                    y = df.apply(resample_get_yvals, dependent)
+                    y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 y = y.reindex(longest_index)          
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 if np.nanmax(y.index) > maxx:
@@ -1161,7 +1389,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
     ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()     
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 #---Single Poke Plots
 
@@ -1194,14 +1422,20 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
     assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
-    fig, ax = plt.subplots(figsize=(7, 3.5), dpi=150)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     if poke_style == 'Cumulative':
         correct_pokes = FED.data['Correct_Poke']
         if poke_show_correct:
@@ -1264,7 +1498,7 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
     ax.legend(bbox_to_anchor=(1,1), loc='upper left')   
     plt.tight_layout()
         
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
               lights_off, dynamic_color, **kwargs):
@@ -1292,7 +1526,10 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
         (shifts plotting from matplotlib.pyplot.plot() to
         matplotlib.pyplot.scatter())
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -1300,7 +1537,10 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
     """
     DENSITY = 10000
     assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
-    fig, ax = plt.subplots(figsize=(7, 3.5), dpi=150)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     if bias_style == 'correct (%)':
         resampled = FED.data.resample(poke_bins)
         y = resampled.apply(resample_get_yvals, 'poke bias (correct %)')
@@ -1330,7 +1570,7 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
         ax.legend(bbox_to_anchor=(1,1), loc='upper left') 
     plt.tight_layout()
     
-    return fig   
+    return fig if 'ax' not in kwargs else None
 
 #---Progressive Ratio Plots
 def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
@@ -1351,7 +1591,10 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
     break_style : str
         "pellets" or "pokes"
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -1396,7 +1639,10 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
             out = out[-1]
         ys.append(out)
     fig_len = min([max([len(FEDs), 4]), 8])
-    fig, ax = plt.subplots(figsize=(fig_len, 5), dpi=125)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(fig_len, 5), dpi=125)
+    else:
+        ax = kwargs['ax']
     xs = range(len(FEDs))
     xticklabels = [x.filename for x in FEDs]
     ax.bar(xs, ys, color=color_gradients)
@@ -1408,7 +1654,7 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
     ax.set_title("Breakpoint")
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
    
 def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
                   break_error, break_show_indvl, **kwargs):
@@ -1435,7 +1681,10 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
     break_show_indvl : bool
         Whether to show individual observations overlaid on bars.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -1445,7 +1694,10 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File), 'Non FED3_File passed to group_pr_plot()'
-    fig, ax = plt.subplots(figsize=(3.5,5), dpi=125)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(3.5,5), dpi=125)
+    else:
+        ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color'] 
     xs = range(len(groups))
     delta = dt.timedelta(hours=break_hours, minutes=break_mins)
@@ -1506,7 +1758,7 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
     ax.set_title(title)
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 #---Circadian Plots
     
@@ -1534,17 +1786,28 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
     circ_show_indvl : bool
         Whether to show individual observations overlaid on bars.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
-    fig, ax = plt.subplots(figsize=(5,5), dpi=125)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(5,5), dpi=125)
+    else:
+        ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     bar_width = (.7/len(groups))
     bar_offsets = np.array([bar_width*i for i in range(len(groups))])
@@ -1561,10 +1824,12 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 night_vals = []
                 for start, end in days:
                     day_slice = df[(df.index>start) & (df.index<end)].copy()
-                    day_vals.append(resample_get_yvals(day_slice,circ_value))
+                    day_vals.append(resample_get_yvals(day_slice,circ_value,
+                                                       retrieval_threshold))
                 for start, end in nights:
                     night_slice = df[(df.index>start) & (df.index<end)].copy()
-                    night_vals.append(resample_get_yvals(night_slice,circ_value))
+                    night_vals.append(resample_get_yvals(night_slice,circ_value,
+                                                         retrieval_threshold))
                 group_day_values.append(np.nanmean(day_vals))
                 group_night_values.append(np.nanmean(night_vals))
         group_day_mean = np.nanmean(group_day_values)
@@ -1618,7 +1883,7 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
     ax.legend(handles, labels, bbox_to_anchor=(1,1),loc='upper left')
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
                     lights_on, lights_off, **kwargs):
@@ -1649,19 +1914,30 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
     pellet_color : str
         matplotlib named color string to color line
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
     if circ_show_indvl:
         circ_error = "None"
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     for i, group in enumerate(groups):
         group_vals = []
@@ -1669,7 +1945,7 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
             if group in FED.group:
                 df = FED.data
                 byhour = df.groupby([df.index.hour])
-                byhour = byhour.apply(resample_get_yvals,value=circ_value)
+                byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
                 new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
                 reindexed = byhour.reindex(new_index)
                 reindexed.index.name = 'hour'
@@ -1708,7 +1984,7 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
     ax.legend(bbox_to_anchor=(1,1),loc='upper left')
     plt.tight_layout()
         
-    return fig
+    return fig if 'ax' not in kwargs else None
 
 def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     """
@@ -1725,19 +2001,33 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     lights_on : int
         Integer between 0 and 23 denoting the start of the light cycle.
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        return_cb : bool
+            return the matplotlib colorbar; really only useful
+            within the GUI
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
-    fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    else:
+        ax = kwargs['ax']
     matrix = []
     index = []
     for FED in FEDs:       
         df = FED.data
         byhour = df.groupby([df.index.hour])
-        byhour = byhour.apply(resample_get_yvals,value=circ_value)
+        byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
         new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
         reindexed = byhour.reindex(new_index)
         if circ_value in ['pellets', 'correct pokes','errors']:
@@ -1760,14 +2050,200 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     ax.get_yticklabels()[-1].set_weight('bold')
     ax.set_xlabel('Hours (since start of light cycle)')
     ax.set_xticks([0,6,12,18,])
-    plt.colorbar(im)
+    cb = plt.colorbar(im, ax=ax)
+    plt.tight_layout()
+    if 'return_cb' in kwargs:
+        if 'return_cb':
+            return cb
+    
+    return fig if 'ax' not in kwargs else None
+
+def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
+    '''
+    FED3 Viz: Create a histogram of interpellet intervals aggregated for
+    multiple FEDs and separated by day and night.
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    kde : bool
+        Whether or not to include kernel density estimation, which plots
+        probability density (rather than count) and includes a fit line (see
+        seaborn.distplot)
+    logx : bool
+        When True, plots on a logarithmic x-axis
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    '''
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for FED in FEDs:
+        assert isinstance(FED, FED3_File),'Non FED3_File passed to interpellet_interval_plot()'
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(4,5), dpi=125)
+    else:
+        ax = kwargs['ax']
+    bins = []
+    if logx:
+        lowest = -2
+        highest = 5
+        ax.set_xticks(range(lowest,highest))
+        ax.set_xticklabels([10**num for num in range(-2,5)])
+        c=0
+        while c <= highest:
+            bins.append(round(lowest+c,2))
+            c+=0.1
+    else:
+        ax.set_xticks([0,300,600,900])
+        div = 900/50
+        bins = [i*div for i in range(50)]
+        ax.set_xlim(-100,1000) 
+    all_day = []
+    all_night = []
+    for FED in FEDs:
+        df = FED.data
+        y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
+        nights = night_intervals(df.index, lights_on, lights_off)
+        days = night_intervals(df.index, lights_on, lights_off, 
+                               instead_days=True)
+        day_vals = []
+        night_vals = []
+        for start, end in days:
+            day_vals.append(y[(y.index >= start) & (y.index < end)].copy())
+        for start, end in nights:
+            night_vals.append(y[(y.index >= start) & (y.index < end)].copy())
+        if day_vals:
+            all_day.append(pd.concat(day_vals))
+        if night_vals:
+            all_night.append(pd.concat(night_vals))
+    if all_day:
+        all_day = pd.concat(all_day)
+    if all_night:
+        all_night = pd.concat(all_night)
+    if logx:
+        all_day = [np.log10(val) for val in all_day if not pd.isna(val)]    
+        all_night = [np.log10(val) for val in all_night if not pd.isna(val)]
+    sns.distplot(all_day,bins=bins,label='Day',ax=ax,norm_hist=False,
+                 kde=kde, color='gold')
+    sns.distplot(all_night,bins=bins,label='Night',ax=ax,norm_hist=False,
+                 kde=kde, color='indigo')
+    ax.legend(fontsize=8)
+    ylabel = 'Density Estimation' if kde else 'Count'
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel('minutes between pellets')
+    ax.set_title('Day Night Interpellet Interval Plot')  
     plt.tight_layout()
     
-    return fig
+    return fig if 'ax' not in kwargs else None
+#---Diagnostic
+def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
+    """
+    FED3 Viz: Plot the battery life for a device.
 
-#---Other Plots
+    Parameters
+    ----------
+    FED : FED3_File object
+        FED3 data (from load.FED3_File)
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
-def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    assert isinstance(FED, FED3_File),'Non FED3_File passed to battery_plot()'
+    df = FED.data
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    else:
+        ax = kwargs['ax']
+    x = df.index
+    y = df['Battery_Voltage']
+    ax.plot(x,y,c='orange')
+    title = ('Battery Life for ' + FED.filename)
+    ax.set_title(title)
+    ax.set_ylabel('Battery (V)')  
+    ax.set_ylim(0,4.5)
+    date_format_x(ax, x[0], x[-1])
+    ax.set_xlabel('Date')
+    if shade_dark:
+        shade_darkness(ax, FED.start_time, FED.end_time,
+                   lights_on=lights_on,
+                   lights_off=lights_off)
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
+    
+    return fig if 'ax' not in kwargs else None
+
+def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
+    """
+    FED3 Viz: Plot the motor turns for each pellet release.
+
+    Parameters
+    ----------
+    FED : FED3_File object
+        FED3 data (from load.FED3_File)
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    assert isinstance(FED, FED3_File),'Non FED3_File passed to battery_plot()'
+    df = FED.data
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
+    else:
+        ax = kwargs['ax']
+    x = df.index
+    y = df['Motor_Turns']
+    ax.scatter(x,y,s=3,c=y,cmap='cool',vmax=100)
+    title = ('Motor Turns for ' + FED.filename)
+    ax.set_title(title)
+    ax.set_ylabel('Motor Turns')  
+    if max(y) < 100:
+        ax.set_ylim(0,100)
+    date_format_x(ax, x[0], x[-1])
+    ax.set_xlabel('Date')
+    if shade_dark:
+        shade_darkness(ax, FED.start_time, FED.end_time,
+                   lights_on=lights_on,
+                   lights_off=lights_off)
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
+
+#---Unused by FED3 Viz
+
+def old_diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     """
     FED3 Viz: Make a 3-panel plot showing the pellet retrieval, motor turns,
     and battery life over time.
@@ -1782,32 +2258,34 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
         Integer between 0 and 23 denoting the start of the light cycle.
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
-    pellet_color : str
-        matplotlib named color string to color line
     **kwargs : 
-        Allows FED3 Viz to pass all settings to all functions.
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
     assert isinstance(FED, FED3_File),'Non FED3_File passed to diagnostic_plot()'
-    df = FED.data
-    
-    fig, (ax1,ax2,ax3) = plt.subplots(3,1,figsize=(7,5),sharex=True, dpi=125)
+    df = FED.data   
+    fig, (ax1,ax2,ax3) = plt.subplots(3,1,sharex=True, figsize=(7,5),dpi=125)
+    ax1.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     plt.subplots_adjust(hspace=.1)
-    x = df.index
-    y = df['Pellet_Count']
+    y = df['Pellet_Count'].drop_duplicates()
+    x = y.index
     ax1.scatter(x,y,s=1,c='green')
     ax1.set_ylabel('Cumulative Pellets')
-    
+       
+    ax2.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     x = df.index
     y = df['Motor_Turns']
     ax2.scatter(x,y,s=3,c=y,cmap='cool',vmax=100)
     ax2.set_ylabel('Motor Turns')
     if max(y) < 100:
         ax2.set_ylim(0,100)
-    
+        
     x = df.index
     y = df['Battery_Voltage']
     ax3.plot(x,y,c='orange')
@@ -1823,4 +2301,4 @@ def diagnostic_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
                        lights_on=lights_on,
                        lights_off=lights_off)
     
-    return fig
+    return fig if 'ax' not in kwargs else None

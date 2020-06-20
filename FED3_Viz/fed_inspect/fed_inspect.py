@@ -28,14 +28,17 @@ shade_dark_funcs = ['pellet_plot_single', 'pellet_freq_single',
                     'pellet_freq_multi_unaligned',
                     'average_plot_ontime','average_plot_ondatetime',
                     'average_plot_onstart',
-                    'diagnostic_plot','poke_plot','poke_bias']
+                    'diagnostic_plot','poke_plot','poke_bias',
+                    'retrieval_time_single', 'battery_plot','motor_plot',
+                    'day_night_ipi_plot']
 avg_funcs = ['average_plot_ontime','average_plot_ondatetime',
              'average_plot_onstart',]
 circ_funcs = ['daynight_plot', 'line_chronogram', 'heatmap_chronogram']
 date_format_funcs = ['pellet_plot_single','pellet_freq_single',
                      'average_plot_ondatetime','poke_plot','poke_bias',
                      'diagnostic plot','pellet_plot_multi_unaligned',
-                     'pellet_freq_multi_unaligned',]
+                     'pellet_freq_multi_unaligned','retrieval_time_single',
+                     'battery_plot','motor_plot']
 pr_funcs = ['pr_plot','group_pr_plot']
 
 def add_quotes(string):
@@ -46,6 +49,12 @@ def generate_code(PLOTOBJ):
     used_args = PLOTOBJ.arguments
     plotfunc    = plotfuncs[PLOTOBJ.plotfunc.__name__]
     args_ordered = inspect.getfullargspec(plotfunc).args
+    if PLOTOBJ.plotfunc.__name__ in avg_funcs:
+        if used_args['dependent'] == 'retrieval time':
+            args_ordered.append('retrieval_threshold')
+    elif PLOTOBJ.plotfunc.__name__ in circ_funcs:
+        if used_args['circ_value'] == 'retrieval time':
+            args_ordered.append('retrieval_threshold')
 
     output = ""
     imports = """
@@ -56,6 +65,7 @@ def generate_code(PLOTOBJ):
 import datetime as dt
 import os
 
+import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
@@ -140,7 +150,10 @@ register_matplotlib_converters()
     call += 'plot = '
     call += plotfunc.__name__ + '('
     for i, arg in enumerate(args_ordered, start=1):
-        call += arg
+        if arg == 'retrieval_threshold' and (plotfunc.__name__ in avg_funcs):
+            call += (arg + '=retrieval_threshold')
+        else:
+            call+=arg
         if i != len(args_ordered):
             call += ', '
         else:
@@ -168,4 +181,18 @@ register_matplotlib_converters()
     output += arguments
     output += call
     return output
-        
+
+def get_arguments(PLOTOBJ):
+    func_name = PLOTOBJ.plotfunc.__name__
+    plotfunc = plotfuncs[func_name]
+    arguments = inspect.getfullargspec(plotfunc).args
+    if func_name in ['pellet_plot_single', 'pellet_freq_single']:
+        arguments.append('pellet_values')
+    if func_name in ['pellet_plot_multi_aligned', 'pellet_plot_multi_unaligned',
+                    'pellet_freq_multi_aligned','pellet_freq_multi_unaligned']:
+        arguments.append('pellet_values')
+        arguments.append('pellet_align')
+    if func_name in ['average_plot_ontime','average_plot_ondatetime',
+                    'average_plot_onstart',]:
+        arguments.append('average_method')
+    return arguments

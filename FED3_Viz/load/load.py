@@ -9,6 +9,7 @@ extra columns.
 from difflib import SequenceMatcher
 import os
 import pandas as pd
+import numbers
 import numpy as np
 
 class FED3_File():
@@ -74,6 +75,7 @@ class FED3_File():
         self.add_correct_pokes()
         self.group = []
         self.mode = self.determine_mode()
+        self.handle_retrieval_time()
 
     def __repr__(self):
         """Shows the directory used to make the file."""
@@ -147,3 +149,10 @@ class FED3_File():
             else:
                 mode = str(column[0])
         return mode
+    
+    def handle_retrieval_time(self):
+        """Convert the Retrieval_Time column to deal with non-numeric entries.
+        Currently, all are converted to np.nan"""
+        self.data['Retrieval_Time'] = pd.to_numeric(self.data['Retrieval_Time'],errors='coerce')
+            
+            
