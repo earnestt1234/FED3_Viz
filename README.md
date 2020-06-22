@@ -78,6 +78,8 @@ See the Releases tab for specific notes about new each version.
 
 FED3 Viz can either be run from a packaged application file, or from a Python interpreter.  Specific instructions for installation and system requirements can be found [here](https://github.com/earnestt1234/FED3_Viz/blob/master/Installation.md).
 
+There is a manual for FED3 Viz which covers the use of the program once it is installed; it can be found [here](https://github.com/earnestt1234/FED3_Viz/blob/master/Manual.md), or [here as a pdf](https://github.com/earnestt1234/FED3_Viz/blob/master/pdfs/Manual.pdf).
+
 ## Beta Statement
 
 **This program is currently in "beta"**: it has only been tested by a few individuals on their machines, with a small selection of data files.  Additionally, the program is still being actively worked on, and likely will be through summer 2020.  I am eager to have other people try the application and report bugs, preferably [through GitHub](https://github.com/earnestt1234/FED3_Viz/issues) or the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  
