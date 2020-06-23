@@ -2367,8 +2367,9 @@ class FED3_Viz(tk.Tk):
             self.save_settings(dialog=False,savepath=last_used)
         #save current session
         if os.path.isdir('sessions'):
-            self.save_session(dialog=False)        
+            self.save_session(dialog=False)
         self.destroy()
+        self.quit()
     
     #---ERROR MESSAGES
     def raise_average_warning(self):
