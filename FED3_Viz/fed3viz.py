@@ -26,6 +26,7 @@ from fed_inspect import fed_inspect
 from getdata import getdata
 from load.load import FED3_File
 from plots import plots
+from summarize import summarize
 
 class FED_Plot():
     def __init__(self, figname, plotfunc, arguments, plotdata=None,
@@ -268,11 +269,13 @@ class FED3_Viz(tk.Tk):
         self.button_load_session       = tk.Button(self.fed_buttons, text='Load Session',
                                                    command=self.load_session,
                                                    state=tk.NORMAL)
+        self.button_descriptives       = tk.Button(self.fed_buttons, text='Summary Stats',
+                                                   command=self.descriptives_window,
+                                                   state=tk.DISABLED)
         self.button_create_plot        = tk.Button(self.plot_selector, text='Create Plot',
                                                    command=self.init_plot,
                                                    state=tk.DISABLED, height=2,
-                                                   font='Segoe 10 bold')
-        
+                                                   font='Segoe 10 bold')       
 
     #---HOVER TEXT DICTIONARY          
         #dictionary mapping widgets to hover text
@@ -365,6 +368,7 @@ class FED3_Viz(tk.Tk):
         self.button_load_groups.grid(row=8,column=0,sticky='sew')
         self.button_save_session.grid(row=9,column=0,sticky='sew',pady=(20,0))
         self.button_load_session.grid(row=10,column=0,sticky='sew')
+        self.button_descriptives.grid(row=11,column=0,sticky='sew',pady=(20,0))
         
         #labels
         self.home_buttons_help.grid(row=0,column=0,sticky='nsw',
@@ -1214,6 +1218,52 @@ class FED3_Viz(tk.Tk):
                 self.raise_figure(plot)
             self.load_settings(dialog=False, from_df=unjarred['settings'])
         
+    def descriptives_window(self):
+        self.stat_window = tk.Toplevel(self)
+        self.stat_window.resizable(False, False)
+        self.stat_window.grab_set()
+        if not platform.system() == 'Darwin': 
+            self.stat_window.iconbitmap('img/mu.ico')
+        self.stat_window.title('Summary Stats')
+        self.stats_radio_var = tk.StringVar()
+        self.stats_radio_var.set('None')
+        self.stats_from_feds = ttk.Radiobutton(self.stat_window,
+                                               text='Use selected FEDs',
+                                               var=self.stats_radio_var,
+                                               value='from_feds',
+                                               command=self.handle_stats_check)
+        self.stats_from_groups = ttk.Radiobutton(self.stat_window,
+                                                 text='Use selected Groups',
+                                                 var=self.stats_radio_var,
+                                                 value='from_groups',
+                                                 command=self.handle_stats_check)
+        self.stats_all_groups = ttk.Radiobutton(self.stat_window,
+                                                text='Use all Groups',
+                                                var=self.stats_radio_var,
+                                                value='all_groups',
+                                                command=self.handle_stats_check)
+        self.stats_okay_button = tk.Button(self.stat_window,
+                                           text='Okay',
+                                           command=self.stats_proceed,
+                                           state=tk.DISABLED)     
+        self.stats_stop_button = tk.Button(self.stat_window,
+                                           text='Cancel',
+                                           command=self.stat_window.destroy,)      
+        self.stats_from_feds.grid(row=0,column=0,sticky='nsew',padx=100,pady=(20,5),
+                                  columnspan=2)
+        self.stats_from_groups.grid(row=1,column=0,sticky='nsew',padx=100,pady=5,
+                                    columnspan=2)
+        self.stats_all_groups.grid(row=2,column=0,sticky='nsew',padx=100,pady=5,
+                                   columnspan=2)
+        self.stats_okay_button.grid(row=3, column=0, sticky='nsew', padx=(40,5), pady=(20,5))
+        self.stats_stop_button.grid(row=3, column=1, sticky='nsew', padx=(5,40), pady=(20,5))
+        if not self.files_spreadsheet.selection():  
+            self.stats_from_feds.configure(state=tk.DISABLED)
+        if not self.group_view.curselection():
+            self.stats_from_groups.configure(state=tk.DISABLED)
+        if not self.GROUPS:
+            self.stats_all_groups.configure(state=tk.DISABLED)  
+    
     def init_plot(self):
         selection = self.plot_treeview.selection()
         self.plotting = True
@@ -1776,6 +1826,11 @@ class FED3_Viz(tk.Tk):
             self.button_edit_group.configure(state=tk.NORMAL)
         else:
             self.button_edit_group.configure(state=tk.DISABLED)
+        #if there are feds selected OR groups loaded
+        if self.files_spreadsheet.selection() or self.GROUPS:
+             self.button_descriptives.configure(state=tk.NORMAL)
+        else:
+            self.button_descriptives.configure(state=tk.DISABLED)
             
     def update_all_buttons(self,*event):
         self.update_buttons_home()
@@ -1873,6 +1928,35 @@ class FED3_Viz(tk.Tk):
         self.update_group_view()
         self.update_file_view()
         self.edit_window.destroy()
+        
+    def handle_stats_check(self):
+        if self.stats_radio_var.get() != 'None':
+            self.stats_okay_button.configure(state=tk.NORMAL)
+
+    def stats_proceed(self):
+        if self.stats_radio_var.get() == 'from_feds':
+            feds = [self.LOADED_FEDS[int(i)] for i in self.files_spreadsheet.selection()]
+            results = summarize.fed_summary(feds)
+            savepath = tk.filedialog.askdirectory(title='Select where to save stats')
+            if savepath:
+                savename = self.create_file_name(savepath, 'FED Stats', ext='.csv')
+                results.to_csv(savename)
+        else:
+            if self.stats_radio_var.get() == 'from_groups':
+                groups = [self.GROUPS[int(i)] for i in self.group_view.curselection()]
+            elif self.stats_radio_var.get() == 'all_groups':
+                groups = self.GROUPS
+            results = OrderedDict()
+            for group in groups:
+                feds = [fed for fed in self.LOADED_FEDS if group in fed.group]
+                results[group] = summarize.fed_summary(feds)
+            savepath = tk.filedialog.askdirectory(title='Select where to save stats')
+            if savepath:
+                dirname = self.create_file_name(savepath, 'FED Stats')
+                os.makedirs(dirname)
+                for group, result in results.items():
+                    result.to_csv(os.path.join(dirname, group) + '.csv')      
+        self.stat_window.destroy()
         
     #---PLOT TAB BUTTON FUNCTIONS
     def rename_plot(self):
@@ -2119,7 +2203,7 @@ class FED3_Viz(tk.Tk):
             c+=1
         return fig_name
     
-    def create_file_name(self, savepath, savename, ext, overwrite=False):
+    def create_file_name(self, savepath, savename, ext='', overwrite=False):
         file_name = savename + ext
         full_save = os.path.join(savepath, file_name)
         if not overwrite:
@@ -2127,6 +2211,7 @@ class FED3_Viz(tk.Tk):
             while os.path.exists(full_save):
                 file_name = savename + ' (' + str(c) + ')' + ext
                 full_save = os.path.join(savepath,file_name)
+                c += 1
         return full_save
              
     def update_buttons_plot(self,*event):
@@ -2523,5 +2608,6 @@ if __name__=="__main__":
     root.lift()
     root.attributes('-topmost',True)
     root.after_idle(root.attributes,'-topmost',False)
+    root.focus_force()
     root.mainloop()
 plt.close('all')

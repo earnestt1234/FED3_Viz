@@ -603,7 +603,7 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
     else:
         ax = kwargs['ax']
     min_date = np.datetime64('2100')
-    max_date = np.datetime64('1970')    
+    max_date = np.datetime64('1970')
     for file in FEDs:
         df = file.data
         x = df.index
