@@ -1936,7 +1936,8 @@ class FED3_Viz(tk.Tk):
     def stats_proceed(self):
         if self.stats_radio_var.get() == 'from_feds':
             feds = [self.LOADED_FEDS[int(i)] for i in self.files_spreadsheet.selection()]
-            results = summarize.fed_summary(feds)
+            results = summarize.fed_summary(feds, ipi_pellet_minimum=2,
+                                            ipi_meal_delay=1)
             savepath = tk.filedialog.askdirectory(title='Select where to save stats')
             if savepath:
                 savename = self.create_file_name(savepath, 'FED Stats', ext='.csv')
