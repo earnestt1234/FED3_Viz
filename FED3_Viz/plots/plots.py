@@ -19,6 +19,7 @@ from scipy import stats
 import seaborn as sns
 
 from load.load import FED3_File
+from summarize.summarize import label_meals
 
 register_matplotlib_converters()
 
@@ -403,7 +404,7 @@ def left_right_noncumulative(df, bin_size, side, version='ondatetime', starttime
     diff = diff.fillna(0)
     return diff
     
-#---Single Pellet Plots
+#---Pellet Plots
 
 def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
                        **kwargs):
@@ -1005,6 +1006,43 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()
     
+    return fig if 'ax' not in kwargs else None
+
+def meal_size_histogram(FEDs, ipi_pellet_minimum, ipi_meal_delay,
+                        norm_meals, **kwargs):
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for file in FEDs:
+        assert isinstance(file, FED3_File),'Non FED3_File passed to retrieval_time_multi()'
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
+    ax.set_title('Meal Size Histogram')
+    label = 'Probability' if norm_meals else 'Count'
+    ax.set_ylabel(label)
+    ax.set_xlabel('Meal Size (# of Pellets)')
+    if norm_meals:
+        ax.set_ylim(0,1)
+        ax.set_yticks([0,.2,.4,.6,.8,1.0])
+    sizes = []
+    for fed in FEDs:
+        df = fed.data
+        meals = label_meals(df['Interpellet_Intervals'].dropna(),
+                            pellet_minimum=ipi_pellet_minimum,
+                            meal_delay=ipi_meal_delay)
+        sizes.append(meals.value_counts())
+    meal_maxes = [s.max() for s in sizes]
+    longest_meal = max(meal_maxes) if meal_maxes else 5
+    if pd.isna(longest_meal):
+        longest_meal = 5
+    bins = range(1,longest_meal+1)
+    for series, fed in zip(sizes,FEDs):
+        sns.distplot(series,bins=bins,kde=False,ax=ax,label=fed.basename,
+                     norm_hist=norm_meals,)
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
     return fig if 'ax' not in kwargs else None
 
 #---Average Pellet Plots
