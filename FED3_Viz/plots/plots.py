@@ -1861,11 +1861,11 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 day_vals = []
                 night_vals = []
                 for start, end in days:
-                    day_slice = df[(df.index>start) & (df.index<end)].copy()
+                    day_slice = df[(df.index>=start) & (df.index<end)].copy()
                     day_vals.append(resample_get_yvals(day_slice,circ_value,
                                                        retrieval_threshold))
                 for start, end in nights:
-                    night_slice = df[(df.index>start) & (df.index<end)].copy()
+                    night_slice = df[(df.index>=start) & (df.index<end)].copy()
                     night_vals.append(resample_get_yvals(night_slice,circ_value,
                                                          retrieval_threshold))
                 group_day_values.append(np.nanmean(day_vals))

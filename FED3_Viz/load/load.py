@@ -154,5 +154,3 @@ class FED3_File():
         """Convert the Retrieval_Time column to deal with non-numeric entries.
         Currently, all are converted to np.nan"""
         self.data['Retrieval_Time'] = pd.to_numeric(self.data['Retrieval_Time'],errors='coerce')
-            
-            
