@@ -577,7 +577,7 @@ class FED3_Viz(tk.Tk):
                                              text=lse_text)
                                               
         #dropdowns/checkboxes
-        #   general
+        #   general      
         self.nightshade_checkbox_val= tk.BooleanVar()
         self.nightshade_checkbox_val.set(True)
         self.nightshade_checkbox = ttk.Checkbutton(self.general_settings_frame,
