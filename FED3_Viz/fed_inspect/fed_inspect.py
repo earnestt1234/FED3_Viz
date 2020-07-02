@@ -40,6 +40,7 @@ date_format_funcs = ['pellet_plot_single','pellet_freq_single',
                      'pellet_freq_multi_unaligned','retrieval_time_single',
                      'battery_plot','motor_plot']
 pr_funcs = ['pr_plot','group_pr_plot']
+meal_funcs = ['meal_size_histogram']
 
 def add_quotes(string):
     output = '"' + string + '"'
@@ -57,8 +58,7 @@ def generate_code(PLOTOBJ):
             args_ordered.append('retrieval_threshold')
 
     output = ""
-    imports = """
-#IMPORTING LIBRARIES:
+    imports = """#IMPORTING LIBRARIES:
 #these are libraries used for ALL plotting functions in FED3 Viz,
 #so some may be redundant!
 
@@ -112,6 +112,9 @@ register_matplotlib_converters()
     
     pr_helpers = '\n#HELPER FUNCTIONS (BREAKPOINT PLOTS)\n\n'
     pr_helpers += inspect.getsource(mymod2.raw_data_scatter)
+    
+    meal_helpers = '\n#HELPER FUNCTIONS (MEAL SIZE)\n\n'
+    meal_helpers += inspect.getsource(mymod2.label_meals)
     
     function_code ='\n#PLOTTING FUNCTION:\n\n'
     inspected = inspect.getsource(plotfunc).replace('plt.close()','')
@@ -177,6 +180,8 @@ register_matplotlib_converters()
         output += date_helpers
     if plotfunc.__name__ in pr_funcs:
         output += pr_helpers
+    if plotfunc.__name__ in meal_funcs:
+        output += meal_helpers
     output += function_code
     output += arguments
     output += call

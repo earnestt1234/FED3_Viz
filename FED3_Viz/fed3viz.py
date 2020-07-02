@@ -26,7 +26,6 @@ from fed_inspect import fed_inspect
 from getdata import getdata
 from load.load import FED3_File
 from plots import plots
-from summarize import summarize
 
 class FED_Plot():
     def __init__(self, figname, plotfunc, arguments, plotdata=None,
@@ -191,9 +190,10 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_pellet, 3, text='Average Pellet Plot')
         self.plot_treeview.insert(self.ps_pellet, 4, text='Interpellet Interval')
         self.plot_treeview.insert(self.ps_pellet, 5, text='Group Interpellet Interval')
-        self.plot_treeview.insert(self.ps_pellet, 6, text='Retrieval Time Plot')
-        self.plot_treeview.insert(self.ps_pellet, 7, text='Multi Retrieval Time Plot')
-        self.plot_treeview.insert(self.ps_pellet, 8, text='Average Retrieval Time Plot')
+        self.plot_treeview.insert(self.ps_pellet, 6, text='Meal Size Histogram')
+        self.plot_treeview.insert(self.ps_pellet, 7, text='Retrieval Time Plot')
+        self.plot_treeview.insert(self.ps_pellet, 8, text='Multi Retrieval Time Plot')
+        self.plot_treeview.insert(self.ps_pellet, 9, text='Average Retrieval Time Plot')
         self.ps_poke = self.plot_treeview.insert("", 2, text='Pokes')
         self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
         self.plot_treeview.insert(self.ps_poke, 2, text='Average Poke Plot (Correct)')
@@ -306,8 +306,9 @@ class FED3_Viz(tk.Tk):
         self.plot_nodes_help = {'Single Pellet Plot':'Plot pellets received for one device',
                                 'Multi Pellet Plot':'Plot pellets received for multiple devices (no averaging)',
                                 'Average Pellet Plot':'Plot average pellets received for Grouped devices (groups make individual curves)',
-                                'Interpellet Interval':'Plot histogram of intervals between pellet retrievals',
-                                'Group Interpellet Interval':'Plot histogram of intervals between pellet retrievals for Groups',
+                                'Interpellet Interval':'Plot a histogram of intervals between pellet retrievals',
+                                'Group Interpellet Interval':'Plot a histogram of intervals between pellet retrievals for Groups',
+                                'Meal Size Histogram':'Plot histogram of number of pellets in a meal',
                                 'Single Poke Plot':'Plot the amount of pokes for one device',
                                 'Average Poke Plot (Correct)':'Plot average correct pokes for Grouped devices (Groups make individual curves)',
                                 'Average Poke Plot (Error)':'Plot average error pokes for Grouped devices (Groups make individual curves)',
@@ -316,8 +317,8 @@ class FED3_Viz(tk.Tk):
                                 'Poke Bias Plot':'Plot the tendency to pick one poke over another',
                                 'Average Poke Bias Plot (Correct %)':'Plot the average Group tendency to poke the active poke (Groups make individual curves)',
                                 'Average Poke Bias Plot (Left %)':'Plot the average Group tendency to poke the left poke (Groups make individual curves)',
-                                'Day/Night Plot':'Plot group averages for day/night on a bar chart',
-                                'Day/Night Interpellet Interval Plot':'Plot intervals between pellet retrieval for multiple animals, grouping by day and night',
+                                'Day/Night Plot':'Plot Group averages for day/night on a bar chart',
+                                'Day/Night Interpellet Interval Plot':'Plot intervals between pellet retrieval for Grouped animals, grouping by day and night',
                                 'Chronogram (Line)':'Plot average 24-hour curves for groups',
                                 'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
@@ -335,6 +336,7 @@ class FED3_Viz(tk.Tk):
                                 'Average Pellet Plot':self.avg_plot_TK,
                                 'Interpellet Interval':self.interpellet_plot_TK,
                                 'Group Interpellet Interval':self.group_ipi_TK,
+                                'Meal Size Histogram':self.meal_histo_TK,
                                 'Day/Night Plot':self.daynight_plot_TK,
                                 'Single Poke Plot':self.poke_plot_single_TK,
                                 'Average Poke Plot (Correct)':self.avg_plot_TK,
@@ -447,13 +449,17 @@ class FED3_Viz(tk.Tk):
         self.settings_canvas = tk.Canvas(self.settings_tab, highlightthickness=0)
         self.settings_scroll = ttk.Scrollbar(self.settings_tab, orient='horizontal',
                                              command=self.settings_canvas.xview)
+        self.settings_scroll2 = ttk.Scrollbar(self.settings_tab, orient='vertical',
+                                              command=self.settings_canvas.yview)
         self.all_settings_frame = tk.Frame(self.settings_canvas)
         self.all_settings_frame.bind('<Configure>',self.settings_canvas_config)
         self.settings_canvas.configure(xscrollcommand=self.settings_scroll.set)
+        self.settings_canvas.configure(yscrollcommand=self.settings_scroll2.set)
         self.settings_canvas.create_window((0,0),window=self.all_settings_frame,
                                             anchor='nw')
         self.settings_canvas.grid(row=0,column=0,sticky='nsew')
-        self.settings_scroll.grid(row=1,column=0,sticky='sew')
+        self.settings_scroll.grid(row=1,column=0,sticky='sew', columnspan=2)
+        self.settings_scroll2.grid(row=0,column=1,sticky='nse', rowspan=2)
         self.settings_col1 = tk.Frame(self.all_settings_frame)
         self.settings_col2 = tk.Frame(self.all_settings_frame)
         self.settings_col1.grid(row=0,column=0, sticky='nw', padx=(5,0))
@@ -472,22 +478,26 @@ class FED3_Viz(tk.Tk):
         self.ipi_settings_frame.grid(row=3,column=0, sticky='nsew', 
                                      pady=(20,0))
         
-        self.retrieval_settings_frame = tk.Frame(self.settings_col1)
-        self.retrieval_settings_frame.grid(row=4,column=0,sticky='nsew',
-                                           pady=(20,40))
+        self.meal_settings_frame = tk.Frame(self.settings_col1)
+        self.meal_settings_frame.grid(row=4,column=0,sticky='nsew',
+                                      pady=(20,40))
+        
+        self.retrieval_settings_frame = tk.Frame(self.settings_col2)
+        self.retrieval_settings_frame.grid(row=0,column=0,sticky='nsew',
+                                           pady=(0,20),padx=(20))
         
         self.pr_settings_frame = tk.Frame(self.settings_col2)
-        self.pr_settings_frame.grid(row=0,column=0,sticky='nsew',padx=(20))
+        self.pr_settings_frame.grid(row=1,column=0,sticky='nsew',padx=(20))
         
         self.poke_settings_frame = tk.Frame(self.settings_col2)
-        self.poke_settings_frame.grid(row=1,column=0,sticky='nsew',padx=(20))
+        self.poke_settings_frame.grid(row=2,column=0,sticky='nsew',padx=(20))
         
         self.daynight_settings_frame = tk.Frame(self.settings_col2)
-        self.daynight_settings_frame.grid(row=2,column=0,sticky='nsew',
+        self.daynight_settings_frame.grid(row=3,column=0,sticky='nsew',
                                           padx=(20,20), pady=(20,0))
         
         self.load_settings_frame = tk.Frame(self.settings_col2)
-        self.load_settings_frame.grid(row=3,column=0,sticky='nsew', 
+        self.load_settings_frame.grid(row=4,column=0,sticky='nsew', 
                                       padx=(20,20), pady=(0,40))
         
         #labels
@@ -529,6 +539,13 @@ class FED3_Viz(tk.Tk):
         self.ipi_settings_label = tk.Label(self.ipi_settings_frame,
                                            text='Interpellet Interval Plots',
                                            font=self.section_font)
+        self.meal_settings_label = tk.Label(self.meal_settings_frame,
+                                            text='Meal Analyses',
+                                            font=self.section_font)
+        self.mealdelay_label = tk.Label(self.meal_settings_frame,
+                                        text='Maximum meal length (minutes)')
+        self.meal_pelletmin_label = tk.Label(self.meal_settings_frame,
+                                             text='Minimum pellets in meal')
         self.retrieval_label = tk.Label(self.retrieval_settings_frame,
                                         text='Retrieval Time',
                                         font=self.section_font)
@@ -666,6 +683,21 @@ class FED3_Viz(tk.Tk):
         self.ipi_log_checkbox = ttk.Checkbutton(self.ipi_settings_frame,
                                                 text='Plot on a logarithmic axis',
                                                 var=self.ipi_log_val)
+        #   meals
+        self.norm_meal_val = tk.BooleanVar()
+        self.norm_meal_val.set(True)
+        self.norm_meal_box = ttk.Checkbutton(self.meal_settings_frame,
+                                             var=self.norm_meal_val,
+                                             text='Normalize meal histogram counts')
+        self.mealdelay_box = ttk.Combobox(self.meal_settings_frame,
+                                          values=[1,2,3,4,5,10,15,30,60],
+                                          width=10)
+        self.mealdelay_box.set(1)
+        self.meal_pelletmin_box = ttk.Combobox(self.meal_settings_frame,
+                                        values=list(range(1,11)),
+                                        width=10)
+        self.meal_pelletmin_box.set(1)
+        
         #   retrieval
         self.retrieval_threshold_menu = ttk.Combobox(self.retrieval_settings_frame,
                                                      values=['None',60,120,300,600,1800,3600],
@@ -740,7 +772,8 @@ class FED3_Viz(tk.Tk):
         self.settings_lastused_val.set(False)
         self.settings_lastused = ttk.Checkbutton(self.load_settings_frame,
                                                 text='Load last used settings when opening',
-                                                var=self.settings_lastused_val)         
+                                                var=self.settings_lastused_val)
+        
         #buttons
         self.settings_load_button = tk.Button(self.load_settings_frame,
                                               text='Load',
@@ -792,8 +825,15 @@ class FED3_Viz(tk.Tk):
         self.ipi_kde_checkbox.grid(row=1,column=0,sticky='w',padx=(20,0))
         self.ipi_log_checkbox.grid(row=2,column=0,sticky='w',padx=(20,0))
         
+        self.meal_settings_label.grid(row=0,column=0,sticky='w')
+        self.norm_meal_box.grid(row=1,column=0,sticky='w',padx=(20,0))
+        self.mealdelay_label.grid(row=2,column=0,padx=(20,175),sticky='w')
+        self.mealdelay_box.grid(row=2,column=1,sticky='ew')
+        self.meal_pelletmin_label.grid(row=3,column=0,sticky='w',padx=(20,0))
+        self.meal_pelletmin_box.grid(row=3,column=1,sticky='ew')
+        
         self.retrieval_label.grid(row=0,column=0,sticky='w')
-        self.retrieval_threshold_label.grid(row=1,column=0,sticky='w',padx=(20,150))
+        self.retrieval_threshold_label.grid(row=1,column=0,sticky='w',padx=(20,100))
         self.retrieval_threshold_menu.grid(row=1,column=1,sticky='w',)
         
         self.pr_settings_label.grid(row=0,column=0,sticky='w')
@@ -818,7 +858,7 @@ class FED3_Viz(tk.Tk):
         self.poke_biasstyle_label.grid(row=7,column=0,sticky='w',padx=20,pady=(10,0))
         self.poke_biasstyle_menu.grid(row=7,column=1,sticky='w', pady=(10,0))
         self.poke_dynamiccolor_box.grid(row=8,column=0,sticky='w',padx=20)
-        
+    
         self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
         self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
         self.settings_load_button.grid(row=1,column=2,sticky='w',ipadx=20,padx=(0,10))
@@ -1424,6 +1464,23 @@ class FED3_Viz(tk.Tk):
         plots.group_interpellet_interval_plot(**args_dict)
         self.display_plot(new_plot)
             
+    def meal_histo_TK(self):
+        arg_dict = self.get_current_settings_as_args()
+        arg_dict['ax'] = self.AX
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        arg_dict['FEDs'] = FEDs_to_plot
+        basename = 'Meal Size Histogram'
+        fig_name = self.create_plot_name(basename)      
+        plotdata = getdata.meal_size_histogram(**arg_dict)
+        new_plot = FED_Plot(figname=fig_name,plotfunc=plots.meal_size_histogram,
+                            plotdata=plotdata,arguments=arg_dict,
+                            x=7, y=3.5,)
+        self.PLOTS[fig_name] = new_plot
+        self.resize_plot(new_plot)
+        plots.meal_size_histogram(**arg_dict)
+        self.display_plot(new_plot)
+    
     def daynight_plot_TK(self):
         args_dict = self.get_current_settings_as_args()
         if self.allgroups_val.get():
@@ -1751,7 +1808,7 @@ class FED3_Viz(tk.Tk):
                          'Interpellet Interval', 'Poke Bias Plot',
                          'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot',
                          'Multi Retrieval Time Plot', 'Battery Life', 'Motor Turns',
-                         'Day/Night Interpellet Interval Plot']:
+                         'Day/Night Interpellet Interval Plot', 'Meal Size Histogram']:
             if self.files_spreadsheet.selection():
                 plottable = True
             else:
@@ -1934,10 +1991,12 @@ class FED3_Viz(tk.Tk):
             self.stats_okay_button.configure(state=tk.NORMAL)
 
     def stats_proceed(self):
+        mini = int(self.meal_pelletmin_box.get())
+        delay = int(self.mealdelay_box.get())
         if self.stats_radio_var.get() == 'from_feds':
             feds = [self.LOADED_FEDS[int(i)] for i in self.files_spreadsheet.selection()]
-            results = summarize.fed_summary(feds, ipi_pellet_minimum=2,
-                                            ipi_meal_delay=1)
+            results = plots.fed_summary(feds, meal_pellet_minimum=mini,
+                                        meal_duration=delay)
             savepath = tk.filedialog.askdirectory(title='Select where to save stats')
             if savepath:
                 savename = self.create_file_name(savepath, 'FED Stats', ext='.csv')
@@ -1950,7 +2009,8 @@ class FED3_Viz(tk.Tk):
             results = OrderedDict()
             for group in groups:
                 feds = [fed for fed in self.LOADED_FEDS if group in fed.group]
-                results[group] = summarize.fed_summary(feds)
+                results[group] = plots.fed_summary(feds, meal_pellet_minimum=mini,
+                                                   meal_duration=delay)
             savepath = tk.filedialog.askdirectory(title='Select where to save stats')
             if savepath:
                 dirname = self.create_file_name(savepath, 'FED Stats')
@@ -2354,6 +2414,9 @@ class FED3_Viz(tk.Tk):
             self.daynight_show_indvl_val.set(settings_df.loc['circ_show_indvl','Values'])
             self.ipi_kde_val.set(settings_df.loc['kde','Values'])
             self.ipi_log_val.set(settings_df.loc['logx','Values'])
+            self.norm_meal_val.set(settings_df.loc['norm_meals','Values'])
+            self.meal_pelletmin_box.set(settings_df.loc['meal_pellet_minimum','Values'])
+            self.mealdelay_box.set(settings_df.loc['meal_duration','Values'])
             self.retrieval_threshold_menu.set(settings_df.loc['retrieval_threshold','Values'])
             self.pr_style_menu.set(settings_df.loc['break_style','Values'])
             self.pr_hours_menu.set(settings_df.loc['break_hours','Values'])
@@ -2397,6 +2460,9 @@ class FED3_Viz(tk.Tk):
                              circ_show_indvl    =self.daynight_show_indvl_val.get(),
                              kde                =self.ipi_kde_val.get(),
                              logx               =self.ipi_log_val.get(),
+                             norm_meals         =self.norm_meal_val.get(),
+                             meal_pellet_minimum=self.meal_pelletmin_box.get(),
+                             meal_duration         =self.mealdelay_box.get(),
                              retrieval_threshold=self.retrieval_threshold_menu.get(),
                              poke_style         =self.poke_style_menu.get(),
                              poke_bins          =self.poke_bins_menu.get(),
@@ -2419,7 +2485,8 @@ class FED3_Viz(tk.Tk):
             settings_dict[time_setting] = self.times_to_int[settings_dict[time_setting]]
         for bin_setting in ['pellet_bins','average_bins', 'poke_bins']:
             settings_dict[bin_setting] = self.freq_bins_to_args[settings_dict[bin_setting]]
-        for int_setting in ['average_align_days','break_hours','break_mins']:
+        for int_setting in ['average_align_days','break_hours','break_mins',
+                            'meal_pellet_minimum','meal_duration']:
             settings_dict[int_setting] = int(settings_dict[int_setting])
         if settings_dict['retrieval_threshold'] == 'None':
             settings_dict['retrieval_threshold'] = None
@@ -2604,7 +2671,7 @@ class FED3_Viz(tk.Tk):
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.on_close)
 root.bind('<Escape>', root.escape)
-root.geometry("1400x650")
+root.geometry("1400x700")
 if __name__=="__main__":
     root.lift()
     root.attributes('-topmost',True)

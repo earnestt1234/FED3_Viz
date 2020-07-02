@@ -13,7 +13,8 @@ import seaborn as sns
 
 from scipy import stats
 
-from plots.plots import resample_get_yvals, night_intervals, left_right_bias, left_right_noncumulative
+from plots.plots import (resample_get_yvals, night_intervals, left_right_bias,
+                         left_right_noncumulative, label_meals)
 
 def pellet_plot_single(FED,*args, **kwargs):
     df = FED.data
@@ -324,10 +325,41 @@ def group_interpellet_interval_plot(FEDs, groups, kde, logx, *args, **kwargs):
         bar_dic = {group:bar_h}
         bar_df = pd.DataFrame(bar_dic, index=bar_x)
         bar_output = bar_output.join(bar_df, how='outer')
-        plt.close()      
+        plt.close()
     kde_output.index.name = 'log10(minutes)' if logx else 'minutes'
     bar_output.index.name = 'log10(minutes)' if logx else 'minutes'
     return kde_output, bar_output
+
+def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
+                        norm_meals, **kwargs):
+    output = pd.DataFrame()
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    sizes = []
+    for fed in FEDs:
+        df = fed.data
+        meals = label_meals(df['Interpellet_Intervals'].dropna(),
+                            meal_pellet_minimum=meal_pellet_minimum,
+                            meal_duration=meal_duration)
+        sizes.append(meals.value_counts())
+    meal_maxes = [s.max() for s in sizes]
+    longest_meal = max(meal_maxes) if meal_maxes else 5
+    if pd.isna(longest_meal):
+        longest_meal = 5
+    bins = range(1,longest_meal+1)
+    for series, fed in zip(sizes,FEDs):
+        #made to not disrupt fig in app            
+        fig = plt.figure()
+        plt.clf()
+        plot = sns.distplot(series,bins=bins,kde=False,label=fed.basename,
+                            norm_hist=norm_meals,)
+        bar_x = [v.get_x() for v in plot.patches]
+        bar_h = [v.get_height() for v in plot.patches]
+        bar_dic = {fed.filename:bar_h}
+        bar_df = pd.DataFrame(bar_dic, index=bar_x)
+        output = output.join(bar_df, how='outer')
+        plt.close()
+    return output
 
 def retrieval_time_single(FED, retrieval_threshold, **kwargs):
     output=pd.DataFrame()
