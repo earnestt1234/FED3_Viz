@@ -20,6 +20,7 @@ from collections import OrderedDict
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 from tkinter import ttk
+from tkcalendar import DateEntry
 
 from _version import __version__, __date__
 from fed_inspect import fed_inspect
@@ -506,7 +507,11 @@ class FED3_Viz(tk.Tk):
             self.section_font = 'Segoe 14 bold'
         self.general_settings_label = tk.Label(self.general_settings_frame,
                                                text='General',
-                                               font=self.section_font)        
+                                               font=self.section_font)
+        self.date_filter_days_label  = tk.Label(self.general_settings_frame,
+                                                text='Date', fg='gray')
+        self.date_filter_hours_label = tk.Label(self.general_settings_frame,
+                                                text='Hour', fg='gray')
         self.pellet_settings_label   = tk.Label(self.pellet_settings_frame,
                                                 text='Individual Pellet Plots',
                                                 font=self.section_font)
@@ -577,7 +582,27 @@ class FED3_Viz(tk.Tk):
                                              text=lse_text)
                                               
         #dropdowns/checkboxes
-        #   general      
+        #   general
+        self.date_filter_val = tk.BooleanVar()
+        self.date_filter_val.set(False)
+        self.date_filter_box = ttk.Checkbutton(self.general_settings_frame,
+                                               text='Globally filter dates',
+                                               var=self.date_filter_val,
+                                               command=self.check_date_filter)
+        self.date_filter_s_days = DateEntry(self.general_settings_frame,
+                                            width=10)
+        self.date_filter_e_days = DateEntry(self.general_settings_frame,
+                                            width=10)
+        self.date_filter_s_days.configure(state=tk.DISABLED)
+        self.date_filter_e_days.configure(state=tk.DISABLED)
+        self.date_filter_s_hour = ttk.Combobox(self.general_settings_frame,
+                                               values=times, width=10,
+                                               state=tk.DISABLED)
+        self.date_filter_e_hour = ttk.Combobox(self.general_settings_frame,
+                                               values=times, width=10,
+                                               state=tk.DISABLED)
+        self.date_filter_s_hour.set('noon')
+        self.date_filter_e_hour.set('noon')
         self.nightshade_checkbox_val= tk.BooleanVar()
         self.nightshade_checkbox_val.set(True)
         self.nightshade_checkbox = ttk.Checkbutton(self.general_settings_frame,
@@ -784,14 +809,21 @@ class FED3_Viz(tk.Tk):
         
     #---PLACE WIDGETS FOR SETTINGS TAB
         self.general_settings_label.grid(row=0,column=0,sticky='w')
-        self.nightshade_checkbox.grid(row=1,column=0,padx=(20,160),sticky='w')
-        self.nightshade_lightson.grid(row=1,column=1,sticky='w')
-        self.nightshade_lightsoff.grid(row=1,column=2,sticky='w')
-        self.allgroups.grid(row=2,column=0,padx=(20,0),sticky='w')
-        self.abs_groups_box.grid(row=3,column=0,padx=(20,0),sticky='w')
-        self.loadduplicates_checkbox.grid(row=4,column=0,padx=(20,0),sticky='w')
-        self.overwrite_checkbox.grid(row=5,column=0,padx=(20,0),sticky='w')
-        self.weirdfed_warning.grid(row=6,column=0,padx=(20,0),sticky='w')
+        self.date_filter_box.grid(row=1,column=0,sticky='w',padx=(20,0))
+        self.date_filter_days_label.grid(row=2,column=0,sticky='w',padx=(40,0))
+        self.date_filter_s_days.grid(row=2,column=1,sticky='ew')
+        self.date_filter_e_days.grid(row=2,column=2,sticky='ew')
+        self.date_filter_hours_label.grid(row=3,column=0,sticky='w',padx=(40,0))
+        self.date_filter_s_hour.grid(row=3,column=1,sticky='ew',)
+        self.date_filter_e_hour.grid(row=3,column=2,sticky='ew',)
+        self.nightshade_checkbox.grid(row=4,column=0,padx=(20,160),sticky='w')
+        self.nightshade_lightson.grid(row=4,column=1,sticky='w')
+        self.nightshade_lightsoff.grid(row=4,column=2,sticky='w')
+        self.allgroups.grid(row=5,column=0,padx=(20,0),sticky='w')
+        self.abs_groups_box.grid(row=6,column=0,padx=(20,0),sticky='w')
+        self.loadduplicates_checkbox.grid(row=7,column=0,padx=(20,0),sticky='w')
+        self.overwrite_checkbox.grid(row=8,column=0,padx=(20,0),sticky='w')
+        self.weirdfed_warning.grid(row=9,column=0,padx=(20,0),sticky='w')
         
         self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
         self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
@@ -1052,6 +1084,7 @@ class FED3_Viz(tk.Tk):
                     
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False, file_paths=None):
+        print(self.date_filter_e_days.get_date())
         if file_paths:
             files = file_paths
         else:
@@ -1339,12 +1372,16 @@ class FED3_Viz(tk.Tk):
                 basename = name_choices[self.pelletplottype_menu.get()]
                 plotdata = plotdata_choices[self.pelletplottype_menu.get()](**arg_dict)
                 fig_name = self.create_plot_name(basename)
+                try:
+                    plotfunc(**arg_dict)
+                except plots.DateFilterError:
+                    self.raise_date_filter_error()
+                    return
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                                     plotdata=plotdata, arguments=arg_dict,
                                     x=7,y=3.5)
                 self.PLOTS[fig_name] = new_plot
                 self.resize_plot(new_plot)
-                plotfunc(**arg_dict)
                 self.display_plot(new_plot)             
             
     def pellet_plot_multi_TK(self):
@@ -2365,6 +2402,22 @@ class FED3_Viz(tk.Tk):
             self.average_alignstart_menu.configure(state=tk.DISABLED)
             self.average_aligndays_menu.configure(state=tk.DISABLED)
     
+    def check_date_filter(self, *event):
+        if self.date_filter_val.get():
+            self.date_filter_days_label.configure(fg='black')
+            self.date_filter_hours_label.configure(fg='black')
+            self.date_filter_s_days.configure(state=tk.NORMAL)
+            self.date_filter_e_days.configure(state=tk.NORMAL)
+            self.date_filter_s_hour.configure(state=tk.NORMAL)
+            self.date_filter_e_hour.configure(state=tk.NORMAL)
+        else:
+            self.date_filter_days_label.configure(fg='gray')
+            self.date_filter_hours_label.configure(fg='gray')
+            self.date_filter_s_days.configure(state=tk.DISABLED)
+            self.date_filter_e_days.configure(state=tk.DISABLED)
+            self.date_filter_s_hour.configure(state=tk.DISABLED)
+            self.date_filter_e_hour.configure(state=tk.DISABLED)           
+    
     def save_settings(self, dialog=True, savepath='', return_df=False):
         settings_dict = self.get_current_settings()
         df = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])     
@@ -2434,6 +2487,7 @@ class FED3_Viz(tk.Tk):
             self.settings_lastused_val.set(settings_df.loc['load_last_used','Values'])
             self.check_average_align()
             self.check_pellet_type()
+            self.check_date_filter()
             
     #---SETTINGS HELPER FUNCTIONS
     def get_current_settings(self):
@@ -2579,8 +2633,7 @@ class FED3_Viz(tk.Tk):
         warn_frame.bind('<Configure>', self.canvas_config)
 
     def canvas_config(self, event):
-        self.warn_canvas.configure(scrollregion=self.warn_canvas.bbox("all"),)
-    
+        self.warn_canvas.configure(scrollregion=self.warn_canvas.bbox("all"),)    
         
     def raise_new_window_warning(self,):
         warn_window = tk.Toplevel(self)
@@ -2590,6 +2643,18 @@ class FED3_Viz(tk.Tk):
             warn_window.iconbitmap('img/exclam.ico')
         text = ("Only 5 New Windows can be opened at one time, in order to" +
                 '\nprevent memory leak.  Please close one of the open windows.')
+                
+        warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
+        warning.pack(padx=(20,20),pady=(20,20))
+        
+    def raise_date_filter_error(self,):
+        warn_window = tk.Toplevel(self)
+        warn_window.grab_set()
+        warn_window.title('Error: Date filter')
+        if not platform.system() == 'Darwin':
+            warn_window.iconbitmap('img/exclam.ico')
+        text = ("At least one file has no data within the date filter." +
+                '\nPlease edit or remove the global date filter.')
                 
         warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
         warning.pack(padx=(20,20),pady=(20,20))

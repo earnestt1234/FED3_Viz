@@ -22,6 +22,12 @@ from load.load import FED3_File
 
 register_matplotlib_converters()
 
+#---ERROR CLASSES
+
+class DateFilterError(Exception):
+    """Error when date filter causes empty df"""
+    pass
+
 #---HELPER FUNCTIONS
 
 def convert_dt64_to_dt(dt64):
@@ -463,6 +469,12 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
     else:
         ax = kwargs['ax']
     df = FED.data
+    if 'date_filter' in kwargs:
+        s,e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)]
+        if df.empty:
+            raise DateFilterError(FED.basename + " dates outside date filter.")
     x = df.index
     y = df['Pellet_Count']
     ax.plot(x, y,color=pellet_color)

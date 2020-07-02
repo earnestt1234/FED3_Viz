@@ -51,23 +51,23 @@ class FED3_File():
         try:
             read_opts = {'.csv':pd.read_csv, '.xlsx':pd.read_excel}
             func = read_opts[self.extension]
-            self.og_data = func(directory,
+            self.data = func(directory,
                                 parse_dates=True,
                                 index_col='MM:DD:YYYY hh:mm:ss')          
-            for column in self.og_data.columns:
+            for column in self.data.columns:
                 for name in self.fixed_names:
                     likeness = SequenceMatcher(a=column, b=name).ratio()
                     if likeness > 0.85:
-                        self.og_data.rename(columns={column:name}, inplace=True)
+                        self.data.rename(columns={column:name}, inplace=True)
                         break
                     self.foreign_columns.append(column)
         except Exception as e:
             raise e
         self.missing_columns = [name for name in self.fixed_names if
-                                name not in self.og_data.columns]           
-        self.events = len(self.og_data.index)
-        self.end_time = pd.Timestamp(self.og_data.index.values[-1])
-        self.start_time = pd.Timestamp(self.og_data.index.values[0])
+                                name not in self.data.columns]           
+        self.events = len(self.data.index)
+        self.end_time = pd.Timestamp(self.data.index.values[-1])
+        self.start_time = pd.Timestamp(self.data.index.values[0])
         self.duration = self.end_time-self.start_time
         self.add_elapsed_time()
         self.add_binary_pellet_count()
@@ -76,7 +76,7 @@ class FED3_File():
         self.group = []
         self.mode = self.determine_mode()
         self.handle_retrieval_time()
-        self.data = self.og_data.copy()
+        self.data = self.data.copy()
 
     def __repr__(self):
         """Shows the directory used to make the file."""
@@ -85,36 +85,36 @@ class FED3_File():
     def add_elapsed_time(self):
         """pandas Timedelta relative to starting point for each row.
         Stored in new Elapsed_Time column"""
-        events = self.og_data.index
+        events = self.data.index
         elapsed_times = [event - self.start_time for event in events]
-        self.og_data['Elapsed_Time'] = elapsed_times
+        self.data['Elapsed_Time'] = elapsed_times
         
     def add_binary_pellet_count(self):
         """Convert cumulative pellet count to binary value for each row.
         Stored in new Binary_Pellets column."""
-        self.og_data['Binary_Pellets'] = self.og_data['Pellet_Count'].diff()
+        self.data['Binary_Pellets'] = self.data['Pellet_Count'].diff()
     
     def add_interpellet_intervals(self):
         """Compute time between each pellet retrieval.
         Stored in new Interpellet_Intervals column."""
-        inter_pellet = np.array(np.full(len(self.og_data.index),np.nan))
+        inter_pellet = np.array(np.full(len(self.data.index),np.nan))
         c=0
-        for i,val in enumerate(self.og_data['Binary_Pellets']):         
+        for i,val in enumerate(self.data['Binary_Pellets']):         
             if val == 1:
                 if c == 0:
                     c = i
                 else:
-                    inter_pellet[i] = (self.og_data.index[i] - 
-                                       self.og_data.index[c]).total_seconds()/60
+                    inter_pellet[i] = (self.data.index[i] - 
+                                       self.data.index[c]).total_seconds()/60
                     c = i
-        self.og_data['Interpellet_Intervals'] = inter_pellet
+        self.data['Interpellet_Intervals'] = inter_pellet
     
     def add_correct_pokes(self):
         """Compute whether each poke was correct or not.  This process returns
         numpy NaN if files are in the older format (only pellets logged).  Stored
         in a new Correct_Poke column, also creates Binary_Left_Pokes and
         Binary_Right_Pokes."""
-        df = self.og_data
+        df = self.data
         df['Binary_Left_Pokes']  = df['Left_Poke_Count'].diff()
         df['Binary_Right_Pokes'] = df['Right_Poke_Count'].diff()
         df.iloc[0,df.columns.get_loc('Binary_Left_Pokes')] = df['Left_Poke_Count'][0]
@@ -137,8 +137,8 @@ class FED3_File():
         mode = 'Unknown'
         column = pd.Series()
         for name in ['FR_Ratio',' FR_Ratio','Session_Type']:
-            if name in self.og_data.columns:
-                column = self.og_data[name]
+            if name in self.data.columns:
+                column = self.data[name]
         if not column.empty:
             if all(isinstance(i,int) for i in column):
                 if len(set(column)) == 1:
@@ -154,11 +154,4 @@ class FED3_File():
     def handle_retrieval_time(self):
         """Convert the Retrieval_Time column to deal with non-numeric entries.
         Currently, all are converted to np.nan"""
-        self.og_data['Retrieval_Time'] = pd.to_numeric(self.og_data['Retrieval_Time'],errors='coerce')
-        
-    def date_filter(self, start, end):
-        self.data = self.data[(self.data.index >= start) &
-                              (self.data.index <= end)]
-        
-    def unfilter_dates(self):
-        self.data = self.og_data
+        self.data['Retrieval_Time'] = pd.to_numeric(self.data['Retrieval_Time'],errors='coerce')
