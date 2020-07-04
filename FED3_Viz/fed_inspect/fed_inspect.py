@@ -85,10 +85,13 @@ register_matplotlib_converters()
     shade_helpers = '\n#HELPER FUNCTIONS (SHADING DARK)\n\n'
     shade_helpers += inspect.getsource(mymod2.convert_dt64_to_dt) + '\n'
     shade_helpers += inspect.getsource(mymod2.hours_between) + '\n'
+    shade_helpers += inspect.getsource(mymod2.is_day_or_night) + '\n' 
     shade_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
     shade_helpers += inspect.getsource(mymod2.shade_darkness)
     
     dn_helpers = '\n#HELPER FUNCTIONS (DAY/NIGHT PLOTS)\n\n'
+    dn_helpers += inspect.getsource(mymod2.is_day_or_night) + '\n' 
+    dn_helpers += inspect.getsource(mymod2.get_daynight_count) + '\n'
     dn_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
     dn_helpers += inspect.getsource(mymod2.raw_data_scatter)
     

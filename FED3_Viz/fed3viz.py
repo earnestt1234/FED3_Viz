@@ -1084,7 +1084,6 @@ class FED3_Viz(tk.Tk):
                     
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False, file_paths=None):
-        print(self.date_filter_e_days.get_date())
         if file_paths:
             files = file_paths
         else:
@@ -1372,17 +1371,13 @@ class FED3_Viz(tk.Tk):
                 basename = name_choices[self.pelletplottype_menu.get()]
                 plotdata = plotdata_choices[self.pelletplottype_menu.get()](**arg_dict)
                 fig_name = self.create_plot_name(basename)
-                try:
-                    plotfunc(**arg_dict)
-                except plots.DateFilterError:
-                    self.raise_date_filter_error()
-                    return
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                                     plotdata=plotdata, arguments=arg_dict,
                                     x=7,y=3.5)
                 self.PLOTS[fig_name] = new_plot
                 self.resize_plot(new_plot)
-                self.display_plot(new_plot)             
+                plotfunc(**arg_dict)
+                self.display_plot(new_plot)  
             
     def pellet_plot_multi_TK(self):
         arg_dict = self.get_current_settings_as_args()
@@ -1848,8 +1843,13 @@ class FED3_Viz(tk.Tk):
                          'Day/Night Interpellet Interval Plot', 'Meal Size Histogram']:
             if self.files_spreadsheet.selection():
                 plottable = True
+                if plot_name == 'Breakpoint Plot':
+                    selected = [self.LOADED_FEDS[int(i)]
+                                for i in self.files_spreadsheet.selection()]
+                    if not all(f.mode == 'PR' for f in selected):
+                        plottable = False
             else:
-                plottable = False
+                plottable = False          
         elif plot_name == 'Single Poke Plot':
             if self.files_spreadsheet.selection():
                 if (self.poke_correct_val.get() or self.poke_error_val.get() or 
@@ -1870,12 +1870,31 @@ class FED3_Viz(tk.Tk):
                     plottable = True
                 else:
                     plottable = False
+                if plot_name == 'Group Breakpoint Plot':
+                    to_plot = []
+                    for fed in self.LOADED_FEDS:
+                        for group in self.GROUPS:
+                            if group in fed.group:
+                                to_plot.append(fed)
+                                break
+                    if not all(f.mode == 'PR' for f in to_plot):
+                        plottable = False                 
             else:
                 #if there are groups selected
                 if self.group_view.curselection():
                     plottable = True
                 else:
                     plottable = False
+                if plot_name == 'Group Breakpoint Plot':
+                    to_plot = []
+                    for fed in self.LOADED_FEDS:
+                        for i in self.group_view.curselection():
+                            group = self.GROUPS[int(i)]
+                            if group in fed.group:
+                                to_plot.append(fed)
+                                break
+                    if not all(f.mode == 'PR' for f in to_plot):
+                        plottable = False                 
         else:
             plottable = False
         return plottable

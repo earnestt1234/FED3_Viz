@@ -22,11 +22,16 @@ from load.load import FED3_File
 
 register_matplotlib_converters()
 
-#---ERROR CLASSES
+#---ERROR HANDLING
 
-class DateFilterError(Exception):
-    """Error when date filter causes empty df"""
-    pass
+# class DateFilterError(Exception):
+#     """Error when date filter causes empty df"""
+#     pass
+
+def date_filter_okay(df, start, end):
+    df = df[(df.index >= start) &
+            (df.index <= end)]
+    return not df.empty
 
 #---HELPER FUNCTIONS
 
@@ -67,6 +72,46 @@ def hours_between(start, end, convert=True):
                                 hour=end.hour)
     return pd.date_range(rounded_start,rounded_end,freq='1H')
 
+def is_day_or_night(time, period, lights_on=7, lights_off=19):
+    lights_on = dt.time(hour=lights_on)
+    lights_off = dt.time(hour=lights_off)
+    val = False
+    #defaults to checking if at night
+    if lights_off > lights_on:
+        val = time.time() >= lights_off or time.time() < lights_on
+    elif lights_off < lights_on:
+        val = time.time() >= lights_off and time.time() < lights_on
+    #reverses if period='day'
+    return val if period=='night' else not val
+
+def get_daynight_count(start_time, end_time, lights_on=7, lights_off=9):
+    cuts = []
+    cuts.append(start_time)
+    loop_time = start_time.replace(minute=0,second=0)
+    while loop_time < end_time:
+        loop_time += pd.Timedelta(hours=1)
+        if loop_time.hour == lights_on:
+            cuts.append(loop_time)
+        elif loop_time.hour == lights_off:
+            cuts.append(loop_time)
+    cuts.append(end_time)
+    days = []
+    nights = []
+    if lights_off > lights_on:
+        day_hours = lights_off - lights_on
+        night_hours = 24 - day_hours
+    else:
+        night_hours = lights_on - lights_off
+        day_hours = 24 - night_hours    
+    day_hours = pd.Timedelta(hours = day_hours)
+    night_hours = pd.Timedelta(hours = night_hours)
+    for i, t in enumerate(cuts[:-1]):
+        if is_day_or_night(t, 'day', lights_on, lights_off):
+            days.append((cuts[i+1] - t)/day_hours)
+        else:
+            nights.append((cuts[i+1] - t)/night_hours)   
+    return {'day':sum(days),'night':sum(nights)}
+
 def night_intervals(array, lights_on, lights_off, instead_days=False):
     """
     Find intervals of a date-array corresponding to night time. 
@@ -92,12 +137,8 @@ def night_intervals(array, lights_on, lights_off, instead_days=False):
     if lights_on == lights_off:
             night_intervals = []
             return night_intervals
-    elif lights_off > lights_on:
-        at_night = [((i.time() >= lights_off) or
-                    (i.time() < lights_on)) for i in array]
-    elif lights_off < lights_on:
-        at_night = [((i.time() >= lights_off) and
-                    (i.time() < lights_on)) for i in array]
+    else:
+        at_night = [is_day_or_night(i, 'night') for i in array]
     if instead_days:
         at_night = [not i for i in at_night]
     night_starts = []
@@ -469,12 +510,6 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
     else:
         ax = kwargs['ax']
     df = FED.data
-    if 'date_filter' in kwargs:
-        s,e = kwargs['date_filter']
-        df = df[(df.index >= s) &
-                (df.index <= e)]
-        if df.empty:
-            raise DateFilterError(FED.basename + " dates outside date filter.")
     x = df.index
     y = df['Pellet_Count']
     ax.plot(x, y,color=pellet_color)
@@ -1894,6 +1929,10 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 nights = night_intervals(df.index, lights_on, lights_off)
                 days = night_intervals(df.index, lights_on, lights_off, 
                                        instead_days=True)
+                durs = get_daynight_count(df.index[0], df.index[-1],
+                                          lights_on, lights_off)
+                days_completed = durs['day']
+                nights_completed = durs['night']
                 day_vals = []
                 night_vals = []
                 for start, end in days:
@@ -1904,8 +1943,8 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                     night_slice = df[(df.index>=start) & (df.index<end)].copy()
                     night_vals.append(resample_get_yvals(night_slice,circ_value,
                                                          retrieval_threshold))
-                group_day_values.append(np.nanmean(day_vals))
-                group_night_values.append(np.nanmean(night_vals))
+                group_day_values.append(np.nansum(day_vals)/days_completed)
+                group_night_values.append(np.nansum(night_vals)/nights_completed)
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
         if circ_error == 'None':
@@ -2020,6 +2059,9 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
                 df = FED.data
                 byhour = df.groupby([df.index.hour])
                 byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
+                byhourday = df.groupby([df.index.hour,df.index.date])
+                num_days_by_hour = byhourday.sum().index.get_level_values(0).value_counts()
+                byhour = byhour.divide(num_days_by_hour, axis=0)
                 new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
                 reindexed = byhour.reindex(new_index)
                 reindexed.index.name = 'hour'
@@ -2102,6 +2144,9 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
         df = FED.data
         byhour = df.groupby([df.index.hour])
         byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
+        byhourday = df.groupby([df.index.hour,df.index.date])
+        num_days_by_hour = byhourday.sum().index.get_level_values(0).value_counts()
+        byhour = byhour.divide(num_days_by_hour, axis=0)
         new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
         reindexed = byhour.reindex(new_index)
         if circ_value in ['pellets', 'correct pokes','errors']:

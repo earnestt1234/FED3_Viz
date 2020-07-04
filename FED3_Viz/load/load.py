@@ -71,12 +71,15 @@ class FED3_File():
         self.duration = self.end_time-self.start_time
         self.add_elapsed_time()
         self.add_binary_pellet_count()
+        try:
+            self.reassign_events()
+        except:
+            pass
         self.add_interpellet_intervals()
         self.add_correct_pokes()
         self.group = []
         self.mode = self.determine_mode()
         self.handle_retrieval_time()
-        self.data = self.data.copy()
 
     def __repr__(self):
         """Shows the directory used to make the file."""
@@ -93,6 +96,8 @@ class FED3_File():
         """Convert cumulative pellet count to binary value for each row.
         Stored in new Binary_Pellets column."""
         self.data['Binary_Pellets'] = self.data['Pellet_Count'].diff()
+        pos = self.data.columns.get_loc('Binary_Pellets')
+        self.data.iloc[0,pos] = 0
     
     def add_interpellet_intervals(self):
         """Compute time between each pellet retrieval.
@@ -153,5 +158,17 @@ class FED3_File():
     
     def handle_retrieval_time(self):
         """Convert the Retrieval_Time column to deal with non-numeric entries.
-        Currently, all are converted to np.nan"""
+        Currently, all are converted to np.nan.  Also, sets NaN retrieval
+        times to 0 when there is a pellet event.  Issue due to very short
+        retrieval times (<1 second) being logged as 0.  Likely will be
+        fixed in future FED code."""
         self.data['Retrieval_Time'] = pd.to_numeric(self.data['Retrieval_Time'],errors='coerce')
+        self.data.loc[(self.data['Event'] == 'Pellet') &
+                      pd.isnull(self.data['Retrieval_Time']), 'Retrieval_Time'] = 0
+    
+    def reassign_events(self):
+        """Reassign the "Event" column based on changes in the pellet and poke
+        counts.  Catches some errors with improper event logging."""
+        events = ["Pellet" if v else 'Poke' for v in self.data['Binary_Pellets']]
+        self.data['Event'] = events
+            
