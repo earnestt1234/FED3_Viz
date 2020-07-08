@@ -190,7 +190,7 @@ register_matplotlib_converters()
     output += call
     return output
 
-def get_arguments(PLOTOBJ):
+def get_arguments_affecting_settings(PLOTOBJ):
     func_name = PLOTOBJ.plotfunc.__name__
     plotfunc = plotfuncs[func_name]
     arguments = inspect.getfullargspec(plotfunc).args
@@ -203,4 +203,14 @@ def get_arguments(PLOTOBJ):
     if func_name in ['average_plot_ontime','average_plot_ondatetime',
                     'average_plot_onstart',]:
         arguments.append('average_method')
+    if func_name in avg_funcs:
+        if PLOTOBJ.arguments['dependent'] == 'retrieval threshold':
+            arguments.append('retrieval_threshold')
+    elif func_name in circ_funcs:
+        if PLOTOBJ.arguments['circ_value'] == 'retrieval threshold':
+            arguments.append('retrieval_threshold')
+    arguments.append('date_filter_val')
+    if 'date_filter' in PLOTOBJ.arguments:
+        arguments += ['date_filter_s_hour','date_filter_s_days',
+                      'date_filter_e_hour','date_filter_e_days',]
     return arguments
