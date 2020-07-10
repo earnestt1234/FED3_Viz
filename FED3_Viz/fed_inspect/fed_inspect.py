@@ -56,12 +56,15 @@ def generate_code(PLOTOBJ):
     elif PLOTOBJ.plotfunc.__name__ in circ_funcs:
         if used_args['circ_value'] == 'retrieval time':
             args_ordered.append('retrieval_threshold')
+    if 'date_filter' in used_args:
+        args_ordered.append('date_filter')
 
     output = ""
     imports = """#IMPORTING LIBRARIES:
 #these are libraries used for ALL plotting functions in FED3 Viz,
 #so some may be redundant!
 
+import datetime
 import datetime as dt
 import os
 
@@ -158,6 +161,8 @@ register_matplotlib_converters()
     for i, arg in enumerate(args_ordered, start=1):
         if arg == 'retrieval_threshold' and (plotfunc.__name__ in avg_funcs):
             call += (arg + '=retrieval_threshold')
+        if arg == 'date_filter':
+            call += (arg + '=date_filter')
         else:
             call+=arg
         if i != len(args_ordered):

@@ -1,9 +1,9 @@
 ,Values
 date_filter_val,True
-date_filter_s_days,2020-06-10
+date_filter_s_days,2020-06-09
 date_filter_e_days,2020-06-11
 date_filter_s_hour,6 pm
-date_filter_e_hour,9 pm
+date_filter_e_hour,10 pm
 shade_dark,True
 lights_on,7 am
 lights_off,7 pm
@@ -12,16 +12,16 @@ abs_group,True
 skip_duplicates,True
 overwrite,False
 weirdwarn,True
-pellet_values,Cumulative
+pellet_values,Frequency
 pellet_bins,1 hour
 pellet_color,blue
 pellet_align,True
 average_error,SEM
-average_bins,4 hours
+average_bins,3 hours
 load_last_used,True
-average_method,shared time
-average_align_start,4 pm
-average_align_days,1
+average_method,elapsed time
+average_align_start,5 pm
+average_align_days,3
 circ_value,pellets
 circ_error,SEM
 circ_show_indvl,False

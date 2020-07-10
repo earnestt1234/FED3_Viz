@@ -19,6 +19,10 @@ from plots.plots import (resample_get_yvals, night_intervals, left_right_bias,
 
 def pellet_plot_single(FED,*args, **kwargs):
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     x = df.index.values
     y = df['Pellet_Count']
     y = y.rename('Pellets')
@@ -26,7 +30,12 @@ def pellet_plot_single(FED,*args, **kwargs):
     return output
 
 def pellet_freq_single(FED, pellet_bins,*args, **kwargs):
-    df = FED.data.resample(pellet_bins).sum()
+    df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
+    df = df.resample(pellet_bins).sum()
     x = df.index.values
     y = df['Binary_Pellets']
     y = y.rename('Pellets')
@@ -38,6 +47,11 @@ def pellet_plot_multi_aligned(FEDs,*args,**kwargs):
     df_list = []
     for file in FEDs:
         df = file.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            df['Elapsed_Time'] -= df['Elapsed_Time'][0]
         x = [(time.total_seconds()/3600) for time in df['Elapsed_Time']]
         y = list(df['Pellet_Count'])
         dic = {file.basename:y}
@@ -52,6 +66,10 @@ def pellet_plot_multi_unaligned(FEDs,*args,**kwargs):
     df_list = []
     for file in FEDs:
         df = file.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         x = df.index.values
         y = list(df['Pellet_Count'])
         dic = {file.basename:y}
@@ -65,10 +83,15 @@ def pellet_plot_multi_unaligned(FEDs,*args,**kwargs):
 def pellet_freq_multi_aligned(FEDs, pellet_bins, *args,**kwargs):
     df_list = []
     for file in FEDs:
-        df = file.data.resample(pellet_bins,base=0).sum()
+        df = file.data
+        if 'date_filter' in kwargs:         
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+        df = df.resample(pellet_bins,base=0).sum()
         x = []
         for i, date in enumerate(df.index.values):
-            x.append(date - df.index.values[0])
+            x.append(date - df.index[0])
         x = [(time/np.timedelta64(1,'h')) for time in x]
         y = list(df['Binary_Pellets'])
         dic = {file.basename:y}
@@ -82,7 +105,12 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, *args,**kwargs):
 def pellet_freq_multi_unaligned(FEDs, pellet_bins, *args,**kwargs):
     df_list = []
     for file in FEDs:
-        df = file.data.resample(pellet_bins,base=0).sum()
+        df = file.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+        df = df.resample(pellet_bins,base=0).sum()
         x = df.index.values
         y = list(df['Binary_Pellets'])
         dic = {file.basename:y}
@@ -104,6 +132,10 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
     latest_start = dt.datetime(1970,1,1,0,0,0)
     for file in FEDs:
         df = file.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         if min(df.index) > latest_start:
             latest_start = min(df.index)
         if max(df.index) < earliest_end:
@@ -112,14 +144,19 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
         avg = []
         for file in FEDs:
             if group in file.group:
+                df = file.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 if dependent == 'poke bias (left %)':
-                    y = left_right_bias(file.data, average_bins, version='ondatetime')
+                    y = left_right_bias(df, average_bins, version='ondatetime')
                 elif dependent == 'left pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='l',version='ondatetime')
+                    y = left_right_noncumulative(df,average_bins,side='l',version='ondatetime')
                 elif dependent == 'right pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='r',version='ondatetime')
+                    y = left_right_noncumulative(df,average_bins,side='r',version='ondatetime')
                 else:
-                    df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
+                    df = df.groupby(pd.Grouper(freq=average_bins,base=0))
                     y = df.apply(resample_get_yvals,dependent, retrieval_threshold)
                     y = y[(y.index > latest_start) &
                           (y.index < earliest_end)].copy()
@@ -157,17 +194,22 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
         avg = []
         for file in FEDs:
             if group in file.group:
+                df = file.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 if dependent == 'poke bias (left %)':
-                    y = left_right_bias(file.data, average_bins, version='ontime',
+                    y = left_right_bias(df, average_bins, version='ontime',
                                         starttime=average_align_start)
                 elif dependent == 'left pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='l',version='ontime', 
+                    y = left_right_noncumulative(df,average_bins,side='l',version='ontime', 
                                                  starttime=average_align_start)
                 elif dependent == 'right pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='r',version='ontime',
+                    y = left_right_noncumulative(df,average_bins,side='r',version='ontime',
                                                  starttime=average_align_start)
                 else:
-                    df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
+                    df = df.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
                     y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 first_entry = y.index[0]
                 aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
@@ -206,6 +248,12 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
     for file in FEDs:
         df = file.data
         resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            df['Elapsed_Time'] -= df['Elapsed_Time'][0]
+            resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
         if len(longest_index) == 0:
             longest_index = resampled.index
         elif len(resampled.index) > len(longest_index):
@@ -214,14 +262,20 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
         avg = []
         for file in FEDs:
             if group in file.group:
+                df = file.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
+                    df['Elapsed_Time'] -= df['Elapsed_Time'][0]
                 if dependent == 'poke bias (left %)':
-                    y = left_right_bias(file.data, average_bins, version='onstart')
+                    y = left_right_bias(df, average_bins, version='onstart')
                 elif dependent == 'left pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='l',version='onstart')
+                    y = left_right_noncumulative(df,average_bins,side='l',version='onstart')
                 elif dependent == 'right pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='r',version='onstart')
+                    y = left_right_noncumulative(df,average_bins,side='r',version='onstart')
                 else:
-                    df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
+                    df = df.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
                     y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 y = y.reindex(longest_index)           

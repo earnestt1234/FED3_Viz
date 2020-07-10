@@ -6,7 +6,7 @@ shows it to the user when prompted with the "Plot Code" button.
 
 @author: https://github.com/earnestt1234
 """
-import datetime as dt
+import datetime
 
 import matplotlib as mpl
 import matplotlib.dates as mdates
@@ -39,7 +39,7 @@ def convert_dt64_to_dt(dt64):
     """Converts numpy datetime to standard datetime (needed for shade_darkness
     function in most cases)."""
     new_date = (dt64 - np.datetime64('1970-01-01T00:00:00')) / np.timedelta64(1, 's')
-    new_date = dt.datetime.utcfromtimestamp(new_date)
+    new_date = datetime.datetime.utcfromtimestamp(new_date)
     return new_date
 
 def hours_between(start, end, convert=True):
@@ -62,19 +62,19 @@ def hours_between(start, end, convert=True):
     if convert:
         start = convert_dt64_to_dt(start)
         end = convert_dt64_to_dt(end)
-    rounded_start = dt.datetime(year=start.year,
+    rounded_start = datetime.datetime(year=start.year,
                                 month=start.month,
                                 day=start.day,
                                 hour=start.hour)
-    rounded_end = dt.datetime(year=end.year,
+    rounded_end = datetime.datetime(year=end.year,
                                 month=end.month,
                                 day=end.day,
                                 hour=end.hour)
     return pd.date_range(rounded_start,rounded_end,freq='1H')
 
 def is_day_or_night(time, period, lights_on=7, lights_off=19):
-    lights_on = dt.time(hour=lights_on)
-    lights_off = dt.time(hour=lights_off)
+    lights_on = datetime.time(hour=lights_on)
+    lights_off = datetime.time(hour=lights_off)
     val = False
     #defaults to checking if at night
     if lights_off > lights_on:
@@ -132,8 +132,8 @@ def night_intervals(array, lights_on, lights_off, instead_days=False):
     night_intervals : list
         List of tuples with structure (start of nighttime, end of nighttime).
     """
-    lights_on = dt.time(hour=lights_on)
-    lights_off = dt.time(hour=lights_off)
+    lights_on = datetime.time(hour=lights_on)
+    lights_off = datetime.time(hour=lights_off)
     if lights_on == lights_off:
             night_intervals = []
             return night_intervals
@@ -318,27 +318,27 @@ def date_format_x(ax, start, end):
     three_days = mdates.DayLocator(interval=3)
     months = mdates.MonthLocator()
     d8_span = end - start
-    if d8_span < dt.timedelta(hours=12):
+    if d8_span < datetime.timedelta(hours=12):
         xfmt = mdates.DateFormatter('%H:%M')
         major = all_hours
         minor = quarter_hours
-    elif (d8_span >= dt.timedelta(hours=12)) and (d8_span < dt.timedelta(hours=24)):
+    elif (d8_span >= datetime.timedelta(hours=12)) and (d8_span < datetime.timedelta(hours=24)):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
         major = quarter_days
         minor = all_hours
-    elif (d8_span >= dt.timedelta(hours=24)) and (d8_span < dt.timedelta(days=3)):
+    elif (d8_span >= datetime.timedelta(hours=24)) and (d8_span < datetime.timedelta(days=3)):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
         major = days
         minor = quarter_days
-    elif d8_span >= dt.timedelta(days=3) and (d8_span < dt.timedelta(days=6)):
+    elif d8_span >= datetime.timedelta(days=3) and (d8_span < datetime.timedelta(days=6)):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
         major = two_days
         minor = days
-    elif (d8_span >= dt.timedelta(days=6)) and (d8_span < dt.timedelta(days=20)):
+    elif (d8_span >= datetime.timedelta(days=6)) and (d8_span < datetime.timedelta(days=20)):
         xfmt = mdates.DateFormatter('%b %d')
         major = three_days
         minor = days
-    elif d8_span >= dt.timedelta(days=20):
+    elif d8_span >= datetime.timedelta(days=20):
         xfmt = mdates.DateFormatter("%b '%y")
         major = months
         minor = three_days
@@ -623,6 +623,8 @@ def pellet_plot_multi_aligned(FEDs, **kwargs):
             s, e = kwargs['date_filter']
             df = df[(df.index >= s) &
                     (df.index <= e)].copy()
+            # following line toggles where 0 is with date filter
+            df['Elapsed_Time'] -= df['Elapsed_Time'][0]
         x = [(time.total_seconds()/3600) for time in df['Elapsed_Time']]   
         y = df['Pellet_Count']
         ax.plot(x, y, label=file.filename)            
@@ -749,11 +751,11 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
     max_time = 0  
     for file in FEDs:
         df = file.data
-        if 'date_filter' in kwargs:
+        if 'date_filter' in kwargs:           
             s, e = kwargs['date_filter']
             df = df[(df.index >= s) &
                     (df.index <= e)].copy()
-        df = df.resample(pellet_bins,base=0).sum()        
+        df = df.resample(pellet_bins,base=0).sum()  
         times = []
         for i, date in enumerate(df.index):
             times.append(date - df.index[0])
@@ -1094,6 +1096,7 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
             s, e = kwargs['date_filter']
             df = df[(df.index >= s) &
                     (df.index <= e)].copy()
+            df['Elapsed_Time'] -= df["Elapsed_Time"][0] #toggles where t=0 is
         y = df['Retrieval_Time'].copy()
         if retrieval_threshold:
             y.loc[y>=retrieval_threshold] = np.nan
@@ -1211,8 +1214,8 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
     if average_error == 'raw data':
         average_error = 'None'
         show_indvl=True
-    earliest_end = dt.datetime(2999,1,1,0,0,0)
-    latest_start = dt.datetime(1970,1,1,0,0,0)
+    earliest_end = datetime.datetime(2999,1,1,0,0,0)
+    latest_start = datetime.datetime(1970,1,1,0,0,0)
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_average_cumulative()'
         df = file.data
@@ -1354,11 +1357,11 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     else:
         ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    start_datetime = dt.datetime(year=1970,
+    start_datetime = datetime.datetime(year=1970,
                                  month=1,
                                  day=1,
                                  hour=average_align_start)
-    end_datetime = start_datetime + dt.timedelta(days=average_align_days)
+    end_datetime = start_datetime + datetime.timedelta(days=average_align_days)
     date_range = pd.date_range(start_datetime,end_datetime,freq=average_bins)    
     maxy=0
     for i, group in enumerate(groups):
@@ -1383,7 +1386,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                     df = df.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
                     y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 first_entry = y.index[0]
-                aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
+                aligned_first_entry = datetime.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)
                 alignment_shift = first_entry - aligned_first_entry
                 y.index = [i-alignment_shift for i in y.index]
@@ -1426,7 +1429,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     tick_labels = [i*12 for i in range(len(ticks))]
     ax.set_xticks(ticks)
     ax.set_xticklabels(tick_labels)
-    ax.set_xlim(start_datetime,end_datetime + dt.timedelta(hours=5))
+    ax.set_xlim(start_datetime,end_datetime + datetime.timedelta(hours=5))
     ax.set_ylabel(dependent.capitalize())
     if "%" in dependent:
         ax.set_ylim(-5,105)
@@ -1482,11 +1485,13 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_average_onstart()'
         df = file.data
+        resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
         if 'date_filter' in kwargs:
             s, e = kwargs['date_filter']
             df = df[(df.index >= s) &
                     (df.index <= e)].copy()
-        resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
+            df['Elapsed_Time'] -= df['Elapsed_Time'][0]
+            resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
         if len(longest_index) == 0:
             longest_index = resampled.index
         elif len(resampled.index) > len(longest_index):
@@ -1507,6 +1512,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
                     s, e = kwargs['date_filter']
                     df = df[(df.index >= s) &
                             (df.index <= e)].copy()
+                    df['Elapsed_Time'] -= df['Elapsed_Time'][0]
                 if dependent == 'poke bias (left %)':
                     y = left_right_bias(df, average_bins, version='onstart')
                 elif dependent == 'left pokes':
@@ -1517,7 +1523,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
                     df = df.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
                     y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
-                y = y.reindex(longest_index)          
+                y = y.reindex(longest_index)
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 if np.nanmax(y.index) > maxx:
                     maxx=np.nanmax(y.index)
@@ -1546,7 +1552,9 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
                             color=colors[i])
             if np.nanmax(np.abs(group_avg) + error_shade) > maxy:
                 maxy = np.nanmax(np.abs(group_avg) + error_shade)
-    ax.set_xlabel('Time (h since recording start)')
+    xlabel = ('Time (h since recording start)' if not 'date_filter' in kwargs else
+              'Time (h since ' + str(kwargs['date_filter'][0]) + ')')
+    ax.set_xlabel(xlabel)
     number_of_days = int(maxx//24)
     if number_of_days > 2:
         days_in_hours = [24*day for day in range(number_of_days+1)]
@@ -1782,7 +1790,7 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File), 'Non FED3_File passed to pr_plot()'
-    delta = dt.timedelta(hours=break_hours, minutes=break_mins)
+    delta = datetime.timedelta(hours=break_hours, minutes=break_mins)
     ys = []
     color_gradient_divisions = [(1/len(FEDs))*i for i in range(len(FEDs))]
     cmap = mpl.cm.get_cmap('spring')
@@ -1878,7 +1886,7 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color'] 
     xs = range(len(groups))
-    delta = dt.timedelta(hours=break_hours, minutes=break_mins)
+    delta = datetime.timedelta(hours=break_hours, minutes=break_mins)
     title = 'Breakpoint'
     for i, group in enumerate(groups):
         group_vals = []
