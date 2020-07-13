@@ -463,6 +463,10 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
         for fed in FEDs:
             if group in fed.group:
                 df = fed.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 nights = night_intervals(df.index, lights_on, lights_off)
                 days = night_intervals(df.index, lights_on, lights_off, 
                                        instead_days=True)
@@ -504,44 +508,68 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
               poke_show_right, poke_style,
               *args, **kwargs):
     output=pd.DataFrame()
+    df = FED.data
+    offset_correct = 0
+    offset_wrong = 0
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        base_df = df[(df.index) <= s].copy()
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()   
+        base_correct = pd.Series([1 if i==True else np.nan
+                                  for i in base_df['Correct_Poke']]).cumsum()
+        base_wrong = pd.Series([1 if i==False else np.nan
+                                for i in base_df['Correct_Poke']]).cumsum()
+        offset_correct = base_correct.max()
+        offset_wrong = base_wrong.max()
     if poke_style == 'Cumulative':
-        pokes = FED.data['Correct_Poke']
+        pokes = df['Correct_Poke']
         if poke_show_correct:
             y = pd.Series([1 if i==True else np.nan for i in pokes]).cumsum()
             y = y.rename('Correct Pokes')
-            y.index = FED.data.index
+            y.index = df.index
             y = y.dropna()
+            if not pd.isna(offset_correct):
+                y += offset_correct
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
         if poke_show_error:
             y = pd.Series([1 if i==False else np.nan for i in pokes]).cumsum()
             y = y.rename('Incorrect Pokes')
-            y.index = FED.data.index
+            y.index = df.index
             y = y.dropna()
+            if not pd.isna(offset_wrong):
+                y += offset_wrong
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
         if poke_show_left:
             try:
-                y = FED.data[FED.data['Event'] == 'Poke']['Left_Poke_Count']
+                y = df[df['Event'] == 'Poke']['Left_Poke_Count']
             except:
-                y = FED.data['Left_Poke_Count']
+                y = df['Left_Poke_Count']
             y = y.rename('Left Pokes')
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
         if poke_show_right:
             try:
-                y = FED.data[FED.data['Event'] == 'Poke']['Right_Poke_Count']
+                y = df[df['Event'] == 'Poke']['Right_Poke_Count']
             except:
-                y = FED.data['Right_Poke_Count']
+                y = df['Right_Poke_Count']
             y = y.rename('Right Pokes')
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
     else:
-        resampled_correct = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            df['Left_Poke_Count'] -= df['Left_Poke_Count'][0]
+            df['Right_Poke_Count'] -= df['Right_Poke_Count'][0]
+        resampled_correct = df['Correct_Poke'].dropna().resample(poke_bins)
         if poke_show_correct:
             y = resampled_correct.apply(lambda binn: (binn==True).sum())
             y = y.rename('Correct Pokes')
@@ -555,13 +583,13 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
         if poke_show_left:
-            y = left_right_noncumulative(FED.data, bin_size=poke_bins,side='l')
+            y = left_right_noncumulative(df, bin_size=poke_bins,side='l')
             y = y.rename('Left Pokes')
             x = y.index
             temp = pd.DataFrame(y, index=x,)
             output = output.join(temp, how='outer')
         if poke_show_right:
-            y = left_right_noncumulative(FED.data, bin_size=poke_bins,side='r')
+            y = left_right_noncumulative(df, bin_size=poke_bins,side='r')
             y = y.rename('Right Pokes')
             x = y.index
             temp = pd.DataFrame(y, index=x,)
@@ -569,11 +597,16 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
     return output
 
 def poke_bias(FED, poke_bins, bias_style, *args, **kwargs):
+    df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     if bias_style == 'correct (%)':
-        resampled = FED.data.resample(poke_bins)
+        resampled = df.groupby(pd.Grouper(freq=poke_bins))
         y = resampled.apply(resample_get_yvals, 'poke bias (correct %)')
     elif bias_style == 'left (%)':
-        y = left_right_bias(FED.data, poke_bins)
+        y = left_right_bias(df, poke_bins)
     y = y.rename('Poke Bias (' + bias_style + ')')
     x = y.index
     output = pd.DataFrame(y, index=x)
@@ -587,6 +620,10 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
     index = []
     for FED in FEDs:       
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         byhour = df.groupby([df.index.hour])
         byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
         byhourday = df.groupby([df.index.hour,df.index.date])
@@ -617,6 +654,10 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 byhour = df.groupby([df.index.hour])
                 byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
                 byhourday = df.groupby([df.index.hour,df.index.date])
@@ -665,6 +706,10 @@ def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
         all_vals = []
         for FED in FEDs:
             df = FED.data
+            if 'date_filter' in kwargs:
+                s, e = kwargs['date_filter']
+                df = df[(df.index >= s) &
+                        (df.index <= e)].copy()
             y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
             periods = night_intervals(df.index, lights_on, lights_off,
                                       instead_days=val)
@@ -703,6 +748,10 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, *args, **kwargs):
     output=pd.DataFrame()
     for FED in FEDs:
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         index = df.index
         nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
         try:
@@ -742,6 +791,10 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 index = df.index
                 nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
                 try:
@@ -782,6 +835,10 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
 
 def battery_plot(FED,*args, **kwargs):
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     x = df.index.values
     y = df['Battery_Voltage']
     y = y.rename('Battery (V)')
@@ -790,6 +847,10 @@ def battery_plot(FED,*args, **kwargs):
 
 def motor_plot(FED,*args, **kwargs):
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     x = df.index.values
     y = df['Motor_Turns']
     y = y.rename('Motor Turns')

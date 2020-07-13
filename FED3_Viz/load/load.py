@@ -124,7 +124,8 @@ class FED3_File():
         df['Binary_Right_Pokes'] = df['Right_Poke_Count'].diff()
         df.iloc[0,df.columns.get_loc('Binary_Left_Pokes')] = df['Left_Poke_Count'][0]
         df.iloc[0,df.columns.get_loc('Binary_Right_Pokes')] = df['Right_Poke_Count'][0]
-        df['Correct_Poke'] = df.apply(lambda row: self.is_correct_poke(row), axis=1)       
+        df['Correct_Poke'] = df.apply(lambda row: self.is_correct_poke(row), axis=1)
+        df['Correct_Poke'] = df['Correct_Poke'].astype(float)
         
     def is_correct_poke(self,row):
         """For each poke event against the active poke column to verify correctness."""

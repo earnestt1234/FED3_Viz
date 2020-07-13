@@ -1583,6 +1583,15 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
+        if self.date_filter_val.get(): 
+            s,e = self.get_date_filter_dates()
+            args_dict['date_filter'] = (s,e)
+            for fed in feds:
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
         args_dict['ax'] = self.AX    
         plotdata = getdata.daynight_plot(**args_dict)
         value = args_dict['circ_value'].capitalize()
@@ -1610,6 +1619,15 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
+        if self.date_filter_val.get(): 
+            s,e = self.get_date_filter_dates()
+            args_dict['date_filter'] = (s,e)
+            for fed in feds:
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
         args_dict['ax'] = self.AX
         plotdata = getdata.line_chronogram(**args_dict)
         value = args_dict['circ_value'].capitalize()
@@ -1627,6 +1645,15 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
+        if self.date_filter_val.get(): 
+            s,e = self.get_date_filter_dates()
+            arg_dict['date_filter'] = (s,e)
+            for fed in FEDs_to_plot:
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
         arg_dict['ax'] = self.AX
         arg_dict['return_cb'] = True
         value = arg_dict['circ_value'].capitalize()
@@ -1646,6 +1673,15 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
+        if self.date_filter_val.get(): 
+            s,e = self.get_date_filter_dates()
+            arg_dict['date_filter'] = (s,e)
+            for fed in FEDs_to_plot:
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
         basename = 'Day Night Interpellet Interval Plot'
         fig_name = self.create_plot_name(basename)
         plotdata = getdata.day_night_ipi_plot(**arg_dict)
@@ -1665,6 +1701,13 @@ class FED3_Viz(tk.Tk):
                 self.clear_axes()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
+                if self.date_filter_val.get():
+                    s,e = self.get_date_filter_dates()
+                    if not plots.date_filter_okay(obj.data, s, e):
+                        self.failed_date_feds.append(obj)
+                        continue
+                    else:
+                        arg_dict['date_filter'] = (s,e)
                 arg_dict['ax'] = self.AX
                 fig_name = self.create_plot_name('Poke plot for ' + obj.filename)
                 plotdata=getdata.poke_plot(**arg_dict)
@@ -1684,6 +1727,13 @@ class FED3_Viz(tk.Tk):
                 self.clear_axes()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
+                if self.date_filter_val.get():
+                    s,e = self.get_date_filter_dates()
+                    if not plots.date_filter_okay(obj.data, s, e):
+                        self.failed_date_feds.append(obj)
+                        continue
+                    else:
+                        arg_dict['date_filter'] = (s,e)
                 arg_dict['ax'] = self.AX
                 fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)              
                 plotdata=getdata.poke_bias(**arg_dict)
@@ -1701,6 +1751,15 @@ class FED3_Viz(tk.Tk):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
+        if self.date_filter_val.get(): 
+            s,e = self.get_date_filter_dates()
+            arg_dict['date_filter'] = (s,e)
+            for fed in FEDs_to_plot:     
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
         arg_dict['ax'] = self.AX
         fig_name = self.create_plot_name('Breakpoint Plot')       
         plotdata = getdata.pr_plot(**arg_dict)
@@ -1728,6 +1787,15 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
+        if self.date_filter_val.get(): 
+            s,e = self.get_date_filter_dates()
+            args_dict['date_filter'] = (s,e)
+            for fed in feds:
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
         args_dict['ax'] = self.AX        
         plotdata = getdata.group_pr_plot(**args_dict)
         fig_name = self.create_plot_name('Group Breakpoint Plot')
@@ -1799,6 +1867,13 @@ class FED3_Viz(tk.Tk):
                 self.clear_axes()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
+                if self.date_filter_val.get():
+                    s,e = self.get_date_filter_dates()
+                    if not plots.date_filter_okay(obj.data, s, e):
+                        self.failed_date_feds.append(obj)
+                        continue
+                    else:
+                        arg_dict['date_filter'] = (s,e)
                 arg_dict['ax'] = self.AX
                 plotfunc = plots.battery_plot   
                 fig_name = self.create_plot_name('Battery Life for ' + obj.filename)                  
@@ -1819,6 +1894,13 @@ class FED3_Viz(tk.Tk):
                 self.clear_axes()
                 arg_dict = self.get_current_settings_as_args()
                 arg_dict['FED'] = obj
+                if self.date_filter_val.get():
+                    s,e = self.get_date_filter_dates()
+                    if not plots.date_filter_okay(obj.data, s, e):
+                        self.failed_date_feds.append(obj)
+                        continue
+                    else:
+                        arg_dict['date_filter'] = (s,e)
                 arg_dict['ax'] = self.AX
                 plotfunc = plots.motor_plot   
                 fig_name = self.create_plot_name('Motor Turns for ' + obj.filename)                  

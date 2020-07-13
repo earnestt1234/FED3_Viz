@@ -1622,36 +1622,60 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     else:
         ax = kwargs['ax']
-    if poke_style == 'Cumulative':
-        correct_pokes = FED.data['Correct_Poke']
+    df = FED.data
+    if poke_style == 'Cumulative':       
+        offset_correct = 0
+        offset_wrong = 0
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']  
+            base_df = df[(df.index) <= s].copy()
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            base_correct = pd.Series([1 if i==True else np.nan
+                                      for i in base_df['Correct_Poke']]).cumsum()
+            base_wrong = pd.Series([1 if i==False else np.nan
+                                    for i in base_df['Correct_Poke']]).cumsum()
+            offset_correct = base_correct.max()
+            offset_wrong = base_wrong.max()
+        correct_pokes = df['Correct_Poke']
         if poke_show_correct:
             y = pd.Series([1 if i==True else np.nan for i in correct_pokes]).cumsum()
-            y.index = FED.data.index
+            y.index = df.index
             y = y.dropna()
+            if not pd.isna(offset_correct):
+                y += offset_correct
             x = y.index
             ax.plot(x, y, color='mediumseagreen', label = 'correct pokes')
         if poke_show_error:
             y = pd.Series([1 if i==False else np.nan for i in correct_pokes]).cumsum()
-            y.index = FED.data.index
+            y.index = df.index
             y = y.dropna()
+            if not pd.isna(offset_wrong):
+                y += offset_wrong
             x = y.index
             ax.plot(x, y, color='indianred', label = 'error pokes')
         if poke_show_left:
             try:
-                y = FED.data[FED.data['Event'] == 'Poke']['Left_Poke_Count']
+                y = df[df['Event'] == 'Poke']['Left_Poke_Count']
             except:
-                y = FED.data['Left_Poke_Count']
+                y = df['Left_Poke_Count']
             x = y.index
             ax.plot(x, y, color='cornflowerblue', label = 'left pokes')
         if poke_show_right:
             try:
-                y = FED.data[FED.data['Event'] == 'Poke']['Right_Poke_Count']
+                y = df[df['Event'] == 'Poke']['Right_Poke_Count']
             except:
-                y = FED.data['Right_Poke_Count']
+                y = df['Right_Poke_Count']
             x = y.index
             ax.plot(x, y, color='gold', label = 'right pokes')         
     else:
-        resampled_correct = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            df['Left_Poke_Count'] -= df['Left_Poke_Count'][0]
+            df['Right_Poke_Count'] -= df['Right_Poke_Count'][0]
+        resampled_correct = df['Correct_Poke'].dropna().resample(poke_bins)
         if poke_show_correct:
             y = resampled_correct.apply(lambda binn: (binn==True).sum())
             x = y.index
@@ -1661,11 +1685,11 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
             x = y.index
             ax.plot(x, y, color='indianred', label = 'error pokes')
         if poke_show_left:
-            y = left_right_noncumulative(FED.data, bin_size=poke_bins,side='l')
+            y = left_right_noncumulative(df, bin_size=poke_bins,side='l')
             x = y.index
             ax.plot(x, y, color='cornflowerblue', label = 'left pokes')
         if poke_show_right:
-            y = left_right_noncumulative(FED.data, bin_size=poke_bins,side='r')
+            y = left_right_noncumulative(df, bin_size=poke_bins,side='r')
             x = y.index
             ax.plot(x, y, color='gold', label = 'right pokes')
     date_format_x(ax, x[0], x[-1])
@@ -1678,7 +1702,7 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
     title = ('Pokes for ' + FED.filename)
     ax.set_title(title)
     if shade_dark:
-        shade_darkness(ax, min(FED.data.index), max(FED.data.index),
+        shade_darkness(ax, min(df.index), max(df.index),
                        lights_on=lights_on,
                        lights_off=lights_off)
     ax.legend(bbox_to_anchor=(1,1), loc='upper left')   
@@ -1727,11 +1751,16 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     else:
         ax = kwargs['ax']
+    df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()   
     if bias_style == 'correct (%)':
-        resampled = FED.data.resample(poke_bins)
+        resampled = df.groupby((pd.Grouper(freq=poke_bins)))
         y = resampled.apply(resample_get_yvals, 'poke bias (correct %)')
     elif bias_style == 'left (%)':
-        y = left_right_bias(FED.data, poke_bins)
+        y = left_right_bias(df, poke_bins)
     x = y.index
     if not dynamic_color:
         ax.plot(x, y, color = 'magenta', zorder=3)
@@ -1797,6 +1826,10 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
     color_gradients = cmap(color_gradient_divisions)
     for FED in FEDs:
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         index = df.index
         nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
         try:
@@ -1893,6 +1926,10 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 index = df.index
                 nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
                 try:
@@ -2003,6 +2040,10 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
         for fed in FEDs:
             if group in fed.group:
                 df = fed.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 nights = night_intervals(df.index, lights_on, lights_off)
                 days = night_intervals(df.index, lights_on, lights_off, 
                                        instead_days=True)
@@ -2134,6 +2175,10 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 byhour = df.groupby([df.index.hour])
                 byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
                 byhourday = df.groupby([df.index.hour,df.index.date])
@@ -2219,6 +2264,10 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     index = []
     for FED in FEDs:       
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         byhour = df.groupby([df.index.hour])
         byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
         byhourday = df.groupby([df.index.hour,df.index.date])
@@ -2308,6 +2357,10 @@ def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     all_night = []
     for FED in FEDs:
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
         nights = night_intervals(df.index, lights_on, lights_off)
         days = night_intervals(df.index, lights_on, lights_off, 
@@ -2368,6 +2421,10 @@ def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     """
     assert isinstance(FED, FED3_File),'Non FED3_File passed to battery_plot()'
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     if 'ax' not in kwargs:   
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
     else:
@@ -2382,7 +2439,7 @@ def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     date_format_x(ax, x[0], x[-1])
     ax.set_xlabel('Date')
     if shade_dark:
-        shade_darkness(ax, FED.start_time, FED.end_time,
+        shade_darkness(ax, x[0], x[-1],
                    lights_on=lights_on,
                    lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
@@ -2416,6 +2473,10 @@ def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     """
     assert isinstance(FED, FED3_File),'Non FED3_File passed to battery_plot()'
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     if 'ax' not in kwargs:   
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
     else:
@@ -2431,7 +2492,7 @@ def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     date_format_x(ax, x[0], x[-1])
     ax.set_xlabel('Date')
     if shade_dark:
-        shade_darkness(ax, FED.start_time, FED.end_time,
+        shade_darkness(ax, x[0], x[-1],
                    lights_on=lights_on,
                    lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
