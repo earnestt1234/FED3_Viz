@@ -244,6 +244,8 @@ class FED3_Viz(tk.Tk):
         self.button_abort_load = tk.Button(self.fed_buttons, text='Abort Load',
                                     command = self.escape,
                                     state=tk.DISABLED)
+        self.button_concat = tk.Button(self.fed_buttons, text='Concatenate',
+                                       command=self.concat_feds,)
         self.button_delete = tk.Button(self.fed_buttons, text='Delete',
                                        command=self.delete_FEDs,
                                        state=tk.DISABLED,
@@ -299,7 +301,9 @@ class FED3_Viz(tk.Tk):
                                     self.button_save_session:
                                         'Save the entire application state (files, groups, plots)',
                                     self.button_load_session:
-                                        'Load a session file'}
+                                        'Load a session file',
+                                    self.button_concat:
+                                        'Concatenate FED files'}
         for button in self.hover_text_one_dict.keys():
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
@@ -360,20 +364,21 @@ class FED3_Viz(tk.Tk):
                                 'Motor Turns': self.motor_turns_TK,
                                 'Day/Night Interpellet Interval Plot': self.dn_ipi_TK}   
                
-    #---PLACE WIDGETS FOR HOME TAB     
+    #---PLACE WIDGETS FOR HOME TAB
         #fed_buttons/group buttons
         self.button_load.grid(row=0,column=0,sticky='sew')
         self.button_load_folder.grid(row=1,column=0,sticky='sew')
         self.button_abort_load.grid(row=2,column=0,sticky='sew')
-        self.button_delete.grid(row=3,column=0,sticky='nsew',pady=20)
-        self.button_create_group.grid(row=4,column=0,sticky='sew')
-        self.button_delete_group.grid(row=5,column=0,sticky='sew')
-        self.button_edit_group.grid(row=6,column=0,sticky='sew')
-        self.button_save_groups.grid(row=7,column=0,sticky='sew')
-        self.button_load_groups.grid(row=8,column=0,sticky='sew')
-        self.button_save_session.grid(row=9,column=0,sticky='sew',pady=(20,0))
-        self.button_load_session.grid(row=10,column=0,sticky='sew')
-        self.button_descriptives.grid(row=11,column=0,sticky='sew',pady=(20,0))
+        self.button_concat.grid(row=3,column=0,sticky='sew')
+        self.button_delete.grid(row=4,column=0,sticky='nsew',pady=20)
+        self.button_create_group.grid(row=5,column=0,sticky='sew')
+        self.button_delete_group.grid(row=6,column=0,sticky='sew')
+        self.button_edit_group.grid(row=7,column=0,sticky='sew')
+        self.button_save_groups.grid(row=8,column=0,sticky='sew')
+        self.button_load_groups.grid(row=9,column=0,sticky='sew')
+        self.button_save_session.grid(row=10,column=0,sticky='sew',pady=(20,0))
+        self.button_load_session.grid(row=11,column=0,sticky='sew')
+        self.button_descriptives.grid(row=12,column=0,sticky='sew',pady=(20,0))
         
         #labels
         self.home_buttons_help.grid(row=0,column=0,sticky='nsw',
@@ -630,7 +635,7 @@ class FED3_Viz(tk.Tk):
         self.loadduplicates_checkbox_val = tk.BooleanVar()
         self.loadduplicates_checkbox_val.set(True)
         self.loadduplicates_checkbox = ttk.Checkbutton(self.general_settings_frame,
-                                                      text='Don\'t load a FED if its filename is already loaded',
+                                                      text='Don\'t load a file if a matching filename is already loaded',
                                                       var=self.loadduplicates_checkbox_val)
         self.overwrite_checkbox_val = tk.BooleanVar()
         self.overwrite_checkbox_val.set(False)
@@ -1143,6 +1148,9 @@ class FED3_Viz(tk.Tk):
         self.update_group_view()
         self.update_buttons_home()
         self.loading=False
+    
+    def concat_feds(self):
+        pass
     
     def delete_FEDs(self):
         to_delete = [int(i) for i in self.files_spreadsheet.selection()]

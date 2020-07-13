@@ -172,4 +172,13 @@ class FED3_File():
         counts.  Catches some errors with improper event logging."""
         events = ["Pellet" if v else 'Poke' for v in self.data['Binary_Pellets']]
         self.data['Event'] = events
-            
+     
+def is_concatable(feds):
+    sorted_feds = sorted(feds, key=lambda x: x.start_time)
+    for i, file in enumerate(sorted_feds[1:]):
+        if file.start_time <= sorted_feds[i-1].end_time:
+            return False
+    return True
+        
+def fed_concat(feds):
+    pass
