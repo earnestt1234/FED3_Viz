@@ -55,12 +55,15 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Deleting Groups](#deleting-groups)
   - [Saving Groups](#saving-groups)
 - [Sessions](#sessions)
+- [Summary Stats](#summary-stats)
 - [Plots](#plots)
   - [Single Pellet Plot](#single-pellet-plot)
   - [Multi Pellet Plot](#multi-pellet-plot)
   - [Average Pellet Plot](#average-pellet-plot)
   - [Interpellet Interval Plot](#interpellet-interval-plot)
   - [Group Interpellet Interval Plot](#group-interpellet-interval-plot)
+  - [Meal Size Histogram](#meal-size-histogram)
+  - [Group Meal Size Histogram](#group-meal-size-histogram)
   - [Retrieval Time Plot](#retrieval-time-plot)
   - [Multi Retrieval Time Plot](#multi-retrieval-time-plot)
   - [Average Retrieval Time Plot](#average-retrieval-time-plot)
@@ -76,7 +79,6 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Chronogram (Heatmap)](#chronogram-heatmap)
   - [Diagnostic Plot](#diagnostic-plot)
 - [Managing Plots](#managing-plots)
-  
   - [Renaming Plots](#renaming-plots)
   - [New Window](#new-window)
   - [Navigation Toolbar](#navigation-toolbar)
@@ -93,7 +95,10 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
 - [FAQ](#faq)
 - [Appendix](#appendix)
 - [Averaging Methods Diagram](#averaging-methods-diagram)
+  - [FED3 Arduino Versions](#fed3-arduino-versions)
+  - [Averaging Methods Diagram](#averaging-methods-diagram)
   - [Plot Column Dependencies](#plot-column-dependencies)
+  - [Meals](#meals)
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
@@ -295,6 +300,14 @@ Session files created on one computer can be opened on another,  but there will 
 
 <div style="page-break-after: always; break-after: page;"></div>
 
+# Summary Stats
+
+The **Summary Stats Button** can be used to create and save table of descriptive statistics for FED3 Files.   These statistics will provide information about pellets, pokes, meals, and other diagnostic properties of the recording.  Many of the statistics are presented with a total value as well as the values isolated to the daytime or nighttime.  Summary Stats can be created either for selected files from the File View, all loaded Groups, or selected Groups from the Group View; if multiple of these options are possible, you can select the method to use with the menu that pops up when Summary Stats is pressed.  The statistics will include the individual values for each file included, as well as the average and standard deviation.  Results are saved in CSV format.
+
+**Note** that some options (the light/dark cycle and the Meal Analyses settings) will affect the computed values.  See the [Meals](#meals) section of the Appendix for help with the latter.
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
 # Plots
 
 The general steps to create a plot are:
@@ -374,8 +387,9 @@ Average Pellet Plots average the pellets retrieved for each file in a Group.  Ea
 *Combines all highlighted files into a single plot* :bar_chart:
 
 <p align="center">
-	<img src="img/manual/ipi_kde.png" width="500">
+	<img src="img/manual/ipi_kde.png" width="350">
 </p>
+
 
 The Interpellet Interval Plot is a histogram where the values counted are the time between each pellet retrieval event.  This plot can give you a sense of how the mouse feeds or earns pellets, and it show changes in meal or eating frequencies.
 
@@ -391,10 +405,27 @@ By default, Interpellet Interval Plots use logarithmically spaced x-axes (in min
 *Uses groups* :paperclip:
 
 <p align="center">
-	<img src="img/manual/group_ipi.png" width="500">
+	<img src="img/manual/group_ipi.png" width="350">
 </p>
 
+
 Same as the Interpellet Interval Plot (see above), except this version plots groups as separate curves.  The Interpellet Intervals from the files of every group are appended to one array, and then plotted.  The KDE line and logarithmic axis can also be turned on or off (see above).
+
+### Meal Size Histogram
+
+<p align="center">
+	<img src="img/manual/meal_hist.png" width="500">
+</p>
+
+This plot creates a histogram where the values are the number of pellets in each meal of the recording.  In addition to the meal computation settings (see [Meals](#meals) in the Appendix), there is a setting **Settings > Meal Analyses > Normalize Meal Histogram Counts** which can be used to normalize the histogram such that the value in each bin represents proportion of meals received of that length.
+
+### Group Meal Size Histogram
+
+<p align="center">
+	<img src="img/manual/group_meal_hist.png" width="500">
+</p>
+
+This plot creates a histogram of meal sizes for Grouped devices, with each Group's values being concatenated to each other.  The same options apply as for the regular Meal Size Histogram.
 
 ### Retrieval Time Plot
 
@@ -563,7 +594,7 @@ Note that this plot type does not use Groups; it plots what is selected in the F
 <p align="center">
 	<img src="img/examples/daynightplot.png" width="500">
 </p>
-Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods; those values represent the individual FED data points, and they are averaged to create the value for the bar.  Note that both individual values and error bars can be shown for these plots.
+Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods and divides by the number of day/night periods completed; those values represent the individual FED data points, and they are averaged to create the value for the bar.  Note that both individual values and error bars can be shown for these plots.
 
 ### Day/Night Interpellet Interval Plot
 
@@ -815,3 +846,13 @@ This table shows which columns of a FED3 data file are used by FED3 Viz to creat
 | Battery Life Plot                                            | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    | :heavy_check_mark:  |                    |
 | Motor Turns Plot                                             | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    |                     | :heavy_check_mark: |
 
+<div style="page-break-after: always; break-after: page;"></div> 
+
+### Meals
+
+"Meals" are a construct intending to capture the pattern of activity where multiple pellets are received from the FED in quick succession.  We have seen that mice sometimes tend to eat a few pellets in a small amount of time, but other times tend to leave long delays in between each pellet retrieval.  This pattern can be seen in the Interpellet Interval Plots shown in this manual.  
+
+Meals are assigned to pellets based on interpellet intervals.  There are a few features in FED3 Viz (Meal Size Histograms and Summary Statistics) which deal with meals, and they have two tweakable parameters under **Settings > Meal Analyses**:
+
+- **Maximum interpellet interval within meals (minutes)**: This sets how much time can pass before the program considers any meal to be finished.  This parameter can be seen as a timer: when a pellet is received, the timer starts.  If the next pellet is retrieved before the timer ends, it will be grouped into a meal with the previous one (depending on the minimum pellets in a meal option); the timer then restarts.  The higher this value is, the fewer unique meals will be assigned (and more pellets will be in each meal). 
+- **Minimum pellets in a meal**: This parameter sets how many pellets must be retrieved (within the maximum interpellet interval of each other) to be considered a meal.  If this value is 1, all pellets will be labeled with a meal number.  When the value is higher, some pellets may be labeled as not being part of a meal.

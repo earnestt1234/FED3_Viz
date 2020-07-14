@@ -1301,7 +1301,7 @@ def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
     for series, fed in zip(sizes,FEDs):
         sns.distplot(series,bins=bins,kde=False,ax=ax,label=fed.basename,
                      norm_hist=norm_meals,)
-    ax.set_yticks(range(1,longest_meal+1))
+    ax.set_xticks(range(1,longest_meal+1))
     if len(FEDs) < 10:
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()

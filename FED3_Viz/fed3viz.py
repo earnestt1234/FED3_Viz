@@ -305,7 +305,9 @@ class FED3_Viz(tk.Tk):
                                     self.button_load_session:
                                         'Load a session file',
                                     self.button_concat:
-                                        'Combine files with non-overlapping dates into a single file'}
+                                        'Combine files with non-overlapping dates into a single file',
+                                    self.button_descriptives:
+                                        'Create a table of descriptive statistics for FED3 files'}
         for button in self.hover_text_one_dict.keys():
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
@@ -559,9 +561,9 @@ class FED3_Viz(tk.Tk):
                                             text='Meal Analyses',
                                             font=self.section_font)
         self.mealdelay_label = tk.Label(self.meal_settings_frame,
-                                        text='Maximum meal length (minutes)')
+                                        text='Maximum interpellet interval within meals (minutes)')
         self.meal_pelletmin_label = tk.Label(self.meal_settings_frame,
-                                             text='Minimum pellets in meal')
+                                             text='Minimum pellets in a meal')
         self.retrieval_label = tk.Label(self.retrieval_settings_frame,
                                         text='Retrieval Time',
                                         font=self.section_font)
