@@ -101,7 +101,9 @@ class FED3_File():
     
     def add_interpellet_intervals(self):
         """Compute time between each pellet retrieval.
-        Stored in new Interpellet_Intervals column."""
+        Stored in new Interpellet_Intervals column.  When loading
+        concatenated files (from load.fed_concat()), first IPIs for
+        the concatenated files are skipped."""
         inter_pellet = np.array(np.full(len(self.data.index),np.nan))
         c=0
         for i,val in enumerate(self.data['Binary_Pellets']):         
@@ -114,11 +116,11 @@ class FED3_File():
                     c = i
         self.data['Interpellet_Intervals'] = inter_pellet
         if 'Concat_#' in self.data.columns:
-            #thanks to this answer https://stackoverflow.com/a/47115490/13386979
-            dropped = self.data.dropna(subset=['Interpellet_Intervals'])
-            pos = dropped.index.to_series().groupby(self.data['Concat_#']).first()
-            print(pos)
-            self.data.loc[pos,'Interpellet_Intervals'] = np.nan
+            if not any(self.data.index.duplicated()): #this can't do duplicate indexes
+                #thanks to this answer https://stackoverflow.com/a/47115490/13386979
+                dropped = self.data.dropna(subset=['Interpellet_Intervals'])
+                pos = dropped.index.to_series().groupby(self.data['Concat_#']).first()
+                self.data.loc[pos[1:],'Interpellet_Intervals'] = np.nan
     
     def add_correct_pokes(self):
         """Compute whether each poke was correct or not.  This process returns
@@ -148,7 +150,7 @@ class FED3_File():
         """Find the recording mode of the file.  Returns the mode as a string."""
         mode = 'Unknown'
         column = pd.Series()
-        for name in ['FR_Ratio',' FR_Ratio','Session_Type']:
+        for name in ['FR_Ratio',' FR_Ratio','Mode','Session_Type']:
             if name in self.data.columns:
                 column = self.data[name]
         if not column.empty:
@@ -238,24 +240,22 @@ def fed_concat(feds):
         for name in original_names:
             if name not in cols:
                 original_names.remove(name)
+    offsets = {}
     sorted_feds = sorted(feds, key=lambda x: x.start_time)
     for i, fed in enumerate(sorted_feds):
         df = fed.data.copy().loc[:,original_names]
         if i==0:
             df['Concat_#'] = i
             output.append(df)
-            pellet_offset = df['Pellet_Count'].max()
-            lpoke_offset = df['Left_Poke_Count'].max()
-            rpoke_offset = df['Right_Poke_Count'].max()
+            for col in['Pellet_Count', 'Left_Poke_Count','Right_Poke_Count']:
+                if col in df.columns:
+                    offsets[col] = df[col].max()
         else:
             df['Concat_#'] = i
-            df['Pellet_Count'] += pellet_offset
-            df['Left_Poke_Count'] += lpoke_offset
-            df['Right_Poke_Count'] += rpoke_offset
+            for name, offset in offsets.items():
+                df[name] += offset
+                offsets[name] = df[name].max()
             output.append(df)
-            pellet_offset = df['Pellet_Count'].max()
-            lpoke_offset = df['Left_Poke_Count'].max()
-            rpoke_offset = df['Right_Poke_Count'].max()
     output = pd.concat(output)
     if len(set([i.mode for i in feds])) == 1:
         output.loc[:,'Mode'] = feds[0].mode

@@ -1,5 +1,5 @@
 ,Values
-date_filter_val,True
+date_filter_val,False
 date_filter_s_days,2020-06-11
 date_filter_e_days,2020-06-13
 date_filter_s_hour,10 pm
@@ -12,10 +12,10 @@ abs_group,True
 skip_duplicates,True
 overwrite,False
 weirdwarn,True
-pellet_values,Cumulative
-pellet_bins,1 hour
+pellet_values,Frequency
+pellet_bins,3 hours
 pellet_color,blue
-pellet_align,True
+pellet_align,False
 average_error,SEM
 average_bins,3 hours
 load_last_used,True
@@ -27,7 +27,7 @@ circ_error,SEM
 circ_show_indvl,True
 kde,True
 logx,True
-norm_meals,True
+norm_meals,False
 meal_pellet_minimum,1
 meal_duration,1
 retrieval_threshold,60

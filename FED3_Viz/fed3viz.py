@@ -26,7 +26,7 @@ from tkcalendar import DateEntry
 from _version import __version__, __date__
 from fed_inspect import fed_inspect
 from getdata import getdata
-from load.load import FED3_File, fed_concat
+from load.load import FED3_File, fed_concat, FedCannotConcat
 from plots import plots
 
 class FED_Plot():
@@ -194,9 +194,10 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_pellet, 4, text='Interpellet Interval')
         self.plot_treeview.insert(self.ps_pellet, 5, text='Group Interpellet Interval')
         self.plot_treeview.insert(self.ps_pellet, 6, text='Meal Size Histogram')
-        self.plot_treeview.insert(self.ps_pellet, 7, text='Retrieval Time Plot')
-        self.plot_treeview.insert(self.ps_pellet, 8, text='Multi Retrieval Time Plot')
-        self.plot_treeview.insert(self.ps_pellet, 9, text='Average Retrieval Time Plot')
+        self.plot_treeview.insert(self.ps_pellet, 7, text='Group Meal Size Histogram')
+        self.plot_treeview.insert(self.ps_pellet, 8, text='Retrieval Time Plot')
+        self.plot_treeview.insert(self.ps_pellet, 9, text='Multi Retrieval Time Plot')
+        self.plot_treeview.insert(self.ps_pellet, 10, text='Average Retrieval Time Plot')
         self.ps_poke = self.plot_treeview.insert("", 2, text='Pokes')
         self.plot_treeview.insert(self.ps_poke, 1, text='Single Poke Plot')
         self.plot_treeview.insert(self.ps_poke, 2, text='Average Poke Plot (Correct)')
@@ -245,7 +246,8 @@ class FED3_Viz(tk.Tk):
                                     command = self.escape,
                                     state=tk.DISABLED)
         self.button_concat = tk.Button(self.fed_buttons, text='Concatenate',
-                                       command=self.concat_feds,)
+                                       command=self.concat_feds,
+                                       state=tk.DISABLED)
         self.button_delete = tk.Button(self.fed_buttons, text='Delete',
                                        command=self.delete_FEDs,
                                        state=tk.DISABLED,
@@ -303,7 +305,7 @@ class FED3_Viz(tk.Tk):
                                     self.button_load_session:
                                         'Load a session file',
                                     self.button_concat:
-                                        'Concatenate FED files'}
+                                        'Combine files with non-overlapping dates into a single file'}
         for button in self.hover_text_one_dict.keys():
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
@@ -314,8 +316,9 @@ class FED3_Viz(tk.Tk):
                                 'Multi Pellet Plot':'Plot pellets received for multiple devices (no averaging)',
                                 'Average Pellet Plot':'Plot average pellets received for Grouped devices (groups make individual curves)',
                                 'Interpellet Interval':'Plot a histogram of intervals between pellet retrievals',
-                                'Group Interpellet Interval':'Plot a histogram of intervals between pellet retrievals for Groups',
+                                'Group Interpellet Interval':'Plot a histogram of intervals between pellet retrievals for Grouped files',
                                 'Meal Size Histogram':'Plot histogram of number of pellets in a meal',
+                                'Group Meal Size Histogram':'Plot a histogram of the number of pellets in a meal for Grouped files',
                                 'Single Poke Plot':'Plot the amount of pokes for one device',
                                 'Average Poke Plot (Correct)':'Plot average correct pokes for Grouped devices (Groups make individual curves)',
                                 'Average Poke Plot (Error)':'Plot average error pokes for Grouped devices (Groups make individual curves)',
@@ -344,6 +347,7 @@ class FED3_Viz(tk.Tk):
                                 'Interpellet Interval':self.interpellet_plot_TK,
                                 'Group Interpellet Interval':self.group_ipi_TK,
                                 'Meal Size Histogram':self.meal_histo_TK,
+                                'Group Meal Size Histogram':self.group_meal_histo_TK,
                                 'Day/Night Plot':self.daynight_plot_TK,
                                 'Single Poke Plot':self.poke_plot_single_TK,
                                 'Average Poke Plot (Correct)':self.avg_plot_TK,
@@ -1150,7 +1154,24 @@ class FED3_Viz(tk.Tk):
         self.loading=False
     
     def concat_feds(self):
-        pass
+        to_concat = [self.LOADED_FEDS[int(i)] for i in self.files_spreadsheet.selection()]
+        if to_concat:
+            try:
+                new = fed_concat(to_concat)
+                savepath = tk.filedialog.asksaveasfilename(title='Select where to save new file',
+                                                           defaultextension='.csv',
+                                                           filetypes = [('Comma-Separated Values', '*.csv'),
+                                                                        ('Excel', '*.xslx')])
+                if savepath:
+                    new.to_csv(savepath)
+                    new_FED = FED3_File(savepath)
+                    self.LOADED_FEDS.append(new_FED)
+                    self.update_file_view()
+                    self.update_group_view()
+                    self.update_buttons_home()            
+            except FedCannotConcat:
+                self.raise_fed_concat_error()
+                return
     
     def delete_FEDs(self):
         to_delete = [int(i) for i in self.files_spreadsheet.selection()]
@@ -1574,6 +1595,41 @@ class FED3_Viz(tk.Tk):
         self.PLOTS[fig_name] = new_plot
         self.resize_plot(new_plot)
         plots.meal_size_histogram(**arg_dict)
+        self.display_plot(new_plot)
+    
+    def group_meal_histo_TK(self):
+        args_dict = self.get_current_settings_as_args()
+        if self.allgroups_val.get():
+            groups = self.GROUPS
+        else:
+            ints = [int(i) for i in self.group_view.curselection()]
+            groups = [self.GROUPS[i] for i in ints]
+        args_dict['groups'] = groups
+        feds = []
+        for fed in self.LOADED_FEDS:
+            for group in fed.group:
+                if group in groups:
+                    feds.append(fed)
+                    break
+        args_dict['FEDs'] = feds
+        if self.date_filter_val.get(): 
+            s,e = self.get_date_filter_dates()
+            args_dict['date_filter'] = (s,e)
+            for fed in feds:     
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
+        args_dict['ax'] = self.AX
+        plotdata = getdata.grouped_meal_size_histogram(**args_dict)
+        fig_name = self.create_plot_name('Group Meal Histogram Plot')      
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.grouped_meal_size_histogram,
+                            arguments=args_dict, plotdata=plotdata,
+                            x=7, y=3.5)
+        self.PLOTS[fig_name] = new_plot
+        self.resize_plot(new_plot)
+        plots.grouped_meal_size_histogram(**args_dict)
         self.display_plot(new_plot)
     
     def daynight_plot_TK(self):
@@ -2023,7 +2079,7 @@ class FED3_Viz(tk.Tk):
                           'Average Poke Plot (Left)','Average Poke Plot (Right)',
                           'Average Poke Bias Plot (Correct %)','Average Poke Bias Plot (Left %)',
                           'Group Interpellet Interval','Group Breakpoint Plot',
-                          'Average Retrieval Time Plot']:
+                          'Average Retrieval Time Plot', 'Group Meal Size Histogram']:
             #if the all groups box is checked
             if self.allgroups_val.get():
                 #if there are any groups
@@ -2075,9 +2131,11 @@ class FED3_Viz(tk.Tk):
         self.update_create_plot_button()
         #if there are feds selected
         if self.files_spreadsheet.selection():
+            self.button_concat.configure(state=tk.NORMAL)
             self.button_delete.configure(state=tk.NORMAL)
             self.button_create_group.configure(state=tk.NORMAL)
         else:
+            self.button_concat.configure(state=tk.DISABLED)
             self.button_delete.configure(state=tk.DISABLED)
             self.button_create_group.configure(state=tk.DISABLED)
         #if groups are selected
@@ -2872,7 +2930,17 @@ class FED3_Viz(tk.Tk):
             text += '\n  - ' + fed.basename
         warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
         warning.pack(padx=(20,20),pady=(20,20))
-        
+    
+    def raise_fed_concat_error(self):
+        warn_window = tk.Toplevel(self)
+        warn_window.grab_set()
+        warn_window.title('Error: cannot concatenate')
+        if not platform.system() == 'Darwin':
+            warn_window.iconbitmap('img/exclam.ico')
+        text = ("The selected FEDs have overlapping dates and could not be concatenated")                
+        warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
+        warning.pack(padx=(20,20),pady=(20,20))
+    
     #---RIGHT CLICK FUNCS
     def r_raise_menu(self, event):
         widget = event.widget

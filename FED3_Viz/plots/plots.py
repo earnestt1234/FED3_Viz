@@ -29,6 +29,22 @@ register_matplotlib_converters()
 #     pass
 
 def date_filter_okay(df, start, end):
+    """
+    Verify that a DataFrame has data in between 2 dates
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        data to check
+    start : datetime
+        start of the date filter
+    end : datetime
+        end of the date filter
+
+    Returns
+    -------
+    Bool
+    """
     check = df[(df.index >= start) &
             (df.index <= end)].copy()
     return not check.empty
@@ -73,6 +89,25 @@ def hours_between(start, end, convert=True):
     return pd.date_range(rounded_start,rounded_end,freq='1H')
 
 def is_day_or_night(time, period, lights_on=7, lights_off=19):
+    """
+    Check if a datetime occured at day or night
+
+    Parameters
+    ----------
+    time : datetime or pandas.Timestamp
+        time to check
+    period : str
+        'day' or 'night', which period to check if the date is part of,
+        based on the lights_on and lights_off arguments
+    lights_on : int, optional
+        Hour of the day (0-23) when lights turn on. The default is 7.
+    lights_off : int, optional
+         Hour of the day (0-23) when lights turn off. The default is 19.
+
+    Returns
+    -------
+    Bool
+    """
     lights_on = datetime.time(hour=lights_on)
     lights_off = datetime.time(hour=lights_off)
     val = False
@@ -85,6 +120,27 @@ def is_day_or_night(time, period, lights_on=7, lights_off=19):
     return val if period=='night' else not val
 
 def get_daynight_count(start_time, end_time, lights_on=7, lights_off=9):
+    """
+    Compute the (fractional) number of completed light and dark periods between
+    two dates.  Used for normalizing values grouped by day & nightime.
+
+    Parameters
+    ----------
+    start_time : datetime
+        starting time
+    end_time : datetime
+        ending time
+    lights_on : int, optional
+        Hour of the day (0-23) when lights turn on. The default is 7.
+    lights_off : int, optional
+        Hour of the day (0-23) when lights turn off. The default is 19.
+
+    Returns
+    -------
+    dict
+        dictionary with keys "day" and "night", values are the
+        number of completed periods for each key.
+    """
     cuts = []
     cuts.append(start_time)
     loop_time = start_time.replace(minute=0,second=0)
@@ -450,7 +506,33 @@ def left_right_noncumulative(df, bin_size, side, version='ondatetime', starttime
     diff = diff.fillna(0)
     return diff
   
-def label_meals(ipi, meal_pellet_minimum=1, meal_duration=1): 
+def label_meals(ipi, meal_pellet_minimum=1, meal_duration=1):
+    """
+    Assign numbers to pellets based on their interpellet intervals (time passsed
+    since the previos pellet).
+
+    Parameters
+    ----------
+    ipi : array
+        An array of interpellet intervals (without missing values!)
+    meal_pellet_minimum : int, optional
+        The minimum pellets required (within the meal_duration) to constitute
+        a meal. The default is 1 (with 1, all pellets are assigned a meal
+        regardless of the elapsed time between them).
+    meal_duration : int, optional
+        The amount of time (in minutes) that can pass before a new meal is
+        assigned. The default is 1.  Pellets with an IPI below the meal_duration
+        will either be assigned to the meal of the previous pellet (if there are
+        enough previous/following pellets to pass the meal_pellet_minimum), to a new meal
+        (if there are enough following pellets to pass the meal_pellet_minimum), or
+        to None (if there are not enough surrounding pellets to surpass the
+        meal_pellet_minimum)/
+
+    Returns
+    -------
+    pandas.Series
+        Series of meals labeled by meal number
+    """
     output = []
     meal_no = 1
     c = 0
@@ -498,6 +580,9 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -554,6 +639,9 @@ def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -601,6 +689,9 @@ def pellet_plot_multi_aligned(FEDs, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -674,6 +765,9 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -734,6 +828,9 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -762,8 +859,7 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
         times = [(time/np.timedelta64(1,'h')) for time in times]      
         x = times
         y = df['Binary_Pellets'] 
-        ax.bar(x, y, width=(x[1]-x[0]),
-               align='edge', alpha=.8, label=file.filename)
+        ax.plot(x, y, alpha=.8, label=file.filename)
         if max(times) > max_time:
             max_time = max(times)
     ax.set_xlabel('Time (h)')
@@ -803,6 +899,9 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -828,8 +927,8 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
         df = df.resample(pellet_bins,base=0).sum()
         x = df.index
         y = df['Binary_Pellets']
-        ax.bar(x, y, label=file.filename,
-               alpha=.8,align='edge',width=(x[1]-x[0]))           
+        ax.plot(x, y, label=file.filename,
+               alpha=.8,)         
         if max(x) > max_date:
             max_date = max(x)
         if min(x) < min_date:
@@ -867,6 +966,9 @@ def interpellet_interval_plot(FEDs, kde, logx, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -937,6 +1039,9 @@ def group_interpellet_interval_plot(FEDs, groups, kde, logx, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1014,6 +1119,9 @@ def retrieval_time_single(FED, retrieval_threshold, shade_dark,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1045,6 +1153,8 @@ def retrieval_time_single(FED, retrieval_threshold, shade_dark,
         ax2.set_ylim(0,retrieval_threshold)
     ax.set_title('Pellets and Retrieval Times for ' + FED.filename)
     date_format_x(ax, df.index[0], df.index[-1])
+    x_offset = (x1[-1] - x1[0])*.05
+    ax.set_xlim(x1[0] - x_offset, x1[-1] + x_offset)
     ax.set_xlabel('Time')
     if shade_dark:
         shade_darkness(ax,min(df.index), max(df.index),
@@ -1072,6 +1182,9 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1126,6 +1239,34 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
 
 def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
                         norm_meals, **kwargs):
+    """
+    FED3 Viz: Create a histogram of meal sizes for multiple devices.
+    Each file is shown as a separate curve.
+    
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    meal_pellet_minimum : int
+        minimum pellets to constitute a meal
+    meal_duration : int
+        amount of time to allow before a new meal is assigned
+    norm_meals : bool
+        Whether or not to normalize the histogram
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     for file in FEDs:
@@ -1156,11 +1297,86 @@ def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
     longest_meal = max(meal_maxes) if meal_maxes else 5
     if pd.isna(longest_meal):
         longest_meal = 5
-    bins = range(1,longest_meal+1)
+    bins = range(1,longest_meal+2)
     for series, fed in zip(sizes,FEDs):
         sns.distplot(series,bins=bins,kde=False,ax=ax,label=fed.basename,
                      norm_hist=norm_meals,)
+    ax.set_yticks(range(1,longest_meal+1))
     if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
+    return fig if 'ax' not in kwargs else None
+
+def grouped_meal_size_histogram(FEDs, groups, meal_pellet_minimum, meal_duration,
+                                norm_meals, **kwargs):
+    """
+    FED3 Viz: Create a histogram of meal sizes for Grouped devices.
+    Each Group is shown as a separate curve; meal sizes within each
+    Group are concatenated. 
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    meal_pellet_minimum : int
+        minimum pellets to constitute a meal
+    meal_duration : int
+        amount of time to allow before a new meal is assigned
+    norm_meals : bool
+        Whether or not to normalize the histogram
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for file in FEDs:
+        assert isinstance(file, FED3_File),'Non FED3_File passed to retrieval_time_multi()'
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
+    ax.set_title('Meal Size Histogram')
+    label = 'Probability' if norm_meals else 'Count'
+    ax.set_ylabel(label)
+    ax.set_xlabel('Meal Size (# of Pellets)')
+    if norm_meals:
+        ax.set_ylim(0,1)
+        ax.set_yticks([0,.2,.4,.6,.8,1.0])    
+    sizes = []
+    for group in groups:
+        fed_vals = []
+        for fed in FEDs:
+            if group in fed.group:
+                df = fed.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
+                meals = label_meals(df['Interpellet_Intervals'].dropna(),
+                                    meal_pellet_minimum=meal_pellet_minimum,
+                                    meal_duration=meal_duration)
+                fed_vals += list(meals.value_counts())
+        sizes.append(fed_vals)
+    meal_maxes = [np.nanmax(s) for s in sizes]
+    longest_meal = max(meal_maxes) if meal_maxes else 5
+    if pd.isna(longest_meal):
+        longest_meal = 5
+    bins = range(1,longest_meal+2)
+    for series, group in zip(sizes,groups):
+        sns.distplot(series,bins=bins,kde=False,ax=ax,label=group,
+                     norm_hist=norm_meals,)
+    ax.set_xticks(range(1, longest_meal+1))
+    if len(groups) < 10:
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()
     return fig if 'ax' not in kwargs else None
@@ -1201,6 +1417,9 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1337,6 +1556,9 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1468,6 +1690,9 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1611,6 +1836,9 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1739,6 +1967,9 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1809,6 +2040,9 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1903,6 +2137,9 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2014,6 +2251,9 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2150,6 +2390,9 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2247,6 +2490,9 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
             within the GUI
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2325,6 +2571,10 @@ def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -2412,7 +2662,9 @@ def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
-            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2464,7 +2716,9 @@ def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
-            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2501,6 +2755,30 @@ def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
 #---Stats
 def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
                 motor_turns_thresh=10, lights_on=7, lights_off=19):
+    """
+    FED3 Viz: generate a DataFrame of summary stats for multiple feds
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    meal_pellet_minimum : int
+        minimum pellets to constitute a meal
+    meal_duration : int
+        amount of time to allow before a new meal is assigned
+    motor_turns_thresh : int, optional
+        Threshold of motor turns to count how many have surpassed. The default is 10.
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+
+    Returns
+    -------
+    output : pandas.DataFrame
+        table of summary statistics for each file, with average and 
+        standard deviation for all files
+    """
     if not isinstance(FEDs, list):
         FEDs = [FEDs]
     output_list = []

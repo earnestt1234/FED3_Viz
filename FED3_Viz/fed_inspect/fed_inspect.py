@@ -40,7 +40,7 @@ date_format_funcs = ['pellet_plot_single','pellet_freq_single',
                      'pellet_freq_multi_unaligned','retrieval_time_single',
                      'battery_plot','motor_plot']
 pr_funcs = ['pr_plot','group_pr_plot']
-meal_funcs = ['meal_size_histogram']
+meal_funcs = ['meal_size_histogram','grouped_meal_size_histogram']
 
 def add_quotes(string):
     output = '"' + string + '"'

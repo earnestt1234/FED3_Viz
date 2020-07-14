@@ -393,6 +393,10 @@ def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
     sizes = []
     for fed in FEDs:
         df = fed.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         meals = label_meals(df['Interpellet_Intervals'].dropna(),
                             meal_pellet_minimum=meal_pellet_minimum,
                             meal_duration=meal_duration)
@@ -401,7 +405,7 @@ def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
     longest_meal = max(meal_maxes) if meal_maxes else 5
     if pd.isna(longest_meal):
         longest_meal = 5
-    bins = range(1,longest_meal+1)
+    bins = range(1,longest_meal+2)
     for series, fed in zip(sizes,FEDs):
         #made to not disrupt fig in app            
         fig = plt.figure()
@@ -411,6 +415,45 @@ def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
         bar_x = [v.get_x() for v in plot.patches]
         bar_h = [v.get_height() for v in plot.patches]
         bar_dic = {fed.filename:bar_h}
+        bar_df = pd.DataFrame(bar_dic, index=bar_x)
+        output = output.join(bar_df, how='outer')
+        plt.close()
+    return output
+
+def grouped_meal_size_histogram(FEDs, groups, meal_pellet_minimum, meal_duration,
+                                norm_meals, **kwargs):
+    output = pd.DataFrame()
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    sizes = []
+    for group in groups:
+        fed_vals = []
+        for fed in FEDs:
+            if group in fed.group:
+                df = fed.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
+                meals = label_meals(df['Interpellet_Intervals'].dropna(),
+                                    meal_pellet_minimum=meal_pellet_minimum,
+                                    meal_duration=meal_duration)
+                fed_vals += list(meals.value_counts())
+        sizes.append(fed_vals)
+    meal_maxes = [np.nanmax(s) for s in sizes]
+    longest_meal = max(meal_maxes) if meal_maxes else 5
+    if pd.isna(longest_meal):
+        longest_meal = 5
+    bins = range(1,longest_meal+2)
+    for series, group in zip(sizes,groups):
+        #made to not disrupt fig in app            
+        fig = plt.figure()
+        plt.clf()
+        plot = sns.distplot(series,bins=bins,kde=False,label=group,
+                            norm_hist=norm_meals,)
+        bar_x = [v.get_x() for v in plot.patches]
+        bar_h = [v.get_height() for v in plot.patches]
+        bar_dic = {group:bar_h}
         bar_df = pd.DataFrame(bar_dic, index=bar_x)
         output = output.join(bar_df, how='outer')
         plt.close()
