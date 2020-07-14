@@ -113,6 +113,12 @@ class FED3_File():
                                        self.data.index[c]).total_seconds()/60
                     c = i
         self.data['Interpellet_Intervals'] = inter_pellet
+        if 'Concat_#' in self.data.columns:
+            #thanks to this answer https://stackoverflow.com/a/47115490/13386979
+            dropped = self.data.dropna(subset=['Interpellet_Intervals'])
+            pos = dropped.index.to_series().groupby(self.data['Concat_#']).first()
+            print(pos)
+            self.data.loc[pos,'Interpellet_Intervals'] = np.nan
     
     def add_correct_pokes(self):
         """Compute whether each poke was correct or not.  This process returns
@@ -173,12 +179,84 @@ class FED3_File():
         events = ["Pellet" if v else 'Poke' for v in self.data['Binary_Pellets']]
         self.data['Event'] = events
      
+class FedCannotConcat(Exception):
+    """Error when FEDs can't be concatendated"""
+    pass
+
 def is_concatable(feds):
+    """
+    Determines whether or not FED3_Files can be concatenated, (based on whether
+    their start and end times overlap).
+
+    Parameters
+    ----------
+    feds : array
+        an array of FED3_Files
+
+    Returns
+    -------
+    bool
+
+    """
     sorted_feds = sorted(feds, key=lambda x: x.start_time)
-    for i, file in enumerate(sorted_feds[1:]):
+    for i, file in enumerate(sorted_feds[1:], start=1):
         if file.start_time <= sorted_feds[i-1].end_time:
             return False
     return True
         
 def fed_concat(feds):
-    pass
+    """
+    Concatenates the data of multiple FED3_Files into a single DataFrame.
+    It will only contain the default FED3 columns, but loading it into
+    FED3 Viz can generate additional columns and metrics.
+
+    Parameters
+    ----------
+    feds : array
+        an array of FED3_Files
+
+    Returns
+    -------
+    pandas.DataFrame
+
+    """
+    if not is_concatable(feds):
+        raise FedCannotConcat('FED file dates overlap, cannot concat')
+    output=[]
+    original_names = ['Device_Number',
+                      'Battery_Voltage',
+                      'Motor_Turns',
+                      'Session_Type',
+                      'Event',
+                      'Active_Poke',
+                      'Left_Poke_Count',
+                      'Right_Poke_Count',
+                      'Pellet_Count',
+                      'Retrieval_Time',]
+    for fed in feds:
+        cols = fed.data.columns
+        for name in original_names:
+            if name not in cols:
+                original_names.remove(name)
+    sorted_feds = sorted(feds, key=lambda x: x.start_time)
+    for i, fed in enumerate(sorted_feds):
+        df = fed.data.copy().loc[:,original_names]
+        if i==0:
+            df['Concat_#'] = i
+            output.append(df)
+            pellet_offset = df['Pellet_Count'].max()
+            lpoke_offset = df['Left_Poke_Count'].max()
+            rpoke_offset = df['Right_Poke_Count'].max()
+        else:
+            df['Concat_#'] = i
+            df['Pellet_Count'] += pellet_offset
+            df['Left_Poke_Count'] += lpoke_offset
+            df['Right_Poke_Count'] += rpoke_offset
+            output.append(df)
+            pellet_offset = df['Pellet_Count'].max()
+            lpoke_offset = df['Left_Poke_Count'].max()
+            rpoke_offset = df['Right_Poke_Count'].max()
+    output = pd.concat(output)
+    if len(set([i.mode for i in feds])) == 1:
+        output.loc[:,'Mode'] = feds[0].mode
+    return output

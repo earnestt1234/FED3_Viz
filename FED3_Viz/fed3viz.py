@@ -26,7 +26,7 @@ from tkcalendar import DateEntry
 from _version import __version__, __date__
 from fed_inspect import fed_inspect
 from getdata import getdata
-from load.load import FED3_File
+from load.load import FED3_File, fed_concat
 from plots import plots
 
 class FED_Plot():
