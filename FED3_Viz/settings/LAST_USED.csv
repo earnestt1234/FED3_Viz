@@ -1,9 +1,9 @@
 ,Values
 date_filter_val,False
-date_filter_s_days,2020-01-08
-date_filter_e_days,2020-02-21
-date_filter_s_hour,10 pm
-date_filter_e_hour,8 pm
+date_filter_s_days,2020-07-08
+date_filter_e_days,2020-07-08
+date_filter_s_hour,noon
+date_filter_e_hour,noon
 shade_dark,True
 lights_on,7 am
 lights_off,7 pm
@@ -12,32 +12,32 @@ abs_group,True
 skip_duplicates,True
 overwrite,False
 weirdwarn,True
-pellet_values,Frequency
-pellet_bins,3 hours
+pellet_values,Cumulative
+pellet_bins,1 hour
 pellet_color,blue
-pellet_align,True
+pellet_align,False
 average_error,SEM
-average_bins,3 hours
-load_last_used,True
-average_method,shared time
-average_align_start,5 pm
-average_align_days,2
+average_bins,1 hour
+load_last_used,False
+average_method,shared date & time
+average_align_start,7 am
+average_align_days,3
 circ_value,pellets
 circ_error,SEM
-circ_show_indvl,True
+circ_show_indvl,False
 kde,True
 logx,True
 norm_meals,True
 meal_pellet_minimum,1
 meal_duration,1
-retrieval_threshold,60
-poke_style,Frequency
-poke_bins,3 hours
+retrieval_threshold,None
+poke_style,Cumulative
+poke_bins,1 hour
 poke_show_correct,True
 poke_show_error,True
-poke_show_left,True
-poke_show_right,True
-bias_style,left (%)
+poke_show_left,False
+poke_show_right,False
+bias_style,correct (%)
 dynamic_color,True
 break_style,pellets
 break_hours,1
