@@ -7,9 +7,9 @@
 </p>
 
 
-**Written for version**: v0.3.0 (Beta)
+**Written for version**: v0.4.0 (Beta)
 
-**Version/Manual Date**: 6/18/2020  
+**Version/Manual Date**: 7/15/2020 
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
