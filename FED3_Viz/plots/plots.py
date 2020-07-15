@@ -6,7 +6,7 @@ shows it to the user when prompted with the "Plot Code" button.
 
 @author: https://github.com/earnestt1234
 """
-import datetime as dt
+import datetime
 
 import matplotlib as mpl
 import matplotlib.dates as mdates
@@ -22,13 +22,40 @@ from load.load import FED3_File
 
 register_matplotlib_converters()
 
+#---ERROR HANDLING
+
+# class DateFilterError(Exception):
+#     """Error when date filter causes empty df"""
+#     pass
+
+def date_filter_okay(df, start, end):
+    """
+    Verify that a DataFrame has data in between 2 dates
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        data to check
+    start : datetime
+        start of the date filter
+    end : datetime
+        end of the date filter
+
+    Returns
+    -------
+    Bool
+    """
+    check = df[(df.index >= start) &
+            (df.index <= end)].copy()
+    return not check.empty
+
 #---HELPER FUNCTIONS
 
 def convert_dt64_to_dt(dt64):
     """Converts numpy datetime to standard datetime (needed for shade_darkness
     function in most cases)."""
     new_date = (dt64 - np.datetime64('1970-01-01T00:00:00')) / np.timedelta64(1, 's')
-    new_date = dt.datetime.utcfromtimestamp(new_date)
+    new_date = datetime.datetime.utcfromtimestamp(new_date)
     return new_date
 
 def hours_between(start, end, convert=True):
@@ -51,15 +78,95 @@ def hours_between(start, end, convert=True):
     if convert:
         start = convert_dt64_to_dt(start)
         end = convert_dt64_to_dt(end)
-    rounded_start = dt.datetime(year=start.year,
+    rounded_start = datetime.datetime(year=start.year,
                                 month=start.month,
                                 day=start.day,
                                 hour=start.hour)
-    rounded_end = dt.datetime(year=end.year,
+    rounded_end = datetime.datetime(year=end.year,
                                 month=end.month,
                                 day=end.day,
                                 hour=end.hour)
     return pd.date_range(rounded_start,rounded_end,freq='1H')
+
+def is_day_or_night(time, period, lights_on=7, lights_off=19):
+    """
+    Check if a datetime occured at day or night
+
+    Parameters
+    ----------
+    time : datetime or pandas.Timestamp
+        time to check
+    period : str
+        'day' or 'night', which period to check if the date is part of,
+        based on the lights_on and lights_off arguments
+    lights_on : int, optional
+        Hour of the day (0-23) when lights turn on. The default is 7.
+    lights_off : int, optional
+         Hour of the day (0-23) when lights turn off. The default is 19.
+
+    Returns
+    -------
+    Bool
+    """
+    lights_on = datetime.time(hour=lights_on)
+    lights_off = datetime.time(hour=lights_off)
+    val = False
+    #defaults to checking if at night
+    if lights_off > lights_on:
+        val = time.time() >= lights_off or time.time() < lights_on
+    elif lights_off < lights_on:
+        val = time.time() >= lights_off and time.time() < lights_on
+    #reverses if period='day'
+    return val if period=='night' else not val
+
+def get_daynight_count(start_time, end_time, lights_on=7, lights_off=9):
+    """
+    Compute the (fractional) number of completed light and dark periods between
+    two dates.  Used for normalizing values grouped by day & nightime.
+
+    Parameters
+    ----------
+    start_time : datetime
+        starting time
+    end_time : datetime
+        ending time
+    lights_on : int, optional
+        Hour of the day (0-23) when lights turn on. The default is 7.
+    lights_off : int, optional
+        Hour of the day (0-23) when lights turn off. The default is 19.
+
+    Returns
+    -------
+    dict
+        dictionary with keys "day" and "night", values are the
+        number of completed periods for each key.
+    """
+    cuts = []
+    cuts.append(start_time)
+    loop_time = start_time.replace(minute=0,second=0)
+    while loop_time < end_time:
+        loop_time += pd.Timedelta(hours=1)
+        if loop_time.hour == lights_on:
+            cuts.append(loop_time)
+        elif loop_time.hour == lights_off:
+            cuts.append(loop_time)
+    cuts.append(end_time)
+    days = []
+    nights = []
+    if lights_off > lights_on:
+        day_hours = lights_off - lights_on
+        night_hours = 24 - day_hours
+    else:
+        night_hours = lights_on - lights_off
+        day_hours = 24 - night_hours    
+    day_hours = pd.Timedelta(hours = day_hours)
+    night_hours = pd.Timedelta(hours = night_hours)
+    for i, t in enumerate(cuts[:-1]):
+        if is_day_or_night(t, 'day', lights_on, lights_off):
+            days.append((cuts[i+1] - t)/day_hours)
+        else:
+            nights.append((cuts[i+1] - t)/night_hours)   
+    return {'day':sum(days),'night':sum(nights)}
 
 def night_intervals(array, lights_on, lights_off, instead_days=False):
     """
@@ -81,17 +188,13 @@ def night_intervals(array, lights_on, lights_off, instead_days=False):
     night_intervals : list
         List of tuples with structure (start of nighttime, end of nighttime).
     """
-    lights_on = dt.time(hour=lights_on)
-    lights_off = dt.time(hour=lights_off)
+    lights_on = datetime.time(hour=lights_on)
+    lights_off = datetime.time(hour=lights_off)
     if lights_on == lights_off:
             night_intervals = []
             return night_intervals
-    elif lights_off > lights_on:
-        at_night = [((i.time() >= lights_off) or
-                    (i.time() < lights_on)) for i in array]
-    elif lights_off < lights_on:
-        at_night = [((i.time() >= lights_off) and
-                    (i.time() < lights_on)) for i in array]
+    else:
+        at_night = [is_day_or_night(i, 'night') for i in array]
     if instead_days:
         at_night = [not i for i in at_night]
     night_starts = []
@@ -271,27 +374,27 @@ def date_format_x(ax, start, end):
     three_days = mdates.DayLocator(interval=3)
     months = mdates.MonthLocator()
     d8_span = end - start
-    if d8_span < dt.timedelta(hours=12):
+    if d8_span < datetime.timedelta(hours=12):
         xfmt = mdates.DateFormatter('%H:%M')
         major = all_hours
         minor = quarter_hours
-    elif (d8_span >= dt.timedelta(hours=12)) and (d8_span < dt.timedelta(hours=24)):
+    elif (d8_span >= datetime.timedelta(hours=12)) and (d8_span < datetime.timedelta(hours=24)):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
         major = quarter_days
         minor = all_hours
-    elif (d8_span >= dt.timedelta(hours=24)) and (d8_span < dt.timedelta(days=3)):
+    elif (d8_span >= datetime.timedelta(hours=24)) and (d8_span < datetime.timedelta(days=3)):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
         major = days
         minor = quarter_days
-    elif d8_span >= dt.timedelta(days=3) and (d8_span < dt.timedelta(days=6)):
+    elif d8_span >= datetime.timedelta(days=3) and (d8_span < datetime.timedelta(days=6)):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
         major = two_days
         minor = days
-    elif (d8_span >= dt.timedelta(days=6)) and (d8_span < dt.timedelta(days=20)):
+    elif (d8_span >= datetime.timedelta(days=6)) and (d8_span < datetime.timedelta(days=20)):
         xfmt = mdates.DateFormatter('%b %d')
         major = three_days
         minor = days
-    elif d8_span >= dt.timedelta(days=20):
+    elif d8_span >= datetime.timedelta(days=20):
         xfmt = mdates.DateFormatter("%b '%y")
         major = months
         minor = three_days
@@ -402,8 +505,59 @@ def left_right_noncumulative(df, bin_size, side, version='ondatetime', starttime
     diff = diff.reindex(side_resampled.index)
     diff = diff.fillna(0)
     return diff
-    
-#---Single Pellet Plots
+  
+def label_meals(ipi, meal_pellet_minimum=1, meal_duration=1):
+    """
+    Assign numbers to pellets based on their interpellet intervals (time passsed
+    since the previos pellet).
+
+    Parameters
+    ----------
+    ipi : array
+        An array of interpellet intervals (without missing values!)
+    meal_pellet_minimum : int, optional
+        The minimum pellets required (within the meal_duration) to constitute
+        a meal. The default is 1 (with 1, all pellets are assigned a meal
+        regardless of the elapsed time between them).
+    meal_duration : int, optional
+        The amount of time (in minutes) that can pass before a new meal is
+        assigned. The default is 1.  Pellets with an IPI below the meal_duration
+        will either be assigned to the meal of the previous pellet (if there are
+        enough previous/following pellets to pass the meal_pellet_minimum), to a new meal
+        (if there are enough following pellets to pass the meal_pellet_minimum), or
+        to None (if there are not enough surrounding pellets to surpass the
+        meal_pellet_minimum)/
+
+    Returns
+    -------
+    pandas.Series
+        Series of meals labeled by meal number
+    """
+    output = []
+    meal_no = 1
+    c = 0
+    while c < len(ipi):
+        following_pellets = ipi[c+1:c+meal_pellet_minimum]
+        if len(following_pellets) == 0 and c == len(ipi) - 1:
+            if ipi[c] >= meal_duration:
+                output.append(meal_no if meal_pellet_minimum == 1 else None)
+            break
+        if all(p < meal_duration for p in following_pellets):
+            output.append(meal_no)
+            while c < len(ipi) - 1:
+                if ipi[c+1] < meal_duration:
+                    output.append(meal_no)
+                    c+=1
+                else:
+                    c+=1
+                    break
+            meal_no += 1
+        else:
+            output.append(None)
+            c+=1
+    return pd.Series(output)
+  
+#---Pellet Plots
 
 def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
                        **kwargs):
@@ -426,6 +580,9 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -438,6 +595,10 @@ def pellet_plot_single(FED, shade_dark, lights_on, lights_off, pellet_color,
     else:
         ax = kwargs['ax']
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     x = df.index
     y = df['Pellet_Count']
     ax.plot(x, y,color=pellet_color)
@@ -478,6 +639,9 @@ def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -490,6 +654,10 @@ def pellet_freq_single(FED, pellet_bins, shade_dark, lights_on,
     else:
         ax = kwargs['ax']
     df = FED.data.resample(pellet_bins).sum()
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     x = df.index
     y = df['Binary_Pellets']    
     ax.bar(x, y,width=(x[1]-x[0]),
@@ -521,6 +689,9 @@ def pellet_plot_multi_aligned(FEDs, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -539,6 +710,12 @@ def pellet_plot_multi_aligned(FEDs, **kwargs):
     ymax = 0          
     for file in FEDs:
         df = file.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            # following line toggles where 0 is with date filter
+            df['Elapsed_Time'] -= df['Elapsed_Time'][0]
         x = [(time.total_seconds()/3600) for time in df['Elapsed_Time']]   
         y = df['Pellet_Count']
         ax.plot(x, y, label=file.filename)            
@@ -588,6 +765,9 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -603,9 +783,13 @@ def pellet_plot_multi_unaligned(FEDs, shade_dark, lights_on,
     else:
         ax = kwargs['ax']
     min_date = np.datetime64('2100')
-    max_date = np.datetime64('1970')    
+    max_date = np.datetime64('1970')
     for file in FEDs:
         df = file.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         x = df.index
         y = df['Pellet_Count']
         ax.plot(x, y, label=file.filename)
@@ -644,6 +828,9 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -660,15 +847,19 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, **kwargs):
         ax = kwargs['ax']
     max_time = 0  
     for file in FEDs:
-        df = file.data.resample(pellet_bins,base=0).sum()         
+        df = file.data
+        if 'date_filter' in kwargs:           
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+        df = df.resample(pellet_bins,base=0).sum()  
         times = []
         for i, date in enumerate(df.index):
             times.append(date - df.index[0])
         times = [(time/np.timedelta64(1,'h')) for time in times]      
         x = times
         y = df['Binary_Pellets'] 
-        ax.bar(x, y, width=(x[1]-x[0]),
-               align='edge', alpha=.8, label=file.filename)
+        ax.plot(x, y, alpha=.8, label=file.filename)
         if max(times) > max_time:
             max_time = max(times)
     ax.set_xlabel('Time (h)')
@@ -708,6 +899,9 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -725,11 +919,16 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, shade_dark,
     min_date = np.datetime64('2100')
     max_date = np.datetime64('1970')   
     for file in FEDs:
-        df = file.data.resample(pellet_bins,base=0).sum()
+        df = file.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+        df = df.resample(pellet_bins,base=0).sum()
         x = df.index
         y = df['Binary_Pellets']
-        ax.bar(x, y, label=file.filename,
-               alpha=.8,align='edge',width=(x[1]-x[0]))           
+        ax.plot(x, y, label=file.filename,
+               alpha=.8,)         
         if max(x) > max_date:
             max_date = max(x)
         if min(x) < min_date:
@@ -767,6 +966,9 @@ def interpellet_interval_plot(FEDs, kde, logx, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -798,6 +1000,10 @@ def interpellet_interval_plot(FEDs, kde, logx, **kwargs):
         ax.set_xlim(-100,1000)
     for FED in FEDs:
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
         if logx:
             y = [np.log10(val) for val in y if not pd.isna(val)]
@@ -833,6 +1039,9 @@ def group_interpellet_interval_plot(FEDs, groups, kde, logx, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -867,6 +1076,10 @@ def group_interpellet_interval_plot(FEDs, groups, kde, logx, **kwargs):
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 y = list(df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0])
                 if logx:
                     y = [np.log10(val) for val in y if not pd.isna(val)]
@@ -906,6 +1119,9 @@ def retrieval_time_single(FED, retrieval_threshold, shade_dark,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -918,6 +1134,10 @@ def retrieval_time_single(FED, retrieval_threshold, shade_dark,
     else:
         ax = kwargs['ax']
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     y1 = df['Pellet_Count'].drop_duplicates()
     x1 = y1.index
     y2 = df['Retrieval_Time'].copy()
@@ -933,6 +1153,8 @@ def retrieval_time_single(FED, retrieval_threshold, shade_dark,
         ax2.set_ylim(0,retrieval_threshold)
     ax.set_title('Pellets and Retrieval Times for ' + FED.filename)
     date_format_x(ax, df.index[0], df.index[-1])
+    x_offset = (x1[-1] - x1[0])*.05
+    ax.set_xlim(x1[0] - x_offset, x1[-1] + x_offset)
     ax.set_xlabel('Time')
     if shade_dark:
         shade_darkness(ax,min(df.index), max(df.index),
@@ -960,6 +1182,9 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -980,6 +1205,11 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
     xmax = 0
     for i, fed in enumerate(FEDs):
         df = fed.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            df['Elapsed_Time'] -= df["Elapsed_Time"][0] #toggles where t=0 is
         y = df['Retrieval_Time'].copy()
         if retrieval_threshold:
             y.loc[y>=retrieval_threshold] = np.nan
@@ -1005,6 +1235,150 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()
     
+    return fig if 'ax' not in kwargs else None
+
+def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
+                        norm_meals, **kwargs):
+    """
+    FED3 Viz: Create a histogram of meal sizes for multiple devices.
+    Each file is shown as a separate curve.
+    
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    meal_pellet_minimum : int
+        minimum pellets to constitute a meal
+    meal_duration : int
+        amount of time to allow before a new meal is assigned
+    norm_meals : bool
+        Whether or not to normalize the histogram
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for file in FEDs:
+        assert isinstance(file, FED3_File),'Non FED3_File passed to retrieval_time_multi()'
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
+    ax.set_title('Meal Size Histogram')
+    label = 'Probability' if norm_meals else 'Count'
+    ax.set_ylabel(label)
+    ax.set_xlabel('Meal Size (# of Pellets)')
+    if norm_meals:
+        ax.set_ylim(0,1)
+        ax.set_yticks([0,.2,.4,.6,.8,1.0])
+    sizes = []
+    for fed in FEDs:
+        df = fed.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+        meals = label_meals(df['Interpellet_Intervals'].dropna(),
+                            meal_pellet_minimum=meal_pellet_minimum,
+                            meal_duration=meal_duration)
+        sizes.append(meals.value_counts())
+    meal_maxes = [s.max() for s in sizes]
+    longest_meal = max(meal_maxes) if meal_maxes else 5
+    if pd.isna(longest_meal):
+        longest_meal = 5
+    bins = range(1,longest_meal+2)
+    for series, fed in zip(sizes,FEDs):
+        sns.distplot(series,bins=bins,kde=False,ax=ax,label=fed.basename,
+                     norm_hist=norm_meals,)
+    ax.set_xticks(range(1,longest_meal+1))
+    if len(FEDs) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
+    return fig if 'ax' not in kwargs else None
+
+def grouped_meal_size_histogram(FEDs, groups, meal_pellet_minimum, meal_duration,
+                                norm_meals, **kwargs):
+    """
+    FED3 Viz: Create a histogram of meal sizes for Grouped devices.
+    Each Group is shown as a separate curve; meal sizes within each
+    Group are concatenated. 
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    meal_pellet_minimum : int
+        minimum pellets to constitute a meal
+    meal_duration : int
+        amount of time to allow before a new meal is assigned
+    norm_meals : bool
+        Whether or not to normalize the histogram
+    **kwargs : 
+        ax : matplotlib.axes.Axes 
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for file in FEDs:
+        assert isinstance(file, FED3_File),'Non FED3_File passed to retrieval_time_multi()'
+    if 'ax' not in kwargs:   
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
+    ax.set_title('Meal Size Histogram')
+    label = 'Probability' if norm_meals else 'Count'
+    ax.set_ylabel(label)
+    ax.set_xlabel('Meal Size (# of Pellets)')
+    if norm_meals:
+        ax.set_ylim(0,1)
+        ax.set_yticks([0,.2,.4,.6,.8,1.0])    
+    sizes = []
+    for group in groups:
+        fed_vals = []
+        for fed in FEDs:
+            if group in fed.group:
+                df = fed.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
+                meals = label_meals(df['Interpellet_Intervals'].dropna(),
+                                    meal_pellet_minimum=meal_pellet_minimum,
+                                    meal_duration=meal_duration)
+                fed_vals += list(meals.value_counts())
+        sizes.append(fed_vals)
+    meal_maxes = [np.nanmax(s) for s in sizes]
+    longest_meal = max(meal_maxes) if meal_maxes else 5
+    if pd.isna(longest_meal):
+        longest_meal = 5
+    bins = range(1,longest_meal+2)
+    for series, group in zip(sizes,groups):
+        sns.distplot(series,bins=bins,kde=False,ax=ax,label=group,
+                     norm_hist=norm_meals,)
+    ax.set_xticks(range(1, longest_meal+1))
+    if len(groups) < 10:
+        ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
     return fig if 'ax' not in kwargs else None
 
 #---Average Pellet Plots
@@ -1043,6 +1417,9 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1056,11 +1433,15 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
     if average_error == 'raw data':
         average_error = 'None'
         show_indvl=True
-    earliest_end = dt.datetime(2999,1,1,0,0,0)
-    latest_start = dt.datetime(1970,1,1,0,0,0)
+    earliest_end = datetime.datetime(2999,1,1,0,0,0)
+    latest_start = datetime.datetime(1970,1,1,0,0,0)
     for file in FEDs:
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_plot_average_cumulative()'
         df = file.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         if min(df.index) > latest_start:
             latest_start = min(df.index)
         if max(df.index) < earliest_end:
@@ -1077,14 +1458,19 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins, average_error
         avg = []
         for file in FEDs:
             if group in file.group:
+                df = file.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 if dependent == 'poke bias (left %)':
-                    y = left_right_bias(file.data, average_bins, version='ondatetime')
+                    y = left_right_bias(df, average_bins, version='ondatetime')
                 elif dependent == 'left pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='l',version='ondatetime')
+                    y = left_right_noncumulative(df,average_bins,side='l',version='ondatetime')
                 elif dependent == 'right pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='r',version='ondatetime')
+                    y = left_right_noncumulative(df,average_bins,side='r',version='ondatetime')
                 else:
-                    df = file.data.groupby(pd.Grouper(freq=average_bins,base=0))
+                    df = df.groupby(pd.Grouper(freq=average_bins,base=0))
                     y = df.apply(resample_get_yvals,dependent,retrieval_threshold)
                 y = y[(y.index > latest_start) &
                         (y.index < earliest_end)].copy()
@@ -1170,6 +1556,9 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1190,31 +1579,36 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     else:
         ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    start_datetime = dt.datetime(year=1970,
+    start_datetime = datetime.datetime(year=1970,
                                  month=1,
                                  day=1,
                                  hour=average_align_start)
-    end_datetime = start_datetime + dt.timedelta(days=average_align_days)
+    end_datetime = start_datetime + datetime.timedelta(days=average_align_days)
     date_range = pd.date_range(start_datetime,end_datetime,freq=average_bins)    
     maxy=0
     for i, group in enumerate(groups):
         avg = []
         for file in FEDs:
             if group in file.group:
+                df = file.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 if dependent == 'poke bias (left %)':
-                    y = left_right_bias(file.data, average_bins, version='ontime',
+                    y = left_right_bias(df, average_bins, version='ontime',
                                         starttime=average_align_start)
                 elif dependent == 'left pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='l',version='ontime', 
+                    y = left_right_noncumulative(df,average_bins,side='l',version='ontime', 
                                                  starttime=average_align_start)
                 elif dependent == 'right pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='r',version='ontime',
+                    y = left_right_noncumulative(df,average_bins,side='r',version='ontime',
                                                  starttime=average_align_start)
                 else:
-                    df = file.data.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
+                    df = df.groupby(pd.Grouper(freq=average_bins,base=average_align_start))
                     y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
                 first_entry = y.index[0]
-                aligned_first_entry = dt.datetime(year=1970,month=1,day=1,
+                aligned_first_entry = datetime.datetime(year=1970,month=1,day=1,
                                                   hour=first_entry.hour)
                 alignment_shift = first_entry - aligned_first_entry
                 y.index = [i-alignment_shift for i in y.index]
@@ -1257,7 +1651,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     tick_labels = [i*12 for i in range(len(ticks))]
     ax.set_xticks(ticks)
     ax.set_xticklabels(tick_labels)
-    ax.set_xlim(start_datetime,end_datetime + dt.timedelta(hours=5))
+    ax.set_xlim(start_datetime,end_datetime + datetime.timedelta(hours=5))
     ax.set_ylabel(dependent.capitalize())
     if "%" in dependent:
         ax.set_ylim(-5,105)
@@ -1296,6 +1690,9 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1314,6 +1711,12 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
         assert isinstance(file, FED3_File),'Non FED3_File passed to pellet_average_onstart()'
         df = file.data
         resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            df['Elapsed_Time'] -= df['Elapsed_Time'][0]
+            resampled = df.resample(average_bins, base=0, on='Elapsed_Time').sum()
         if len(longest_index) == 0:
             longest_index = resampled.index
         elif len(resampled.index) > len(longest_index):
@@ -1328,18 +1731,24 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
     for i, group in enumerate(groups):
         avg = []
         for file in FEDs:
-            if group in file.group:              
+            if group in file.group:  
+                df = file.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
+                    df['Elapsed_Time'] -= df['Elapsed_Time'][0]
                 if dependent == 'poke bias (left %)':
-                    y = left_right_bias(file.data, average_bins, version='onstart')
+                    y = left_right_bias(df, average_bins, version='onstart')
                 elif dependent == 'left pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='l',version='onstart')
+                    y = left_right_noncumulative(df,average_bins,side='l',version='onstart')
                 elif dependent == 'right pokes':
-                    y = left_right_noncumulative(file.data,average_bins,side='r',version='onstart')
+                    y = left_right_noncumulative(df,average_bins,side='r',version='onstart')
                 else:
-                    df = file.data.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
+                    df = df.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
                     y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
-                y = y.reindex(longest_index)          
+                y = y.reindex(longest_index)
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 if np.nanmax(y.index) > maxx:
                     maxx=np.nanmax(y.index)
@@ -1368,7 +1777,9 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error, *
                             color=colors[i])
             if np.nanmax(np.abs(group_avg) + error_shade) > maxy:
                 maxy = np.nanmax(np.abs(group_avg) + error_shade)
-    ax.set_xlabel('Time (h since recording start)')
+    xlabel = ('Time (h since recording start)' if not 'date_filter' in kwargs else
+              'Time (h since ' + str(kwargs['date_filter'][0]) + ')')
+    ax.set_xlabel(xlabel)
     number_of_days = int(maxx//24)
     if number_of_days > 2:
         days_in_hours = [24*day for day in range(number_of_days+1)]
@@ -1425,6 +1836,9 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1436,36 +1850,60 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     else:
         ax = kwargs['ax']
-    if poke_style == 'Cumulative':
-        correct_pokes = FED.data['Correct_Poke']
+    df = FED.data
+    if poke_style == 'Cumulative':       
+        offset_correct = 0
+        offset_wrong = 0
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']  
+            base_df = df[(df.index) <= s].copy()
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            base_correct = pd.Series([1 if i==True else np.nan
+                                      for i in base_df['Correct_Poke']]).cumsum()
+            base_wrong = pd.Series([1 if i==False else np.nan
+                                    for i in base_df['Correct_Poke']]).cumsum()
+            offset_correct = base_correct.max()
+            offset_wrong = base_wrong.max()
+        correct_pokes = df['Correct_Poke']
         if poke_show_correct:
             y = pd.Series([1 if i==True else np.nan for i in correct_pokes]).cumsum()
-            y.index = FED.data.index
+            y.index = df.index
             y = y.dropna()
+            if not pd.isna(offset_correct):
+                y += offset_correct
             x = y.index
             ax.plot(x, y, color='mediumseagreen', label = 'correct pokes')
         if poke_show_error:
             y = pd.Series([1 if i==False else np.nan for i in correct_pokes]).cumsum()
-            y.index = FED.data.index
+            y.index = df.index
             y = y.dropna()
+            if not pd.isna(offset_wrong):
+                y += offset_wrong
             x = y.index
             ax.plot(x, y, color='indianred', label = 'error pokes')
         if poke_show_left:
             try:
-                y = FED.data[FED.data['Event'] == 'Poke']['Left_Poke_Count']
+                y = df[df['Event'] == 'Poke']['Left_Poke_Count']
             except:
-                y = FED.data['Left_Poke_Count']
+                y = df['Left_Poke_Count']
             x = y.index
             ax.plot(x, y, color='cornflowerblue', label = 'left pokes')
         if poke_show_right:
             try:
-                y = FED.data[FED.data['Event'] == 'Poke']['Right_Poke_Count']
+                y = df[df['Event'] == 'Poke']['Right_Poke_Count']
             except:
-                y = FED.data['Right_Poke_Count']
+                y = df['Right_Poke_Count']
             x = y.index
             ax.plot(x, y, color='gold', label = 'right pokes')         
     else:
-        resampled_correct = FED.data['Correct_Poke'].dropna().resample(poke_bins)
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+            df['Left_Poke_Count'] -= df['Left_Poke_Count'][0]
+            df['Right_Poke_Count'] -= df['Right_Poke_Count'][0]
+        resampled_correct = df['Correct_Poke'].dropna().resample(poke_bins)
         if poke_show_correct:
             y = resampled_correct.apply(lambda binn: (binn==True).sum())
             x = y.index
@@ -1475,11 +1913,11 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
             x = y.index
             ax.plot(x, y, color='indianred', label = 'error pokes')
         if poke_show_left:
-            y = left_right_noncumulative(FED.data, bin_size=poke_bins,side='l')
+            y = left_right_noncumulative(df, bin_size=poke_bins,side='l')
             x = y.index
             ax.plot(x, y, color='cornflowerblue', label = 'left pokes')
         if poke_show_right:
-            y = left_right_noncumulative(FED.data, bin_size=poke_bins,side='r')
+            y = left_right_noncumulative(df, bin_size=poke_bins,side='r')
             x = y.index
             ax.plot(x, y, color='gold', label = 'right pokes')
     date_format_x(ax, x[0], x[-1])
@@ -1492,7 +1930,7 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
     title = ('Pokes for ' + FED.filename)
     ax.set_title(title)
     if shade_dark:
-        shade_darkness(ax, min(FED.data.index), max(FED.data.index),
+        shade_darkness(ax, min(df.index), max(df.index),
                        lights_on=lights_on,
                        lights_off=lights_off)
     ax.legend(bbox_to_anchor=(1,1), loc='upper left')   
@@ -1529,6 +1967,9 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1541,11 +1982,16 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
     else:
         ax = kwargs['ax']
+    df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()   
     if bias_style == 'correct (%)':
-        resampled = FED.data.resample(poke_bins)
+        resampled = df.groupby((pd.Grouper(freq=poke_bins)))
         y = resampled.apply(resample_get_yvals, 'poke bias (correct %)')
     elif bias_style == 'left (%)':
-        y = left_right_bias(FED.data, poke_bins)
+        y = left_right_bias(df, poke_bins)
     x = y.index
     if not dynamic_color:
         ax.plot(x, y, color = 'magenta', zorder=3)
@@ -1594,6 +2040,9 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1604,13 +2053,17 @@ def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
         FEDs = [FEDs]
     for FED in FEDs:
         assert isinstance(FED, FED3_File), 'Non FED3_File passed to pr_plot()'
-    delta = dt.timedelta(hours=break_hours, minutes=break_mins)
+    delta = datetime.timedelta(hours=break_hours, minutes=break_mins)
     ys = []
     color_gradient_divisions = [(1/len(FEDs))*i for i in range(len(FEDs))]
     cmap = mpl.cm.get_cmap('spring')
     color_gradients = cmap(color_gradient_divisions)
     for FED in FEDs:
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         index = df.index
         nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
         try:
@@ -1684,6 +2137,9 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
             created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1700,13 +2156,17 @@ def group_pr_plot(FEDs, groups, break_hours, break_mins, break_style,
         ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color'] 
     xs = range(len(groups))
-    delta = dt.timedelta(hours=break_hours, minutes=break_mins)
+    delta = datetime.timedelta(hours=break_hours, minutes=break_mins)
     title = 'Breakpoint'
     for i, group in enumerate(groups):
         group_vals = []
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 index = df.index
                 nextaction = [index[j+1] - index[j] for j in range(len(index[:-1]))]
                 try:
@@ -1791,6 +2251,9 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1817,21 +2280,29 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
         for fed in FEDs:
             if group in fed.group:
                 df = fed.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 nights = night_intervals(df.index, lights_on, lights_off)
                 days = night_intervals(df.index, lights_on, lights_off, 
                                        instead_days=True)
+                durs = get_daynight_count(df.index[0], df.index[-1],
+                                          lights_on, lights_off)
+                days_completed = durs['day']
+                nights_completed = durs['night']
                 day_vals = []
                 night_vals = []
                 for start, end in days:
-                    day_slice = df[(df.index>start) & (df.index<end)].copy()
+                    day_slice = df[(df.index>=start) & (df.index<end)].copy()
                     day_vals.append(resample_get_yvals(day_slice,circ_value,
                                                        retrieval_threshold))
                 for start, end in nights:
-                    night_slice = df[(df.index>start) & (df.index<end)].copy()
+                    night_slice = df[(df.index>=start) & (df.index<end)].copy()
                     night_vals.append(resample_get_yvals(night_slice,circ_value,
                                                          retrieval_threshold))
-                group_day_values.append(np.nanmean(day_vals))
-                group_night_values.append(np.nanmean(night_vals))
+                group_day_values.append(np.nansum(day_vals)/days_completed)
+                group_night_values.append(np.nansum(night_vals)/nights_completed)
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
         if circ_error == 'None':
@@ -1919,6 +2390,9 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
             created if not passed
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -1944,8 +2418,15 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         for FED in FEDs:
             if group in FED.group:
                 df = FED.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
                 byhour = df.groupby([df.index.hour])
                 byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
+                byhourday = df.groupby([df.index.hour,df.index.date])
+                num_days_by_hour = byhourday.sum().index.get_level_values(0).value_counts()
+                byhour = byhour.divide(num_days_by_hour, axis=0)
                 new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
                 reindexed = byhour.reindex(new_index)
                 reindexed.index.name = 'hour'
@@ -2009,6 +2490,9 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
             within the GUI
         retrieval_threshold : int or float
             Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data         
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2026,8 +2510,15 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
     index = []
     for FED in FEDs:       
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         byhour = df.groupby([df.index.hour])
         byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
+        byhourday = df.groupby([df.index.hour,df.index.date])
+        num_days_by_hour = byhourday.sum().index.get_level_values(0).value_counts()
+        byhour = byhour.divide(num_days_by_hour, axis=0)
         new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
         reindexed = byhour.reindex(new_index)
         if circ_value in ['pellets', 'correct pokes','errors']:
@@ -2080,6 +2571,10 @@ def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
     -------
@@ -2112,6 +2607,10 @@ def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     all_night = []
     for FED in FEDs:
         df = FED.data
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
         y = df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0]
         nights = night_intervals(df.index, lights_on, lights_off)
         days = night_intervals(df.index, lights_on, lights_off, 
@@ -2163,7 +2662,9 @@ def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
-            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2172,6 +2673,10 @@ def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     """
     assert isinstance(FED, FED3_File),'Non FED3_File passed to battery_plot()'
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     if 'ax' not in kwargs:   
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
     else:
@@ -2186,7 +2691,7 @@ def battery_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     date_format_x(ax, x[0], x[-1])
     ax.set_xlabel('Date')
     if shade_dark:
-        shade_darkness(ax, FED.start_time, FED.end_time,
+        shade_darkness(ax, x[0], x[-1],
                    lights_on=lights_on,
                    lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
@@ -2211,7 +2716,9 @@ def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     **kwargs : 
         ax : matplotlib.axes.Axes 
             Axes to plot on, a new Figure and Axes are
-            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
         **kwargs also allows FED3 Viz to pass all settings to all functions.
 
     Returns
@@ -2220,6 +2727,10 @@ def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     """
     assert isinstance(FED, FED3_File),'Non FED3_File passed to battery_plot()'
     df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
     if 'ax' not in kwargs:   
         fig, ax = plt.subplots(figsize=(7,3.5), dpi=125)
     else:
@@ -2235,11 +2746,147 @@ def motor_plot(FED, shade_dark, lights_on, lights_off, **kwargs):
     date_format_x(ax, x[0], x[-1])
     ax.set_xlabel('Date')
     if shade_dark:
-        shade_darkness(ax, FED.start_time, FED.end_time,
+        shade_darkness(ax, x[0], x[-1],
                    lights_on=lights_on,
                    lights_off=lights_off)
         ax.legend(bbox_to_anchor=(1,1), loc='upper left')
     plt.tight_layout()
+
+#---Stats
+def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
+                motor_turns_thresh=10, lights_on=7, lights_off=19):
+    """
+    FED3 Viz: generate a DataFrame of summary stats for multiple feds
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    meal_pellet_minimum : int
+        minimum pellets to constitute a meal
+    meal_duration : int
+        amount of time to allow before a new meal is assigned
+    motor_turns_thresh : int, optional
+        Threshold of motor turns to count how many have surpassed. The default is 10.
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+
+    Returns
+    -------
+    output : pandas.DataFrame
+        table of summary statistics for each file, with average and 
+        standard deviation for all files
+    """
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    output_list = []
+    for fed in FEDs:
+        df = fed.data
+        v = fed.basename
+        results = pd.DataFrame(columns=[v])
+        results.index.name = 'Variable'
+        nights = night_intervals(df.index, lights_on, lights_off)
+        days = night_intervals(df.index, lights_on, lights_off,
+                                              instead_days=True)  
+        
+        #vars
+        starttime = df.index[0]
+        endtime = df.index[-1]
+        duration = endtime-starttime
+        hours = duration/pd.Timedelta(hours=1)
+        
+        #pellets
+        results.loc['Pellets Taken', v] = df['Pellet_Count'].max()
+        results.loc['Pellets per Hour', v] = df['Pellet_Count'].max()/hours
+        
+        #ipi
+        if 'Interpellet_Intervals' in df.columns:
+            meals = label_meals(df['Interpellet_Intervals'].dropna(),
+                                meal_pellet_minimum=meal_pellet_minimum,
+                                meal_duration=meal_duration)
+            results.loc['Number of Meals',v] =  meals.max()
+            results.loc['Average Pellets per Meal',v] =  meals.value_counts().mean()
+            results.loc['% Pellets within Meals',v] =  (len(meals.dropna())/
+                                                       len(meals) * 100)
+            
+        #pokes
+        total_pokes = df['Left_Poke_Count'].max()+df['Right_Poke_Count'].max()
+        results.loc['Total Pokes',v] = total_pokes
+        results.loc['Left Pokes (%)',v] = df['Left_Poke_Count'].max()/total_pokes*100
+        
+        #other
+        results.loc['Recording Duration (Hours)', v] = hours
+        battery_use = (df['Battery_Voltage'][-1] - df['Battery_Voltage'][0])
+        results.loc['Battery Change (V)', v] = battery_use
+        results.loc['Battery Rate (V/hour)', v] = battery_use / hours
+        motor_turns = df['Motor_Turns'][df['Motor_Turns'] > 0]
+        results.loc['Motor Turns (Mean)', v] = motor_turns.mean()
+        results.loc['Motor Turns (Median)', v] = motor_turns.median()
+        motor_col = 'Motor Turns Above ' + str(motor_turns_thresh)
+        results.loc[motor_col, v] = motor_turns[motor_turns >= motor_turns_thresh].sum()
+        
+        #circadian
+        night_slices = []
+        day_slices = []
+        night_hours = []
+        day_hours = []
+        
+        for start, end in nights:
+            portion = df[(df.index>=start) & (df.index<=end)].copy()
+            night_slices.append(portion)
+            night_hours.append((portion.index[-1] - portion.index[0])/pd.Timedelta(hours=1))
+        
+        for start, end in days:
+            portion = df[(df.index>=start) & (df.index<=end)].copy()
+            day_slices.append(portion)
+            day_hours.append((portion.index[-1] - portion.index[0])/pd.Timedelta(hours=1))
+        
+        night_hours = np.sum(night_hours)
+        day_hours = np.sum(day_hours)
+        
+        for name, portions, hourz in zip([' (Night)', ' (Day)'], [night_slices, day_slices],
+                                         [night_hours, day_hours]):
+            results.loc['Pellets Taken' + name, v] = np.sum([d['Pellet_Count'].max()-d['Pellet_Count'].min()
+                                                             for d in portions])
+            results.loc['Pellets per Hour' + name, v] = np.sum([d['Pellet_Count'].max()-d['Pellet_Count'].min()
+                                                             for d in portions])/hourz
+            concat_meals = pd.concat([d['Interpellet_Intervals'] for d in portions])
+            concat_meals = label_meals(concat_meals.dropna(),
+                                       meal_pellet_minimum=meal_pellet_minimum,
+                                       meal_duration=meal_duration)
+            results.loc['Number of Meals' + name, v] = concat_meals.max()
+            results.loc['Average Pellets per Meal' + name, v] = concat_meals.value_counts().mean()
+            results.loc['% Pellets within Meals' + name, v] = (len(concat_meals.dropna())/
+                                                               len(concat_meals))*100
+            left_pokes = np.sum([d['Left_Poke_Count'].max() - d['Left_Poke_Count'].min()
+                                 for d in portions])
+            right_pokes = np.sum([d['Right_Poke_Count'].max() - d['Right_Poke_Count'].min()
+                                 for d in portions])
+            total_pokes = left_pokes + right_pokes
+            results.loc['Total Pokes' + name,v] = total_pokes
+            results.loc['Left Pokes (%)'+name,v] = left_pokes / total_pokes *100   
+        output_list.append(results.astype(float))        
+    output = pd.concat(output_list, axis=1)     
+    avg = output.mean(axis=1)
+    std = output.std(axis=1)
+    order = []
+    names = list(output.index)
+    output['Average'] = avg
+    output['STD'] = std
+    for name in names:
+        order.append(name)
+        night_version = name + " (Night)"
+        day_version = name + ' (Day)'
+        if night_version in names:
+            order.append(night_version)
+            names.remove(night_version)
+        if day_version in names:
+            order.append(day_version)
+            names.remove(day_version)
+    output = output.reindex(order)
+    return output
 
 #---Unused by FED3 Viz
 

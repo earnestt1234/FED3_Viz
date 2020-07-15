@@ -40,6 +40,7 @@ date_format_funcs = ['pellet_plot_single','pellet_freq_single',
                      'pellet_freq_multi_unaligned','retrieval_time_single',
                      'battery_plot','motor_plot']
 pr_funcs = ['pr_plot','group_pr_plot']
+meal_funcs = ['meal_size_histogram','grouped_meal_size_histogram']
 
 def add_quotes(string):
     output = '"' + string + '"'
@@ -55,13 +56,15 @@ def generate_code(PLOTOBJ):
     elif PLOTOBJ.plotfunc.__name__ in circ_funcs:
         if used_args['circ_value'] == 'retrieval time':
             args_ordered.append('retrieval_threshold')
+    if 'date_filter' in used_args:
+        args_ordered.append('date_filter')
 
     output = ""
-    imports = """
-#IMPORTING LIBRARIES:
+    imports = """#IMPORTING LIBRARIES:
 #these are libraries used for ALL plotting functions in FED3 Viz,
 #so some may be redundant!
 
+import datetime
 import datetime as dt
 import os
 
@@ -85,10 +88,13 @@ register_matplotlib_converters()
     shade_helpers = '\n#HELPER FUNCTIONS (SHADING DARK)\n\n'
     shade_helpers += inspect.getsource(mymod2.convert_dt64_to_dt) + '\n'
     shade_helpers += inspect.getsource(mymod2.hours_between) + '\n'
+    shade_helpers += inspect.getsource(mymod2.is_day_or_night) + '\n' 
     shade_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
     shade_helpers += inspect.getsource(mymod2.shade_darkness)
     
     dn_helpers = '\n#HELPER FUNCTIONS (DAY/NIGHT PLOTS)\n\n'
+    dn_helpers += inspect.getsource(mymod2.is_day_or_night) + '\n' 
+    dn_helpers += inspect.getsource(mymod2.get_daynight_count) + '\n'
     dn_helpers += inspect.getsource(mymod2.night_intervals) + '\n'
     dn_helpers += inspect.getsource(mymod2.raw_data_scatter)
     
@@ -112,6 +118,9 @@ register_matplotlib_converters()
     
     pr_helpers = '\n#HELPER FUNCTIONS (BREAKPOINT PLOTS)\n\n'
     pr_helpers += inspect.getsource(mymod2.raw_data_scatter)
+    
+    meal_helpers = '\n#HELPER FUNCTIONS (MEAL SIZE)\n\n'
+    meal_helpers += inspect.getsource(mymod2.label_meals)
     
     function_code ='\n#PLOTTING FUNCTION:\n\n'
     inspected = inspect.getsource(plotfunc).replace('plt.close()','')
@@ -152,6 +161,8 @@ register_matplotlib_converters()
     for i, arg in enumerate(args_ordered, start=1):
         if arg == 'retrieval_threshold' and (plotfunc.__name__ in avg_funcs):
             call += (arg + '=retrieval_threshold')
+        if arg == 'date_filter':
+            call += (arg + '=date_filter')
         else:
             call+=arg
         if i != len(args_ordered):
@@ -177,12 +188,14 @@ register_matplotlib_converters()
         output += date_helpers
     if plotfunc.__name__ in pr_funcs:
         output += pr_helpers
+    if plotfunc.__name__ in meal_funcs:
+        output += meal_helpers
     output += function_code
     output += arguments
     output += call
     return output
 
-def get_arguments(PLOTOBJ):
+def get_arguments_affecting_settings(PLOTOBJ):
     func_name = PLOTOBJ.plotfunc.__name__
     plotfunc = plotfuncs[func_name]
     arguments = inspect.getfullargspec(plotfunc).args
@@ -195,4 +208,14 @@ def get_arguments(PLOTOBJ):
     if func_name in ['average_plot_ontime','average_plot_ondatetime',
                     'average_plot_onstart',]:
         arguments.append('average_method')
+    if func_name in avg_funcs:
+        if PLOTOBJ.arguments['dependent'] == 'retrieval threshold':
+            arguments.append('retrieval_threshold')
+    elif func_name in circ_funcs:
+        if PLOTOBJ.arguments['circ_value'] == 'retrieval threshold':
+            arguments.append('retrieval_threshold')
+    arguments.append('date_filter_val')
+    if 'date_filter' in PLOTOBJ.arguments:
+        arguments += ['date_filter_s_hour','date_filter_s_days',
+                      'date_filter_e_hour','date_filter_e_days',]
     return arguments

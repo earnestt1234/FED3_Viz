@@ -36,6 +36,7 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
   - correct and incorrect pokes
   - intervals between pellet retrieval
   - pellet retrieval time
+  - meal sizes     ***New feature!***
   - progressive ratio breakpoints
   - circadian patterns of activity
   - grouped averages for multiple devices
@@ -43,9 +44,12 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
 - Toolbar for live plot editing (from [`matplotlib`](https://matplotlib.org/3.1.1/users/navigation_toolbar.html))
 - Savable code and data for each plot
 - Sortable viewer showing recording properties
+- Summary statistics      ***New feature!***
 - Group labels for averaging data
 - Savable settings
 - Savable "Sessions" (for reloading files, plots, and settings)
+- Use date cutoffs to filter data plotted     ***New feature!***
+- Concatenate data (from single recordings split over multiple files)     ***New feature!***
 
 See the Releases tab for specific notes about new each version.
 

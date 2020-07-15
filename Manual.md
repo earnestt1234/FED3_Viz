@@ -48,6 +48,7 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
     - [Loading Errors](#loading-errors)
   - [File View](#file-view)
   - [Deleting FEDs](#deleting-feds)
+  - [Concatenating Files](#concatenating)
 - [Groups](#groups)
   
   - [Creating Groups](#creating-groups)
@@ -55,12 +56,15 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Deleting Groups](#deleting-groups)
   - [Saving Groups](#saving-groups)
 - [Sessions](#sessions)
+- [Summary Stats](#summary-stats)
 - [Plots](#plots)
   - [Single Pellet Plot](#single-pellet-plot)
   - [Multi Pellet Plot](#multi-pellet-plot)
   - [Average Pellet Plot](#average-pellet-plot)
   - [Interpellet Interval Plot](#interpellet-interval-plot)
   - [Group Interpellet Interval Plot](#group-interpellet-interval-plot)
+  - [Meal Size Histogram](#meal-size-histogram)
+  - [Group Meal Size Histogram](#group-meal-size-histogram)
   - [Retrieval Time Plot](#retrieval-time-plot)
   - [Multi Retrieval Time Plot](#multi-retrieval-time-plot)
   - [Average Retrieval Time Plot](#average-retrieval-time-plot)
@@ -76,7 +80,6 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
   - [Chronogram (Heatmap)](#chronogram-heatmap)
   - [Diagnostic Plot](#diagnostic-plot)
 - [Managing Plots](#managing-plots)
-  
   - [Renaming Plots](#renaming-plots)
   - [New Window](#new-window)
   - [Navigation Toolbar](#navigation-toolbar)
@@ -93,7 +96,10 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
 - [FAQ](#faq)
 - [Appendix](#appendix)
 - [Averaging Methods Diagram](#averaging-methods-diagram)
+  - [FED3 Arduino Versions](#fed3-arduino-versions)
+  - [Averaging Methods Diagram](#averaging-methods-diagram)
   - [Plot Column Dependencies](#plot-column-dependencies)
+  - [Meals](#meals)
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
@@ -229,6 +235,12 @@ When more than one file is loaded, the files can be sorted by clicking on the co
 
 FEDs can be removed from the application by using the **Delete Button** of the Home Tab.  The Delete Button will only be active when one or multiple FEDs are highlighted in the File View.
 
+### Concatenating Files
+
+You can concatenate files together if they do not have any overlapping dates.  This function is useful if you have one experiment or recording that occurred over multiple files.  To concatenate files, select files in the File View and hit the **Concatenate Button**.  When files are concatenated, a new CSV file is created, with the rows of each file appended below one another in chronological order.  The cumulative pellet and poke counts are also adjusted to be continuous for the whole recording.  The new file is immediately loaded into FED3 Viz, and it can be loaded again as any other FED3 File.  Concatenated files also have a "Concat_#" column, which identifies where breaks between the original files were.  They may also have a "Mode" column which may help to determine the recording mode when loading.
+
+If there are **any** overlapping timestamps between files, concatenation will fail and an error message will be raised.  You can check the "Start Date" and "End Date" columns of the File View to identify which files can be concatenated with each other.  Additionally, note that concatenation is ignorant of the device number of the file; files with the same device number or name will not be automatically concatenated (but they can be selected and concatenated).
+
 <div style="page-break-after: always; break-after: page;"></div> 
 
 # Groups
@@ -295,6 +307,14 @@ Session files created on one computer can be opened on another,  but there will 
 
 <div style="page-break-after: always; break-after: page;"></div>
 
+# Summary Stats
+
+The **Summary Stats Button** can be used to create and save table of descriptive statistics for FED3 Files.   These statistics will provide information about pellets, pokes, meals, and other diagnostic properties of the recording.  Many of the statistics are presented with a total value as well as the values isolated to the daytime or nighttime.  Summary Stats can be created either for selected files from the File View, all loaded Groups, or selected Groups from the Group View; if multiple of these options are possible, you can select the method to use with the menu that pops up when Summary Stats is pressed.  The statistics will include the individual values for each file included, as well as the average and standard deviation.  Results are saved in CSV format.
+
+**Note** that some options (the light/dark cycle and the Meal Analyses settings) will affect the computed values.  See the [Meals](#meals) section of the Appendix for help with the latter.
+
+<div style="page-break-after: always; break-after: page;"></div> 
+
 # Plots
 
 The general steps to create a plot are:
@@ -308,13 +328,20 @@ This section will go through the plot buttons currently available in the Home Ta
 
 There are a couple settings which apply to multiple plots: 
 
+- *Date Filtering*:  You can apply a date filter to any plot using the options under **Globally filter dates**.  To do so, check the **Globally filter dates** box and then set a  start date, start hour, end date, and end hour.  When plots are then created, dates outside the date filter will be removed.  If there are no data within the date filter, an error message will pop up indicating which files couldn't be used with the filter (and plots involving those files will not be created).  This function affects *all plots*.  For plots which incorporate some aspect of Elapsed Time since the recording start (rather than Absolute Time), the *t=0* point will be set to the start of the date filter.
+
 - *Shading dark periods*:  When enabled, applicable plots will have a light gray shading during periods when the lights are off - this can help for detecting circadian patterns of activity.  This setting can be toggled from **Settings > General > Shade dark periods (lights on/off)**.  The start and and time of the dark period can be selected using the dropdown menus next to this setting. Plots which make use of this feature will include a :new_moon_with_face: symbol in their description
+
 - *Using Groups*: Some plots aggregate data and rely on Groups.  By default, plots which rely on Groups will **plot all Groups present in the Group View**; you can instead use the Group View to select which Groups to include by unticking **Settings > General > For plots using groups, include all loaded groups rather than those selected**.  Plots that utilize groups will be tagged with a :paperclip: symbol in their description.
+
 - *Handling multiple selections*: For plots that don't use Groups, the data to plot depends on which loaded FED data are highlighted.  More than one file can be highlighted at once, and there are two main ways the program deals with this.  Buttons that combine the highlighted files into one graph are marked by :bar_chart:, while buttons that create multiple plots (one for each highlighted file) are marked by :bar_chart::bar_chart::bar_chart:.
+
 - *Pellet & Poke Averaging:*  Several plots that average data on pellet retrieval and pokes rely on specific settings for determining the method of averaging across a time series.  These settings occur under the heading **Averaging (Pellet & Poke Plots)**, and plots that use them will include a 🧮 symbol in their description.  These settings include:
   
   - **Error value for average plots:**  How to show the spread of data.  Options are SEM (standard error of the mean), STD (standard deviation), raw data (data for each device shown around the average), or None.
+  
   - **Bin size for averaging (hours):** how frequently to average data (must be done as pellets are logged to the second)
+  
   - **Alignment method for averaging:**  How to deal with alignment of time series.  The three options are:
     - **shared date & time**: The program only averages over *absolute date & time*; i.e. only FEDs that were active at the same time can be averaged, and averaging can only be done for the window of time where **all** FEDs in the Groups are active.  This option makes sense for experiments where devices were started and ended at the same time.
     - **shared time**: The program averages over time of day but disregards the date; i.e., the program aligns the files to the first occurrence of a selected time, and then creates an average.  This setting requires you to specify the **Start time & length of averaging (time/days)** (what time of day to align the data to and how many days to try and average).  This option makes sense for experiments where devices were recording on different days or from different cohorts of mice, but you want circadian patterns to be preserved.
@@ -351,7 +378,7 @@ The color of these plots can be set, also (**Settings > Individual Pellet Plots 
 	<img src="img/examples/multipellet.png" width="500">
 </p>
 
-Multi Pellet Plots are basically Single Pellet Plots, but individual devices are plotted as separate lines.  As above, either the cumulative amount or binned frequency of pellet retrieval can be plotted.
+Multi Pellet Plots are basically Single Pellet Plots, but individual devices are plotted as separate lines.  As above, either the cumulative amount or binned frequency of pellet retrieval can be plotted (but a frequency plot will use lines instead of bars, as seen in the Single Pellet Plot).
 
 The only additional setting is **Settings > Individual Pellet Plots > Align multi pellet plots to the same start time**.  When ticked (as above), pellets will be plotted against the *elapsed time* (since each device started); this prevents shading of dark periods.  When unticked (default), the *absolute date/time* will be preserved, so FEDs which were recorded at different times will not overlap.
 
@@ -374,8 +401,9 @@ Average Pellet Plots average the pellets retrieved for each file in a Group.  Ea
 *Combines all highlighted files into a single plot* :bar_chart:
 
 <p align="center">
-	<img src="img/manual/ipi_kde.png" width="500">
+	<img src="img/manual/ipi_kde.png" width="350">
 </p>
+
 
 The Interpellet Interval Plot is a histogram where the values counted are the time between each pellet retrieval event.  This plot can give you a sense of how the mouse feeds or earns pellets, and it show changes in meal or eating frequencies.
 
@@ -391,10 +419,27 @@ By default, Interpellet Interval Plots use logarithmically spaced x-axes (in min
 *Uses groups* :paperclip:
 
 <p align="center">
-	<img src="img/manual/group_ipi.png" width="500">
+	<img src="img/manual/group_ipi.png" width="350">
 </p>
 
+
 Same as the Interpellet Interval Plot (see above), except this version plots groups as separate curves.  The Interpellet Intervals from the files of every group are appended to one array, and then plotted.  The KDE line and logarithmic axis can also be turned on or off (see above).
+
+### Meal Size Histogram
+
+<p align="center">
+	<img src="img/manual/meal_hist.png" width="500">
+</p>
+
+This plot creates a histogram where the values are the number of pellets in each meal of the recording.  In addition to the meal computation settings (see [Meals](#meals) in the Appendix), there is a setting **Settings > Meal Analyses > Normalize Meal Histogram Counts** which can be used to normalize the histogram such that the value in each bin represents proportion of meals received of that length.
+
+### Group Meal Size Histogram
+
+<p align="center">
+	<img src="img/manual/group_meal_hist.png" width="500">
+</p>
+
+This plot creates a histogram of meal sizes for Grouped devices, with each Group's values being concatenated to each other.  The same options apply as for the regular Meal Size Histogram.
 
 ### Retrieval Time Plot
 
@@ -504,7 +549,7 @@ Average Poke Bias plots average the poke bias (see above) for Grouped devices.  
 	<img src="img/manual/bp.png" width="500">
 </p>
 
-The Breakpoint Plot is a bar plot showing the "breakpoint" for multiple devices.  The breakpoint is the maximum value of pokes or pellets reached before a period of inactivity.  It is a concept primarily used in progressive ratio tasks to capture a point of loss of motivation.  While the Breakpoint Plots here are designed to be used with progressive ratio data, they can be made for any type of file.
+The Breakpoint Plot is a bar plot showing the "breakpoint" for multiple devices.  The breakpoint is the maximum value of pokes or pellets reached before a period of inactivity.  It is a concept primarily used in progressive ratio tasks to capture a point of loss of motivation.  As such, **they can only be used with Progressive Ratio recordings**. 
 
 Options for these plots are under **Settings > Progressive Ratio**:
 
@@ -523,6 +568,8 @@ The Group Breakpoint Plot averages breakpoints (see Breakpoint Plot) for Grouped
 
 - **Error value for group breakpoint plots**: What values to use to create error bars; options are SEM (standard error of the mean), STD (standard deviation), or None.
 - **Show individual values**: When ticked, values for individual recordings are superimposed over the bars to show the values contributing to the average.
+
+Like Breakpoint Plots, **they can only be used with Progressive Ratio recordings**
 
 ### Chronograms (Line)
 
@@ -563,7 +610,7 @@ Note that this plot type does not use Groups; it plots what is selected in the F
 <p align="center">
 	<img src="img/examples/daynightplot.png" width="500">
 </p>
-Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods; those values represent the individual FED data points, and they are averaged to create the value for the bar.  Note that both individual values and error bars can be shown for these plots.
+Day/Night Plots show average values for Groups of data during daytime and nighttime.  What is consider day or night is set by the times selected in **Settings > General > Shade dark periods (lights on/off)**.  Regardless of the value plotted, the bars represent the *Group average of the daily or nightly average values of each file*.  That is, for each file, the program averages the selected value for all its day or night periods and divides by the number of day/night periods completed; those values represent the individual FED data points, and they are averaged to create the value for the bar.  Note that both individual values and error bars can be shown for these plots.
 
 ### Day/Night Interpellet Interval Plot
 
@@ -597,7 +644,6 @@ The Battery Life plot simply shows the battery life of the FED over the course o
 <p align="center">
 	<img src="img/manual/motorturns.png" width="600">
 </p>
-
 The Motor Turns Plot shows how many turns were used by the device to dispense each pellet.  The motor should only need to turn a few times (under 10) for each pellet dispensed.  Slightly higher values than this (10-50) may represent the FED's mechanism to try and unjam, while much higher values (>100) may represent a longer pellet jam.
 
 <div style="page-break-after: always; break-after: page;"></div> 
@@ -815,3 +861,13 @@ This table shows which columns of a FED3 data file are used by FED3 Viz to creat
 | Battery Life Plot                                            | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    | :heavy_check_mark:  |                    |
 | Motor Turns Plot                                             | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    |                     | :heavy_check_mark: |
 
+<div style="page-break-after: always; break-after: page;"></div> 
+
+### Meals
+
+"Meals" are a construct intending to capture the pattern of activity where multiple pellets are received from the FED in quick succession.  We have seen that mice sometimes tend to eat a few pellets in a small amount of time, but other times tend to leave long delays in between each pellet retrieval.  This pattern can be seen in the Interpellet Interval Plots shown in this manual.  
+
+Meals are assigned to pellets based on interpellet intervals.  There are a few features in FED3 Viz (Meal Size Histograms and Summary Statistics) which deal with meals, and they have two tweakable parameters under **Settings > Meal Analyses**:
+
+- **Maximum interpellet interval within meals (minutes)**: This sets how much time can pass before the program considers any meal to be finished.  This parameter can be seen as a timer: when a pellet is received, the timer starts.  If the next pellet is retrieved before the timer ends, it will be grouped into a meal with the previous one (depending on the minimum pellets in a meal option); the timer then restarts.  The higher this value is, the fewer unique meals will be assigned (and more pellets will be in each meal). 
+- **Minimum pellets in a meal**: This parameter sets how many pellets must be retrieved (within the maximum interpellet interval of each other) to be considered a meal.  If this value is 1, all pellets will be labeled with a meal number.  When the value is higher, some pellets may be labeled as not being part of a meal.
