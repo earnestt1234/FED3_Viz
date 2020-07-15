@@ -1073,6 +1073,8 @@ class FED3_Viz(tk.Tk):
         self.r_menu_file_multi.add_command(label='Create Group', command=self.create_group)
         self.r_menu_file_multi.add_command(label='Edit Group', command=self.edit_group)
         self.r_menu_file_multi.add_separator()
+        self.r_menu_file_multi.add_command(label='Concatenate', command=self.concat_feds)
+        self.r_menu_file_multi.add_separator()
         self.r_menu_file_multi.add_command(label='Delete', command=self.delete_FEDs)
         
         self.plot_listbox.bind(self.r_click, self.r_raise_menu)
