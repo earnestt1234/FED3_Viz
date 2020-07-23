@@ -1,0 +1,13 @@
+Changes made for building EXE:
+
+-fix babel imports for tkcalender, from https://tekrecipes.com/2019/04/17/modulenotfounderror-no-module-named-babel-numbers/
+Locate the tkcalendar folder under venv/lib/python3.x/site-packages of your project folder.
+
+Under calendar.py, add an additional import for the missing module.
+
+import calendar
+from babel.dates import format_date, parse_date, get_day_names, get_month_names
+from babel.numbers import *  # Additional Import
+
+- suppress matplotlib warnings, from https://stackoverflow.com/questions/57517371/matplotlibdeprecationwarning-with-pyinstaller-exe
+in __init__.py() comment out the cbook warnings at lines 662-665 and 653-655

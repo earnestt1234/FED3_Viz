@@ -7,9 +7,9 @@
 </p>
 
 
-**Written for version**: v0.4.0 (Beta)
+**Written for version**: v0.4.1 (Beta)
 
-**Version/Manual Date**: 7/15/2020 
+**Version/Manual Date**: 7/23/2020
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
@@ -237,7 +237,7 @@ FEDs can be removed from the application by using the **Delete Button** of the H
 
 ### Concatenating Files
 
-You can concatenate files together if they do not have any overlapping dates.  This function is useful if you have one experiment or recording that occurred over multiple files.  To concatenate files, select files in the File View and hit the **Concatenate Button**.  When files are concatenated, a new CSV file is created, with the rows of each file appended below one another in chronological order.  The cumulative pellet and poke counts are also adjusted to be continuous for the whole recording.  The new file is immediately loaded into FED3 Viz, and it can be loaded again as any other FED3 File.  Concatenated files also have a "Concat_#" column, which identifies where breaks between the original files were.  They may also have a "Mode" column which may help to determine the recording mode when loading.
+You can concatenate files together if they do not have any overlapping dates.  This function is useful if you have one experiment or recording that occurred over multiple files.  To concatenate files, select files in the File View and hit the **Concatenate Button**.  When files are concatenated, a new CSV file is created, with the rows of each file appended below one another in chronological order.  The cumulative pellet and poke counts are also adjusted to be continuous for the whole recording.  The new file is immediately loaded into FED3 Viz, and it can be loaded again as any other FED3 File.  The files which were used to create the file will be unloaded from FED3 Viz.  Concatenated files also have a "Concat_#" column, which identifies where breaks between the original files were.  They may also have a "Mode" column which may help to determine the recording mode when loading.
 
 If there are **any** overlapping timestamps between files, concatenation will fail and an error message will be raised.  You can check the "Start Date" and "End Date" columns of the File View to identify which files can be concatenated with each other.  Additionally, note that concatenation is ignorant of the device number of the file; files with the same device number or name will not be automatically concatenated (but they can be selected and concatenated).
 
