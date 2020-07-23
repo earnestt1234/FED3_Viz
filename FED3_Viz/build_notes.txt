@@ -10,4 +10,4 @@ from babel.dates import format_date, parse_date, get_day_names, get_month_names
 from babel.numbers import *  # Additional Import
 
 - suppress matplotlib warnings, from https://stackoverflow.com/questions/57517371/matplotlibdeprecationwarning-with-pyinstaller-exe
-in __init__.py() comment out the cbook warnings at lines 662-665 and 653-655
+in __init__.py() comment out the cbook warnings at lines 662-665 and 653-654
