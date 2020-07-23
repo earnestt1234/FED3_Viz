@@ -42,7 +42,7 @@ class FED3_File():
                             'Right_Poke_Count',
                             'Pellet_Count',
                             'Retrieval_Time',]
-        
+
         self.basename = os.path.basename(directory)
         splitext = os.path.splitext(self.basename)
         self.filename = splitext[0]
@@ -53,7 +53,7 @@ class FED3_File():
             func = read_opts[self.extension]
             self.data = func(directory,
                                 parse_dates=True,
-                                index_col='MM:DD:YYYY hh:mm:ss')          
+                                index_col='MM:DD:YYYY hh:mm:ss')
             for column in self.data.columns:
                 for name in self.fixed_names:
                     likeness = SequenceMatcher(a=column, b=name).ratio()
@@ -64,7 +64,7 @@ class FED3_File():
         except Exception as e:
             raise e
         self.missing_columns = [name for name in self.fixed_names if
-                                name not in self.data.columns]           
+                                name not in self.data.columns]
         self.events = len(self.data.index)
         self.end_time = pd.Timestamp(self.data.index.values[-1])
         self.start_time = pd.Timestamp(self.data.index.values[0])
@@ -84,21 +84,22 @@ class FED3_File():
     def __repr__(self):
         """Shows the directory used to make the file."""
         return 'FED3_File("' + self.directory + '")'
-    
+
     def add_elapsed_time(self):
         """pandas Timedelta relative to starting point for each row.
         Stored in new Elapsed_Time column"""
         events = self.data.index
         elapsed_times = [event - self.start_time for event in events]
         self.data['Elapsed_Time'] = elapsed_times
-        
+
     def add_binary_pellet_count(self):
         """Convert cumulative pellet count to binary value for each row.
         Stored in new Binary_Pellets column."""
         self.data['Binary_Pellets'] = self.data['Pellet_Count'].diff()
         pos = self.data.columns.get_loc('Binary_Pellets')
-        self.data.iloc[0,pos] = 0
-    
+        pos2 = self.data.columns.get_loc('Pellet_Count')
+        self.data.iloc[0,pos] = self.data.iloc[0, pos2]
+
     def add_interpellet_intervals(self):
         """Compute time between each pellet retrieval.
         Stored in new Interpellet_Intervals column.  When loading
@@ -106,12 +107,12 @@ class FED3_File():
         the concatenated files are skipped."""
         inter_pellet = np.array(np.full(len(self.data.index),np.nan))
         c=0
-        for i,val in enumerate(self.data['Binary_Pellets']):         
+        for i,val in enumerate(self.data['Binary_Pellets']):
             if val == 1:
                 if c == 0:
                     c = i
                 else:
-                    inter_pellet[i] = (self.data.index[i] - 
+                    inter_pellet[i] = (self.data.index[i] -
                                        self.data.index[c]).total_seconds()/60
                     c = i
         self.data['Interpellet_Intervals'] = inter_pellet
@@ -121,7 +122,7 @@ class FED3_File():
                 dropped = self.data.dropna(subset=['Interpellet_Intervals'])
                 pos = dropped.index.to_series().groupby(self.data['Concat_#']).first()
                 self.data.loc[pos[1:],'Interpellet_Intervals'] = np.nan
-    
+
     def add_correct_pokes(self):
         """Compute whether each poke was correct or not.  This process returns
         numpy NaN if files are in the older format (only pellets logged).  Stored
@@ -134,7 +135,7 @@ class FED3_File():
         df.iloc[0,df.columns.get_loc('Binary_Right_Pokes')] = df['Right_Poke_Count'][0]
         df['Correct_Poke'] = df.apply(lambda row: self.is_correct_poke(row), axis=1)
         df['Correct_Poke'] = df['Correct_Poke'].astype(float)
-        
+
     def is_correct_poke(self,row):
         """For each poke event against the active poke column to verify correctness."""
         try:
@@ -145,7 +146,7 @@ class FED3_File():
                 return np.nan
         except:
             return np.nan
-    
+
     def determine_mode(self):
         """Find the recording mode of the file.  Returns the mode as a string."""
         mode = 'Unknown'
@@ -164,23 +165,27 @@ class FED3_File():
             else:
                 mode = str(column[0])
         return mode
-    
+
     def handle_retrieval_time(self):
         """Convert the Retrieval_Time column to deal with non-numeric entries.
-        Currently, all are converted to np.nan.  Also, sets NaN retrieval
-        times to 0 when there is a pellet event.  Issue due to very short
-        retrieval times (<1 second) being logged as 0.  Likely will be
-        fixed in future FED code."""
+        Currently, all are converted to np.nan.  Also, weakly tries to set
+        NaN retrieval times to 0 when there is a pellet event.
+        Issue due to very short retrieval times (<1 second) being logged as 0.
+        Likely will be fixed in future FED code."""
         self.data['Retrieval_Time'] = pd.to_numeric(self.data['Retrieval_Time'],errors='coerce')
-        self.data.loc[(self.data['Event'] == 'Pellet') &
-                      pd.isnull(self.data['Retrieval_Time']), 'Retrieval_Time'] = 0
-    
+        try:
+            self.data.loc[(self.data['Event'] == 'Pellet') &
+                          pd.isnull(self.data['Retrieval_Time']), 'Retrieval_Time'] = 0
+        except:
+            pass
+
     def reassign_events(self):
         """Reassign the "Event" column based on changes in the pellet and poke
         counts.  Catches some errors with improper event logging."""
-        events = ["Pellet" if v else 'Poke' for v in self.data['Binary_Pellets']]
-        self.data['Event'] = events
-     
+        if 'Event' in self.data.columns:
+            events = ["Pellet" if v else 'Poke' for v in self.data['Binary_Pellets']]
+            self.data['Event'] = events
+
 class FedCannotConcat(Exception):
     """Error when FEDs can't be concatendated"""
     pass
@@ -205,7 +210,7 @@ def is_concatable(feds):
         if file.start_time <= sorted_feds[i-1].end_time:
             return False
     return True
-        
+
 def fed_concat(feds):
     """
     Concatenates the data of multiple FED3_Files into a single DataFrame.

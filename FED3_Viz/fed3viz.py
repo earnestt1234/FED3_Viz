@@ -4,6 +4,11 @@ FED3 Viz: A tkinter program for visualizing FED3 Data
 
 @author: https://github.com/earnestt1234
 """
+#try to disable warning
+import warnings
+import matplotlib.cbook
+warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
+
 import datetime as dt
 import emoji
 import matplotlib.pyplot as plt
@@ -41,7 +46,7 @@ class FED_Plot():
         self.dpi = dpi
         self.x_pix = int(self.x * self.dpi) + 300
         self.y_pix = int(self.y * self.dpi) + 100
-        
+
 class New_Window_Figure():
     def __init__(self, toplevel, fig, ax, frame, canvas, toolbar, in_use,):
         self.toplevel = toplevel
@@ -56,7 +61,7 @@ class FED3_Viz(tk.Tk):
     def __init__(self):
         super(FED3_Viz, self).__init__()
         self.title('FED3 Viz')
-        if not platform.system() == 'Darwin': 
+        if not platform.system() == 'Darwin':
             self.iconbitmap('img/fedviz_logo.ico')
         self.r_click = '<Button-3>'
         self.LOADED_FEDS = []
@@ -76,7 +81,7 @@ class FED3_Viz(tk.Tk):
                                                          frame=None,canvas=None,
                                                          toolbar=None,in_use=False))
         self.FIGURE, self.AX = plt.subplots(figsize=(5,3.5),dpi=150) #fig/axes used in plot tab
-        self.CB = None      
+        self.CB = None
         times = []
         for xm in [' am', ' pm']:
             for num in range(0,12):
@@ -86,7 +91,7 @@ class FED3_Viz(tk.Tk):
                 if time == '0 pm':
                     time = 'noon'
                 times.append(time)
-                
+
         self.times_to_int = {time : num for num,time in enumerate(times)}
         self.freq_bins = ['5 minutes', '10 minutes', '15 minutes', '30 minutes', '1 hour']
         self.freq_bins += [str(i) + ' hours' for i in range(2,25)]
@@ -101,7 +106,7 @@ class FED3_Viz(tk.Tk):
             elif 'hour' in val:
                 out += 'H'
             self.freq_bins_to_args[val] = out
-        
+
     #---SETUP TABS
         self.tabcontrol = ttk.Notebook(self)
         self.home_tab   = tk.Frame(self.tabcontrol)
@@ -125,10 +130,10 @@ class FED3_Viz(tk.Tk):
         self.home_sheets = tk.Frame(self.home_tab)
         self.plot_buttons = tk.Frame(self.home_tab)
         self.plot_selector = tk.Frame(self.home_tab)
-        
+
         self.fed_text.grid(row=1,column=0,sticky='w',padx=(10,0),
                             columnspan=2)
-        self.fed_buttons.grid(row=2,column=0, sticky='nsew', padx=5) 
+        self.fed_buttons.grid(row=2,column=0, sticky='nsew', padx=5)
         self.home_sheets.grid(row=2,column=1,sticky='nsew',columnspan=2)
         self.home_sheets.rowconfigure(0,weight=1)
         self.home_sheets.columnconfigure(0,weight=1)
@@ -136,8 +141,8 @@ class FED3_Viz(tk.Tk):
                                 columnspan=2)
         self.plot_selector.rowconfigure(0,weight=1)
         self.plot_selector.columnconfigure(0,weight=1)
-        
-        
+
+
         #labels
         italic = 'Segoe 10 italic'
         self.home_buttons_help = tk.Label(self.fed_text, text='Welcome to FED3 Viz!',
@@ -145,11 +150,11 @@ class FED3_Viz(tk.Tk):
         self.file_view_label    = tk.Label(self.home_sheets, text='File View',
                                           font=italic)
         self.group_view_label    = tk.Label(self.home_sheets, text='Group View',
-                                          font=italic)     
+                                          font=italic)
         #spreadsheets
         treeview_columns = ['','Name','Mode','# Events','Start Time',
                             'End Time','Duration','Groups']
-        self.files_spreadsheet = ttk.Treeview(self.home_sheets, 
+        self.files_spreadsheet = ttk.Treeview(self.home_sheets,
                                               columns=treeview_columns)
         self.files_spreadsheet.column('', width=25, stretch=False)
         self.files_spreadsheet.column('Name', width=200)
@@ -158,20 +163,20 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.column('Start Time', width=125)
         self.files_spreadsheet.column('End Time', width=125)
         self.files_spreadsheet.column('Duration', width=100)
-        self.files_spreadsheet.column('Groups', width=150)     
+        self.files_spreadsheet.column('Groups', width=150)
         for i,val in enumerate(treeview_columns):
             self.files_spreadsheet.heading(i, text=val)
         self.files_spreadsheet['show'] = 'headings'
-        self.files_spreadsheet.bind('<Button-1>', lambda event, reverse=False: 
+        self.files_spreadsheet.bind('<Button-1>', lambda event, reverse=False:
                                     self.sort_FEDs(event,reverse))
         self.files_spreadsheet.bind('<ButtonRelease-1>', self.update_buttons_home)
-        self.files_spreadsheet.bind('<Double-Button-1>', lambda event, reverse=True: 
+        self.files_spreadsheet.bind('<Double-Button-1>', lambda event, reverse=True:
                                     self.sort_FEDs(event,reverse))
         ctrla1 = '<Control-a>'
         ctrla2 = '<Control-A>'
         if platform.system() == 'Darwin':
             ctrla1 = '<Mod1-a>'
-            ctrla2 = '<Mod1-A>'           
+            ctrla2 = '<Mod1-A>'
         self.files_spreadsheet.bind(ctrla1,self.select_all_FEDs)
         self.files_spreadsheet.bind(ctrla2,self.select_all_FEDs)
         self.files_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.files_spreadsheet.yview,)
@@ -182,7 +187,7 @@ class FED3_Viz(tk.Tk):
         self.group_view.bind('<ButtonRelease-1>', self.select_group)
         self.group_scrollbar = ttk.Scrollbar(self.home_sheets, command=self.group_view.yview)
         self.group_view.configure(yscrollcommand=self.group_scrollbar.set)
-        
+
         #plot selector:
         self.plot_treeview = ttk.Treeview(self.plot_selector,)
         self.plot_treeview.heading('#0', text='Plots',)
@@ -219,25 +224,25 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_other, 1, text='Battery Life')
         self.plot_treeview.insert(self.ps_other, 2, text='Motor Turns')
         self.plot_treeview.bind('<<TreeviewSelect>>', self.handle_plot_selelection)
-        
+
         self.plot_tree_scroll = ttk.Scrollbar(self.plot_selector, command=self.plot_treeview.yview)
         self.plot_treeview.configure(yscrollcommand=self.plot_tree_scroll.set)
-        
+
         #progessbar
         self.progressbar = ttk.Progressbar(self.fed_text, orient='horizontal',
                                            mode='determinate', length=500)
         self.progresstextvar = tk.StringVar()
         self.progresstextvar.set('')
         self.progresstext = tk.Label(self.fed_text, textvariable=self.progresstextvar)
-        
+
         #buttons
         self.button_load   = tk.Button(self.fed_buttons, text='Load Files',
-                                       command=lambda: 
+                                       command=lambda:
                                        self.load_FEDs(overwrite=False,
                                                       skip_duplicates=self.loadduplicates_checkbox_val.get()),
                                        width=8)
         self.button_load_folder = tk.Button(self.fed_buttons, text='Load Folder',
-                                       command=lambda: 
+                                       command=lambda:
                                        self.load_FEDs(overwrite=False,
                                                       skip_duplicates=self.loadduplicates_checkbox_val.get(),
                                                       from_folder=True),
@@ -282,9 +287,9 @@ class FED3_Viz(tk.Tk):
         self.button_create_plot        = tk.Button(self.plot_selector, text='Create Plot',
                                                    command=self.init_plot,
                                                    state=tk.DISABLED, height=2,
-                                                   font='Segoe 10 bold')       
+                                                   font='Segoe 10 bold')
 
-    #---HOVER TEXT DICTIONARY          
+    #---HOVER TEXT DICTIONARY
         #dictionary mapping widgets to hover text
         self.hover_text_one_dict = {self.button_load : 'Load FED3 files',
                                     self.button_load_folder: 'Load all FED3 files in a folder (and subfolders)',
@@ -311,7 +316,7 @@ class FED3_Viz(tk.Tk):
         for button in self.hover_text_one_dict.keys():
             button.bind('<Enter>', self.hover_text_one)
             button.bind('<Leave>', self.clear_hover_text_one)
-     
+
     #---PLOT TREEVIEW > HELP TEXT
         #associate each plot_treeview entry with helptext
         self.plot_nodes_help = {'Single Pellet Plot':'Plot pellets received for one device',
@@ -340,7 +345,7 @@ class FED3_Viz(tk.Tk):
                                 'Average Retrieval Time Plot':'Plot mean pellet retrieval time for Groups (Groups make individual curves)',
                                 'Battery Life':'Plot the battery voltage for a device over time.',
                                 'Motor Turns':'Plot the amount of motor turns for each pellet dispensed.'}
-            
+
     #---PLOT TREEVIEW > PLOT FUNCTION
         #associate each plot_treeview entry with a plotting function
         self.plot_nodes_func = {'Single Pellet Plot':self.pellet_plot_single_TK,
@@ -368,8 +373,8 @@ class FED3_Viz(tk.Tk):
                                 'Average Retrieval Time Plot':self.avg_plot_TK,
                                 'Battery Life': self.battery_life_TK,
                                 'Motor Turns': self.motor_turns_TK,
-                                'Day/Night Interpellet Interval Plot': self.dn_ipi_TK}   
-               
+                                'Day/Night Interpellet Interval Plot': self.dn_ipi_TK}
+
     #---PLACE WIDGETS FOR HOME TAB
         #fed_buttons/group buttons
         self.button_load.grid(row=0,column=0,sticky='sew')
@@ -385,20 +390,20 @@ class FED3_Viz(tk.Tk):
         self.button_save_session.grid(row=10,column=0,sticky='sew',pady=(20,0))
         self.button_load_session.grid(row=11,column=0,sticky='sew')
         self.button_descriptives.grid(row=12,column=0,sticky='sew',pady=(20,0))
-        
+
         #labels
         self.home_buttons_help.grid(row=0,column=0,sticky='nsw',
-                                    pady=(20),)  
+                                    pady=(20),)
         #spreadsheets
         self.files_spreadsheet.grid(row=0,column=0,sticky='nsew')
         self.files_scrollbar.grid(row=0,column=1,sticky='nsew')
         self.file_view_label.grid(row=1,column=0,sticky='w')
-        self.group_view.grid(row=2,column=0,sticky='nsew') 
+        self.group_view.grid(row=2,column=0,sticky='nsew')
         self.group_scrollbar.grid(row=2,column=1,sticky='nsew')
         self.group_view_label.grid(row=3,column=0,sticky='w')
         self.progresstext.grid(row=0,column=1,sticky='w')
         self.home_buttons_help.lift()
-        
+
         #plot selector
         self.plot_treeview.grid(row=0,column=0,sticky='nsew')
         self.plot_tree_scroll.grid(row=0,column=1,sticky='nsew')
@@ -429,13 +434,13 @@ class FED3_Viz(tk.Tk):
         self.plot_rename = tk.Button(self.plot_buttons,text='Rename',
                                      command=self.rename_plot,
                                      state=tk.DISABLED)
-        self.plot_delete = tk.Button(self.plot_buttons,text='Delete', 
+        self.plot_delete = tk.Button(self.plot_buttons,text='Delete',
                                      command=self.delete_plot,
                                      state=tk.DISABLED)
         self.plot_popout = tk.Button(self.plot_buttons,text='New Window',
                                      command=self.new_window_plot,
                                      state=tk.DISABLED)
-        self.plot_save   = tk.Button(self.plot_buttons,text='Save Plots', 
+        self.plot_save   = tk.Button(self.plot_buttons,text='Save Plots',
                                      command=self.save_plots,
                                      state=tk.DISABLED)
         self.plot_inspect = tk.Button(self.plot_buttons, text='Plot Code',
@@ -444,18 +449,18 @@ class FED3_Viz(tk.Tk):
         self.plot_data = tk.Button(self.plot_buttons, text='Save Plot Data',
                                    command=self.save_plot_data,
                                    state=tk.DISABLED)
-    #---PLACE WIDGETS FOR PLOTS TAB        
-        self.plot_buttons.grid(row=0,column=0,sticky='nsew')   
-        self.plot_listbox.grid(row=0,column=1,sticky='nsew')    
+    #---PLACE WIDGETS FOR PLOTS TAB
+        self.plot_buttons.grid(row=0,column=0,sticky='nsew')
+        self.plot_listbox.grid(row=0,column=1,sticky='nsew')
         self.plot_container.grid(row=0,column=2,sticky='nsew')
         self.plot_tab.grid_rowconfigure(0,weight=1)
         self.plot_rename.grid(row=0,column=0,sticky='ew')
-        self.plot_popout.grid(row=1,column=0,sticky='ew')  
+        self.plot_popout.grid(row=1,column=0,sticky='ew')
         self.plot_save.grid(row=2,column=0,sticky='ew')
         self.plot_inspect.grid(row=3,column=0,sticky='ew')
         self.plot_data.grid(row=4, column=0,sticky='ew')
         self.plot_delete.grid(row=5,column=0,sticky='ew', pady=(20,0))
-            
+
     #---INIT WIDGETS FOR SETTINGS TAB
         #organization frames
         self.settings_tab.grid_rowconfigure(0,weight=1)
@@ -478,42 +483,42 @@ class FED3_Viz(tk.Tk):
         self.settings_col2 = tk.Frame(self.all_settings_frame)
         self.settings_col1.grid(row=0,column=0, sticky='nw', padx=(5,0))
         self.settings_col2.grid(row=0,column=1, sticky='nw')
-        
+
         self.general_settings_frame = tk.Frame(self.settings_col1)
         self.general_settings_frame.grid(row=0,column=0, sticky='nsew')
-        
+
         self.pellet_settings_frame = tk.Frame(self.settings_col1)
         self.pellet_settings_frame.grid(row=2,column=0, sticky='nsew')
-        
+
         self.average_settings_frame = tk.Frame(self.settings_col1)
         self.average_settings_frame.grid(row=1,column=0,sticky='nsew',)
-        
+
         self.ipi_settings_frame = tk.Frame(self.settings_col1)
-        self.ipi_settings_frame.grid(row=3,column=0, sticky='nsew', 
+        self.ipi_settings_frame.grid(row=3,column=0, sticky='nsew',
                                      pady=(20,0))
-        
+
         self.meal_settings_frame = tk.Frame(self.settings_col1)
         self.meal_settings_frame.grid(row=4,column=0,sticky='nsew',
                                       pady=(20,40))
-        
+
         self.retrieval_settings_frame = tk.Frame(self.settings_col2)
         self.retrieval_settings_frame.grid(row=0,column=0,sticky='nsew',
                                            pady=(0,20),padx=(20))
-        
+
         self.pr_settings_frame = tk.Frame(self.settings_col2)
         self.pr_settings_frame.grid(row=1,column=0,sticky='nsew',padx=(20))
-        
+
         self.poke_settings_frame = tk.Frame(self.settings_col2)
         self.poke_settings_frame.grid(row=2,column=0,sticky='nsew',padx=(20))
-        
+
         self.daynight_settings_frame = tk.Frame(self.settings_col2)
         self.daynight_settings_frame.grid(row=3,column=0,sticky='nsew',
                                           padx=(20,20), pady=(20,0))
-        
+
         self.load_settings_frame = tk.Frame(self.settings_col2)
-        self.load_settings_frame.grid(row=4,column=0,sticky='nsew', 
+        self.load_settings_frame.grid(row=4,column=0,sticky='nsew',
                                       padx=(20,20), pady=(0,40))
-        
+
         #labels
         self.section_font = 'Segoe 10 bold'
         if platform.system() == 'Darwin':
@@ -535,7 +540,7 @@ class FED3_Viz(tk.Tk):
                                                 fg='gray')
         self.pelletplotcolor_label   = tk.Label(self.pellet_settings_frame,
                                                 text='Default color (single pellet plots)')
-        
+
         self.average_settings_label  = tk.Label(self.average_settings_frame,
                                                 text='Averaging (Pellet & Poke Plots)',
                                                 font=self.section_font)
@@ -593,7 +598,7 @@ class FED3_Viz(tk.Tk):
         lse_text = 'Save the current settings for future use.'
         self.load_settings_explan = tk.Label(self.load_settings_frame,
                                              text=lse_text)
-                                              
+
         #dropdowns/checkboxes
         #   general
         self.date_filter_val = tk.BooleanVar()
@@ -631,7 +636,7 @@ class FED3_Viz(tk.Tk):
         self.allgroups_val.set(True)
         self.allgroups = ttk.Checkbutton(self.general_settings_frame,
                                         text='For plots using groups, include all loaded groups\nrather than those selected',
-                                        var=self.allgroups_val, 
+                                        var=self.allgroups_val,
                                         command=self.update_buttons_home)
         self.abs_groups_val = tk.BooleanVar()
         self.abs_groups_val.set(True)
@@ -658,7 +663,7 @@ class FED3_Viz(tk.Tk):
                                                values=['SEM','STD','raw data','None'],
                                                width=10)
         self.average_error_menu.set('SEM')
-        
+
         self.average_bin_menu = ttk.Combobox(self.average_settings_frame,
                                              values=self.freq_bins,
                                              width=10)
@@ -676,7 +681,7 @@ class FED3_Viz(tk.Tk):
                                                   values=list(range(1,8)),
                                                   width=10,
                                                   state=tk.DISABLED)
-        self.average_aligndays_menu.set(3)      
+        self.average_aligndays_menu.set(3)
         #   pellet plot
         self.pelletplottype_menu = ttk.Combobox(self.pellet_settings_frame,
                                                 values=['Cumulative',
@@ -695,7 +700,7 @@ class FED3_Viz(tk.Tk):
         self.pelletplotalign_checkbox = ttk.Checkbutton(self.pellet_settings_frame,
                                                        text='Align multi pellet plots to the same start time',
                                                        var=self.pelletplotalign_checkbox_val)
-        
+
         #   day/night
         dn_options = ['pellets','retrieval time','interpellet intervals',
                       'correct pokes','errors','correct pokes (%)','errors (%)']
@@ -735,7 +740,7 @@ class FED3_Viz(tk.Tk):
                                         values=list(range(1,11)),
                                         width=10)
         self.meal_pelletmin_box.set(1)
-        
+
         #   retrieval
         self.retrieval_threshold_menu = ttk.Combobox(self.retrieval_settings_frame,
                                                      values=['None',60,120,300,600,1800,3600],
@@ -758,13 +763,13 @@ class FED3_Viz(tk.Tk):
                                           values=['SEM','STD','None'],
                                           width=10)
         self.pr_error_menu.set('SEM')
-        
+
         self.pr_show_indvl_val = tk.BooleanVar()
         self.pr_show_indvl_val.set(False)
         self.pr_show_indvl_box = ttk.Checkbutton(self.pr_settings_frame,
                                                  text='Show individual values',
                                                  var=self.pr_show_indvl_val)
-        
+
         #   poke
         self.poke_style_menu = ttk.Combobox(self.poke_settings_frame,
                                             values=['Cumulative','Frequency',])
@@ -772,7 +777,7 @@ class FED3_Viz(tk.Tk):
         self.poke_bins_menu = ttk.Combobox(self.poke_settings_frame,
                                            values=self.freq_bins,
                                            width=10)
-        self.poke_bins_menu.set('1 hour')     
+        self.poke_bins_menu.set('1 hour')
         self.poke_correct_val = tk.BooleanVar()
         self.poke_correct_val.set(True)
         self.poke_correct_box = ttk.Checkbutton(self.poke_settings_frame,
@@ -811,7 +816,7 @@ class FED3_Viz(tk.Tk):
         self.settings_lastused = ttk.Checkbutton(self.load_settings_frame,
                                                 text='Load last used settings when opening',
                                                 var=self.settings_lastused_val)
-        
+
         #buttons
         self.settings_load_button = tk.Button(self.load_settings_frame,
                                               text='Load',
@@ -819,7 +824,7 @@ class FED3_Viz(tk.Tk):
         self.settings_save_button = tk.Button(self.load_settings_frame,
                                               text='Save',
                                               command=self.save_settings)
-        
+
     #---PLACE WIDGETS FOR SETTINGS TAB
         self.general_settings_label.grid(row=0,column=0,sticky='w')
         self.date_filter_box.grid(row=1,column=0,sticky='w',padx=(20,0))
@@ -837,7 +842,7 @@ class FED3_Viz(tk.Tk):
         self.loadduplicates_checkbox.grid(row=7,column=0,padx=(20,0),sticky='w')
         self.overwrite_checkbox.grid(row=8,column=0,padx=(20,0),sticky='w')
         self.weirdfed_warning.grid(row=9,column=0,padx=(20,0),sticky='w')
-        
+
         self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
         self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
         self.average_error_menu.grid(row=1,column=1,sticky='nw')
@@ -848,8 +853,8 @@ class FED3_Viz(tk.Tk):
         self.average_align_ontime_label.grid(row=4,column=0,sticky='w',padx=(30,0))
         self.average_alignstart_menu.grid(row=4,column=1,sticky='w')
         self.average_aligndays_menu.grid(row=4,column=2,sticky='w')
-        
-        self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))       
+
+        self.pellet_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
         self.pelletplottype_label.grid(row=1,column=0,padx=(20,100),sticky='w')
         self.pelletplottype_menu.grid(row=1,column=1,sticky='nw')
         self.pelletplotcumu_label.grid(row=2,column=0,padx=(20,100),sticky='w')
@@ -858,29 +863,29 @@ class FED3_Viz(tk.Tk):
         self.pelletplotcolor_menu.grid(row=3,column=1,sticky='nw')
         self.pelletplotalign_checkbox.grid(row=4,column=0,padx=(20,100),
                                            sticky='nw')
-        
+
         self.daynight_settings_label.grid(row=0,column=0,sticky='w')
         self.daynight_values_label.grid(row=1,column=0,sticky='w',padx=(20,175))
         self.daynight_values.grid(row=1,column=1,sticky='w')
         self.daynight_error_label.grid(row=2,column=0,sticky='w',padx=(20,175))
         self.daynight_error_menu.grid(row=2,column=1,sticky='w')
         self.daynight_show_indvl.grid(row=3,column=0,sticky='w',padx=(20,0))
-        
+
         self.ipi_settings_label.grid(row=0,column=0,sticky='w')
         self.ipi_kde_checkbox.grid(row=1,column=0,sticky='w',padx=(20,0))
         self.ipi_log_checkbox.grid(row=2,column=0,sticky='w',padx=(20,0))
-        
+
         self.meal_settings_label.grid(row=0,column=0,sticky='w')
         self.norm_meal_box.grid(row=1,column=0,sticky='w',padx=(20,0))
         self.mealdelay_label.grid(row=2,column=0,padx=(20,175),sticky='w')
         self.mealdelay_box.grid(row=2,column=1,sticky='ew')
         self.meal_pelletmin_label.grid(row=3,column=0,sticky='w',padx=(20,0))
         self.meal_pelletmin_box.grid(row=3,column=1,sticky='ew')
-        
+
         self.retrieval_label.grid(row=0,column=0,sticky='w')
         self.retrieval_threshold_label.grid(row=1,column=0,sticky='w',padx=(20,100))
         self.retrieval_threshold_menu.grid(row=1,column=1,sticky='w',)
-        
+
         self.pr_settings_label.grid(row=0,column=0,sticky='w')
         self.pr_style_label.grid(row=1,column=0,sticky='w',padx=(20,0))
         self.pr_style_menu.grid(row=1,column=1,sticky='ew',columnspan=2)
@@ -890,7 +895,7 @@ class FED3_Viz(tk.Tk):
         self.pr_error_label.grid(row=3,column=0,sticky='w',padx=(20,55))
         self.pr_error_menu.grid(row=3,column=1,sticky='ew',columnspan=2)
         self.pr_show_indvl_box.grid(row=4,column=0,sticky='w',padx=(20,0), pady=(0,20))
-        
+
         self.poke_settings_label.grid(row=0,column=0,sticky='w')
         self.poke_style_label.grid(row=1,column=0,sticky='w',padx=(20,0))
         self.poke_style_menu.grid(row=1,column=1,sticky='ew',)
@@ -903,21 +908,21 @@ class FED3_Viz(tk.Tk):
         self.poke_biasstyle_label.grid(row=7,column=0,sticky='w',padx=20,pady=(10,0))
         self.poke_biasstyle_menu.grid(row=7,column=1,sticky='w', pady=(10,0))
         self.poke_dynamiccolor_box.grid(row=8,column=0,sticky='w',padx=20)
-    
+
         self.load_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
         self.load_settings_explan.grid(row=1,column=0,padx=(20,30),sticky='w')
         self.settings_load_button.grid(row=1,column=2,sticky='w',ipadx=20,padx=(0,10))
         self.settings_save_button.grid(row=1,column=3,sticky='nw',ipadx=20)
         self.settings_lastused.grid(row=2,column=0,sticky='w',padx=(20,0))
-        
+
     #---INIT WIDGETS FOR ABOUT TAB
         self.graphic_frame = tk.Frame(self.about_tab)
         self.information_frame = tk.Frame(self.about_tab)
         title_text = 'FED3 Viz'
         title_font = ('Fixedsys', '48','bold')
         subtitle_text = 'a GUI for plotting FED3 data'
-        subtitle_font = ('Times','14','normal')      
-        self.fed_title = tk.Label(self.graphic_frame, text=title_text, 
+        subtitle_font = ('Times','14','normal')
+        self.fed_title = tk.Label(self.graphic_frame, text=title_text,
                                   font=title_font)
         self.fed_subtitle = tk.Label(self.graphic_frame,text=subtitle_text,
                                      font=subtitle_font)
@@ -938,28 +943,28 @@ class FED3_Viz(tk.Tk):
         self.kravitzlab2 = tk.Label(self.postcolon_text,
                                     text=kravitz_url, fg='blue',
                                     cursor='hand2')
-        self.kravitzlab2.bind('<ButtonRelease-1>', 
+        self.kravitzlab2.bind('<ButtonRelease-1>',
                               lambda event: self.open_url(kravitz_url))
         self.fedhack1 = tk.Label(self.precolon_text,text='FED3 Hackaday:',
                                  font=bold)
         hackurl = 'https://hackaday.io/project/106885-feeding-experimentation-device-3-fed3'
         self.fedhack2 = tk.Label(self.postcolon_text,text=hackurl,
                                  fg='blue',cursor='hand2',)
-        self.fedhack2.bind('<ButtonRelease-1>', 
+        self.fedhack2.bind('<ButtonRelease-1>',
                             lambda event: self.open_url(hackurl))
         self.github1 = tk.Label(self.precolon_text,text='GitHub:',
                                 font=bold)
         giturl = 'https://github.com/earnestt1234/'
         self.github2 = tk.Label(self.postcolon_text,text=giturl,fg='blue',
                                 cursor='hand2')
-        self.github2.bind('<ButtonRelease-1>', 
+        self.github2.bind('<ButtonRelease-1>',
                           lambda event: self.open_url(giturl))
         self.googlegr1 = tk.Label(self.precolon_text, text='Google Group:',
                                   font=bold)
         googlegr_url = 'https://groups.google.com/forum/#!forum/fedforum'
         self.googlegr2 = tk.Label(self.postcolon_text,text=googlegr_url,
                                   fg='blue',cursor='hand2')
-        self.googlegr2.bind('<ButtonRelease-1>', 
+        self.googlegr2.bind('<ButtonRelease-1>',
                             lambda event: self.open_url(googlegr_url))
         self.help_link1 = tk.Label(self.precolon_text,text='HELP (MANUAL): ',
                                    font=bold)
@@ -978,7 +983,7 @@ class FED3_Viz(tk.Tk):
                       ' '*spaces + '-Tom & Lex')
         self.caveat = tk.Label(self.information_frame,text=caveat_text,
                                wraplength=400, justify=tk.LEFT)
-        
+
     #---PLACE WIDGETS FOR ABOUT TAB
         #title_frame
         self.about_tab.grid_columnconfigure(0,weight=1)
@@ -1005,7 +1010,7 @@ class FED3_Viz(tk.Tk):
         self.googlegr1.grid(row=6,column=0,sticky='w')
         self.googlegr2.grid(row=6,column=1,sticky='w')
         self.caveat.grid(row=1, column=0, pady=40, columnspan=2)
-        
+
     #---LOAD SETTINGS ON START
     #try to load default settings when the application starts:
         default=True
@@ -1027,7 +1032,7 @@ class FED3_Viz(tk.Tk):
                     self.load_settings(dialog=False,settings_file=[default_file])
                 except:
                     print("Found 'DEFAULT.CSV' settings file, but couldn't load!")
-                    
+
     #---OS CONFIG
         self.w_offset = 400
         self.h_offset = 60
@@ -1039,7 +1044,7 @@ class FED3_Viz(tk.Tk):
             if widget.grid_slaves():
                 for i in widget.grid_slaves():
                     config_color_mac(i)
-        
+
         if platform.system() == 'Darwin':
             self.plot_treeview.column('#0', width=250)
             self.plot_listbox.config(width=30)
@@ -1049,7 +1054,7 @@ class FED3_Viz(tk.Tk):
             for widget in [self.home_tab, self.plot_tab,
                             self.settings_tab, self.about_tab]:
                 config_color_mac(widget)
-     
+
     #---RIGHT CLICK MENUS
         #file_view_single
         self.files_spreadsheet.bind(self.r_click, self.r_raise_menu)
@@ -1059,7 +1064,7 @@ class FED3_Viz(tk.Tk):
         self.r_menu_file_empty.add_command(label='Load folder',
                                             command=lambda:self.load_FEDs(skip_duplicates=self.loadduplicates_checkbox_val.get(),
                                                                           from_folder=True))
-        
+
         self.r_menu_file_single = tkinter.Menu(self, tearoff=0,)
         self.r_menu_file_single.add_command(label='Open file location',command= self.r_open_location,)
         self.r_menu_file_single.add_command(label='Open file externally', command=self.r_open_externally)
@@ -1068,7 +1073,7 @@ class FED3_Viz(tk.Tk):
         self.r_menu_file_single.add_command(label='Edit Group', command=self.edit_group)
         self.r_menu_file_single.add_separator()
         self.r_menu_file_single.add_command(label='Delete', command=self.delete_FEDs)
-        
+
         self.r_menu_file_multi = tkinter.Menu(self, tearoff=0,)
         self.r_menu_file_multi.add_command(label='Create Group', command=self.create_group)
         self.r_menu_file_multi.add_command(label='Edit Group', command=self.edit_group)
@@ -1076,7 +1081,7 @@ class FED3_Viz(tk.Tk):
         self.r_menu_file_multi.add_command(label='Concatenate', command=self.concat_feds)
         self.r_menu_file_multi.add_separator()
         self.r_menu_file_multi.add_command(label='Delete', command=self.delete_FEDs)
-        
+
         self.plot_listbox.bind(self.r_click, self.r_raise_menu)
         self.r_menu_plot_single = tkinter.Menu(self, tearoff=0,)
         self.r_menu_plot_single.add_command(label='Load settings used in this graph',command= self.r_load_plot_settings,)
@@ -1089,14 +1094,14 @@ class FED3_Viz(tk.Tk):
         self.r_menu_plot_single.add_command(label='Save data',command= self.save_plot_data,)
         self.r_menu_plot_single.add_separator()
         self.r_menu_plot_single.add_command(label='Delete',command= self.delete_plot,)
-        
+
         self.r_menu_plot_multi = tkinter.Menu(self, tearoff=0,)
         self.r_menu_plot_multi.add_command(label='Plot Code',command= self.show_plot_code,)
         self.r_menu_plot_multi.add_command(label='Save Figure',command= self.save_plots,)
         self.r_menu_plot_multi.add_command(label='Save Data',command= self.save_plot_data,)
         self.r_menu_plot_multi.add_separator()
         self.r_menu_plot_multi.add_command(label='Delete',command= self.delete_plot,)
-                    
+
     #---HOME TAB BUTTON FUNCTIONS
     def load_FEDs(self, overwrite=True, skip_duplicates=True, from_folder=False, file_paths=None):
         if file_paths:
@@ -1126,13 +1131,13 @@ class FED3_Viz(tk.Tk):
                 self.LOADED_FEDS = []
             for i,file in enumerate(files):
                 file_name = os.path.basename(file)
-                if self.loading:                    
-                    if skip_duplicates:                       
+                if self.loading:
+                    if skip_duplicates:
                         if file_name not in loaded_filenames:
                             try:
                                 pass_FEDs.append(FED3_File(file))
                             except:
-                                failed_FEDs.append(file_name)                     
+                                failed_FEDs.append(file_name)
                     else:
                         try:
                             pass_FEDs.append(FED3_File(file))
@@ -1150,33 +1155,35 @@ class FED3_Viz(tk.Tk):
         if not self.weirdfed_warning_val.get():
             weird_FEDs=None
         if failed_FEDs or weird_FEDs:
-            self.raise_load_errors(failed_FEDs, weird_FEDs,)         
+            self.raise_load_errors(failed_FEDs, weird_FEDs,)
         self.LOADED_FEDS += pass_FEDs
         self.update_file_view()
         self.update_group_view()
         self.update_buttons_home()
         self.loading=False
-    
+
     def concat_feds(self):
-        to_concat = [self.LOADED_FEDS[int(i)] for i in self.files_spreadsheet.selection()]
+        selected = self.files_spreadsheet.selection()
+        to_concat = [self.LOADED_FEDS[int(i)] for i in selected]
         if to_concat:
             try:
                 new = fed_concat(to_concat)
                 savepath = tk.filedialog.asksaveasfilename(title='Select where to save new file',
                                                            defaultextension='.csv',
-                                                           filetypes = [('Comma-Separated Values', '*.csv'),
-                                                                        ('Excel', '*.xslx')])
+                                                           filetypes = [('Comma-Separated Values', '*.csv')])
                 if savepath:
                     new.to_csv(savepath)
                     new_FED = FED3_File(savepath)
                     self.LOADED_FEDS.append(new_FED)
+                    for fed in to_concat:
+                        self.LOADED_FEDS.remove(fed)
                     self.update_file_view()
                     self.update_group_view()
-                    self.update_buttons_home()            
+                    self.update_buttons_home()
             except FedCannotConcat:
                 self.raise_fed_concat_error()
                 return
-    
+
     def delete_FEDs(self):
         to_delete = [int(i) for i in self.files_spreadsheet.selection()]
         for index in sorted(to_delete, reverse=True):
@@ -1184,7 +1191,7 @@ class FED3_Viz(tk.Tk):
         self.update_file_view()
         self.update_group_view()
         self.update_buttons_home(None)
-    
+
     def create_group(self):
         self.create_window = tk.Toplevel(self)
         self.create_window.title('Enter a group name')
@@ -1211,7 +1218,7 @@ class FED3_Viz(tk.Tk):
         self.ok_button_create.grid(row=2,column=0,sticky='ew',padx=(20,20),pady=(20,20))
         cancel_button.grid(row=2,column=1,sticky='ew',padx=(20,20),pady=(20,20))
         self.update_buttons_home()
-        
+
     def delete_group(self):
         clicked = self.group_view.curselection()
         if clicked:
@@ -1223,12 +1230,12 @@ class FED3_Viz(tk.Tk):
             self.update_file_view()
             self.update_group_view()
             self.update_buttons_home()
-    
+
     def edit_group(self):
         selected = [int(i) for i in self.files_spreadsheet.selection()]
         self.edit_window = tk.Toplevel(self)
         self.edit_window.grab_set()
-        if not platform.system() == 'Darwin': 
+        if not platform.system() == 'Darwin':
             self.edit_window.iconbitmap('img/edit.ico')
         self.edit_window.title('Edit Groups')
         introtext = 'For ' + str(len(selected)) + ' selected file(s), add to / remove from these groups:'
@@ -1242,7 +1249,7 @@ class FED3_Viz(tk.Tk):
                                          command=lambda: self.handle_edit('add'))
         self.button_edit_remove = tk.Button(self.edit_window, text='Remove',
                                             state=tk.DISABLED, width=6,
-                                            command=lambda: self.handle_edit('remove'))        
+                                            command=lambda: self.handle_edit('remove'))
         edit_intro.grid(row=0,column=0,sticky='nsew', padx=(30), pady=30,
                         columnspan=2)
         self.edit_listbox.grid(row=1,column=0,sticky='nsew',padx=(30), pady=(0,30),
@@ -1250,7 +1257,7 @@ class FED3_Viz(tk.Tk):
         self.button_edit_add.grid(row=2, column=0, sticky='nsew', padx=30, pady=(0,30))
         self.button_edit_remove.grid(row=2,column=1,sticky='nsew', padx=30, pady=(0,30))
         self.edit_listbox.bind('<<ListboxSelect>>', self.check_addremove)
-    
+
     def save_groups(self):
         group_dict = {fed.directory : fed.group for fed in self.LOADED_FEDS
                       if fed.group}
@@ -1262,7 +1269,7 @@ class FED3_Viz(tk.Tk):
             df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in group_dict.items()]))
             df.to_csv(savepath)
             del df
-            
+
     def load_groups(self):
         settings_file = tk.filedialog.askopenfilenames(title='Select group labels to load',
                                                         defaultextension='.csv',
@@ -1283,7 +1290,7 @@ class FED3_Viz(tk.Tk):
                             fed.group.append(str(grp))
         self.update_file_view()
         self.update_group_view()
-    
+
     def save_session(self, dialog=True):
         if dialog:
             savepath = tk.filedialog.asksaveasfilename(title='Select where to save session file',
@@ -1307,7 +1314,7 @@ class FED3_Viz(tk.Tk):
             jarred['plots'] = jarred_plots
             jarred['settings'] = self.save_settings(return_df = True)
             pickle.dump(jarred, open(savepath, 'wb'))
-    
+
     def load_session(self):
         session_file = tk.filedialog.askopenfilenames(title='Select a session file to load',
                                                       initialdir='sessions',
@@ -1324,12 +1331,12 @@ class FED3_Viz(tk.Tk):
                 self.PLOTS[plot].arguments['ax'] = self.AX
                 self.raise_figure(plot)
             self.load_settings(dialog=False, from_df=unjarred['settings'])
-        
+
     def descriptives_window(self):
         self.stat_window = tk.Toplevel(self)
         self.stat_window.resizable(False, False)
         self.stat_window.grab_set()
-        if not platform.system() == 'Darwin': 
+        if not platform.system() == 'Darwin':
             self.stat_window.iconbitmap('img/mu.ico')
         self.stat_window.title('Summary Stats')
         self.stats_radio_var = tk.StringVar()
@@ -1352,10 +1359,10 @@ class FED3_Viz(tk.Tk):
         self.stats_okay_button = tk.Button(self.stat_window,
                                            text='Okay',
                                            command=self.stats_proceed,
-                                           state=tk.DISABLED)     
+                                           state=tk.DISABLED)
         self.stats_stop_button = tk.Button(self.stat_window,
                                            text='Cancel',
-                                           command=self.stat_window.destroy,)      
+                                           command=self.stat_window.destroy,)
         self.stats_from_feds.grid(row=0,column=0,sticky='nsew',padx=100,pady=(20,5),
                                   columnspan=2)
         self.stats_from_groups.grid(row=1,column=0,sticky='nsew',padx=100,pady=5,
@@ -1364,13 +1371,13 @@ class FED3_Viz(tk.Tk):
                                    columnspan=2)
         self.stats_okay_button.grid(row=3, column=0, sticky='nsew', padx=(40,5), pady=(20,5))
         self.stats_stop_button.grid(row=3, column=1, sticky='nsew', padx=(5,40), pady=(20,5))
-        if not self.files_spreadsheet.selection():  
+        if not self.files_spreadsheet.selection():
             self.stats_from_feds.configure(state=tk.DISABLED)
         if not self.group_view.curselection():
             self.stats_from_groups.configure(state=tk.DISABLED)
         if not self.GROUPS:
-            self.stats_all_groups.configure(state=tk.DISABLED)  
-    
+            self.stats_all_groups.configure(state=tk.DISABLED)
+
     def init_plot(self):
         self.failed_date_feds = []
         selection = self.plot_treeview.selection()
@@ -1389,7 +1396,7 @@ class FED3_Viz(tk.Tk):
             self.update()
         if self.failed_date_feds:
             self.raise_date_filter_error()
-    
+
     def pellet_plot_single_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
@@ -1412,7 +1419,7 @@ class FED3_Viz(tk.Tk):
                                 'Frequency' : 'Frequency pellet plot for ' + obj.filename}
                 plotdata_choices = {'Cumulative': getdata.pellet_plot_single,
                                     'Frequency' : getdata.pellet_freq_single}
-                plotfunc = func_choices[self.pelletplottype_menu.get()]           
+                plotfunc = func_choices[self.pelletplottype_menu.get()]
                 basename = name_choices[self.pelletplottype_menu.get()]
                 plotdata = plotdata_choices[self.pelletplottype_menu.get()](**arg_dict)
                 fig_name = self.create_plot_name(basename)
@@ -1422,22 +1429,22 @@ class FED3_Viz(tk.Tk):
                 self.PLOTS[fig_name] = new_plot
                 self.resize_plot(new_plot)
                 plotfunc(**arg_dict)
-                self.display_plot(new_plot)  
-            
+                self.display_plot(new_plot)
+
     def pellet_plot_multi_TK(self):
         arg_dict = self.get_current_settings_as_args()
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             arg_dict['date_filter'] = (s,e)
-            for fed in FEDs_to_plot:     
+            for fed in FEDs_to_plot:
                 if not plots.date_filter_okay(fed.data, s, e):
                     self.failed_date_feds.append(fed)
                     continue
         if self.failed_date_feds:
             return
-        arg_dict['FEDs'] = FEDs_to_plot    
+        arg_dict['FEDs'] = FEDs_to_plot
         arg_dict['ax'] = self.AX
         fig_name = self.create_plot_name('Multi-FED Pellet Plot')
         multi_plot_choices = {('Cumulative',True) :plots.pellet_plot_multi_aligned,
@@ -1451,14 +1458,14 @@ class FED3_Viz(tk.Tk):
         choice = (self.pelletplottype_menu.get(),self.pelletplotalign_checkbox_val.get())
         plotfunc = multi_plot_choices[choice]
         plotdata = plotdata_choices[choice](**arg_dict)
-        new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc, 
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                             arguments=arg_dict, plotdata=plotdata,
                             x=7,y=3.5)
         self.PLOTS[fig_name] = new_plot
         self.resize_plot(new_plot)
         plotfunc(**arg_dict)
         self.display_plot(new_plot)
-           
+
     def avg_plot_TK(self, plot_name):
         args_dict = self.get_current_settings_as_args()
         if self.allgroups_val.get():
@@ -1473,10 +1480,10 @@ class FED3_Viz(tk.Tk):
                 if group in groups:
                     feds.append(fed)
                     break
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             args_dict['date_filter'] = (s,e)
-            for fed in feds:     
+            for fed in feds:
                 if not plots.date_filter_okay(fed.data, s, e):
                     self.failed_date_feds.append(fed)
                     continue
@@ -1513,24 +1520,24 @@ class FED3_Viz(tk.Tk):
         self.resize_plot(new_plot)
         plotfunc(**args_dict)
         self.display_plot(new_plot)
-       
+
     def interpellet_plot_TK(self):
         arg_dict = self.get_current_settings_as_args()
         arg_dict['ax'] = self.AX
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             arg_dict['date_filter'] = (s,e)
-            for fed in FEDs_to_plot:     
+            for fed in FEDs_to_plot:
                 if not plots.date_filter_okay(fed.data, s, e):
                     self.failed_date_feds.append(fed)
                     continue
         if self.failed_date_feds:
             return
         basename = 'Inter-pellet Interval Plot'
-        fig_name = self.create_plot_name(basename)      
+        fig_name = self.create_plot_name(basename)
         plotdata = getdata.interpellet_interval_plot(**arg_dict)
         new_plot = FED_Plot(figname=fig_name,plotfunc=plots.interpellet_interval_plot,
                             plotdata=plotdata,arguments=arg_dict,
@@ -1555,10 +1562,10 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             args_dict['date_filter'] = (s,e)
-            for fed in feds:     
+            for fed in feds:
                 if not plots.date_filter_okay(fed.data, s, e):
                     self.failed_date_feds.append(fed)
                     continue
@@ -1566,7 +1573,7 @@ class FED3_Viz(tk.Tk):
             return
         args_dict['ax'] = self.AX
         plotdata = getdata.group_interpellet_interval_plot(**args_dict)
-        fig_name = self.create_plot_name('Group Interpellet Interval Plot')      
+        fig_name = self.create_plot_name('Group Interpellet Interval Plot')
         new_plot = FED_Plot(figname=fig_name, plotfunc=plots.group_interpellet_interval_plot,
                             arguments=args_dict, plotdata=plotdata,
                             x=4, y=5)
@@ -1574,16 +1581,16 @@ class FED3_Viz(tk.Tk):
         self.resize_plot(new_plot)
         plots.group_interpellet_interval_plot(**args_dict)
         self.display_plot(new_plot)
-            
+
     def meal_histo_TK(self):
         arg_dict = self.get_current_settings_as_args()
         arg_dict['ax'] = self.AX
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             arg_dict['date_filter'] = (s,e)
-            for fed in FEDs_to_plot:     
+            for fed in FEDs_to_plot:
                 if not plots.date_filter_okay(fed.data, s, e):
                     self.failed_date_feds.append(fed)
                     continue
@@ -1591,7 +1598,7 @@ class FED3_Viz(tk.Tk):
             return
         arg_dict['FEDs'] = FEDs_to_plot
         basename = 'Meal Size Histogram'
-        fig_name = self.create_plot_name(basename)      
+        fig_name = self.create_plot_name(basename)
         plotdata = getdata.meal_size_histogram(**arg_dict)
         new_plot = FED_Plot(figname=fig_name,plotfunc=plots.meal_size_histogram,
                             plotdata=plotdata,arguments=arg_dict,
@@ -1600,7 +1607,7 @@ class FED3_Viz(tk.Tk):
         self.resize_plot(new_plot)
         plots.meal_size_histogram(**arg_dict)
         self.display_plot(new_plot)
-    
+
     def group_meal_histo_TK(self):
         args_dict = self.get_current_settings_as_args()
         if self.allgroups_val.get():
@@ -1616,10 +1623,10 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             args_dict['date_filter'] = (s,e)
-            for fed in feds:     
+            for fed in feds:
                 if not plots.date_filter_okay(fed.data, s, e):
                     self.failed_date_feds.append(fed)
                     continue
@@ -1627,7 +1634,7 @@ class FED3_Viz(tk.Tk):
             return
         args_dict['ax'] = self.AX
         plotdata = getdata.grouped_meal_size_histogram(**args_dict)
-        fig_name = self.create_plot_name('Group Meal Histogram Plot')      
+        fig_name = self.create_plot_name('Group Meal Histogram Plot')
         new_plot = FED_Plot(figname=fig_name, plotfunc=plots.grouped_meal_size_histogram,
                             arguments=args_dict, plotdata=plotdata,
                             x=7, y=3.5)
@@ -1635,7 +1642,7 @@ class FED3_Viz(tk.Tk):
         self.resize_plot(new_plot)
         plots.grouped_meal_size_histogram(**args_dict)
         self.display_plot(new_plot)
-    
+
     def daynight_plot_TK(self):
         args_dict = self.get_current_settings_as_args()
         if self.allgroups_val.get():
@@ -1651,7 +1658,7 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             args_dict['date_filter'] = (s,e)
             for fed in feds:
@@ -1660,7 +1667,7 @@ class FED3_Viz(tk.Tk):
                     continue
         if self.failed_date_feds:
             return
-        args_dict['ax'] = self.AX    
+        args_dict['ax'] = self.AX
         plotdata = getdata.daynight_plot(**args_dict)
         value = args_dict['circ_value'].capitalize()
         fig_name = self.create_plot_name(value + ' Day Night Plot')
@@ -1671,7 +1678,7 @@ class FED3_Viz(tk.Tk):
         self.resize_plot(new_plot)
         plots.daynight_plot(**args_dict)
         self.display_plot(new_plot)
-    
+
     def chronogram_line_TK(self):
         args_dict = self.get_current_settings_as_args()
         if self.allgroups_val.get():
@@ -1687,7 +1694,7 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             args_dict['date_filter'] = (s,e)
             for fed in feds:
@@ -1707,13 +1714,13 @@ class FED3_Viz(tk.Tk):
         self.resize_plot(new_plot)
         plots.line_chronogram(**args_dict)
         self.display_plot(new_plot)
-    
+
     def chronogram_heatmap_TK(self):
         arg_dict = self.get_current_settings_as_args()
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             arg_dict['date_filter'] = (s,e)
             for fed in FEDs_to_plot:
@@ -1725,23 +1732,23 @@ class FED3_Viz(tk.Tk):
         arg_dict['ax'] = self.AX
         arg_dict['return_cb'] = True
         value = arg_dict['circ_value'].capitalize()
-        fig_name = self.create_plot_name(value + ' Chronogram (Heatmap)')      
+        fig_name = self.create_plot_name(value + ' Chronogram (Heatmap)')
         plotdata = getdata.heatmap_chronogram(**arg_dict)
-        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.heatmap_chronogram, 
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.heatmap_chronogram,
                             arguments=arg_dict, plotdata=plotdata,
                             x=7, y=3.5)
         self.PLOTS[fig_name] = new_plot
         self.resize_plot(new_plot)
         self.CB = plots.heatmap_chronogram(**arg_dict)
         self.display_plot(new_plot)
-    
+
     def dn_ipi_TK(self):
         arg_dict = self.get_current_settings_as_args()
         arg_dict['ax'] = self.AX
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             arg_dict['date_filter'] = (s,e)
             for fed in FEDs_to_plot:
@@ -1760,7 +1767,7 @@ class FED3_Viz(tk.Tk):
         self.resize_plot(new_plot)
         plots.day_night_ipi_plot(**arg_dict)
         self.display_plot(new_plot)
-    
+
     def poke_plot_single_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
@@ -1786,7 +1793,7 @@ class FED3_Viz(tk.Tk):
                 self.resize_plot(new_plot)
                 plots.poke_plot(**arg_dict)
                 self.display_plot(new_plot)
-        
+
     def poke_bias_single_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
@@ -1803,43 +1810,43 @@ class FED3_Viz(tk.Tk):
                     else:
                         arg_dict['date_filter'] = (s,e)
                 arg_dict['ax'] = self.AX
-                fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)              
+                fig_name = self.create_plot_name('Poke bias plot for ' + obj.filename)
                 plotdata=getdata.poke_bias(**arg_dict)
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plots.poke_bias,
-                                    plotdata=plotdata, 
+                                    plotdata=plotdata,
                                     arguments=arg_dict,
                                     x=7,y=3.5)
                 self.PLOTS[fig_name] = new_plot
                 self.resize_plot(new_plot)
-                plots.poke_bias(**arg_dict)  
+                plots.poke_bias(**arg_dict)
                 self.display_plot(new_plot)
-                
+
     def breakpoint_plot(self):
         arg_dict = self.get_current_settings_as_args()
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
         arg_dict['FEDs'] = FEDs_to_plot
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             arg_dict['date_filter'] = (s,e)
-            for fed in FEDs_to_plot:     
+            for fed in FEDs_to_plot:
                 if not plots.date_filter_okay(fed.data, s, e):
                     self.failed_date_feds.append(fed)
                     continue
         if self.failed_date_feds:
             return
         arg_dict['ax'] = self.AX
-        fig_name = self.create_plot_name('Breakpoint Plot')       
+        fig_name = self.create_plot_name('Breakpoint Plot')
         plotdata = getdata.pr_plot(**arg_dict)
         fig_len = min([max([len(FEDs_to_plot), 4]), 8])
-        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.pr_plot, 
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.pr_plot,
                             arguments=arg_dict, plotdata=plotdata,
                             x=fig_len, y=5)
         self.PLOTS[fig_name] = new_plot
         self.resize_plot(new_plot)
         plots.pr_plot(**arg_dict)
         self.display_plot(new_plot)
-    
+
     def group_breakpoint_plot(self):
         args_dict = self.get_current_settings_as_args()
         if self.allgroups_val.get():
@@ -1855,7 +1862,7 @@ class FED3_Viz(tk.Tk):
                     feds.append(fed)
                     break
         args_dict['FEDs'] = feds
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             args_dict['date_filter'] = (s,e)
             for fed in feds:
@@ -1864,7 +1871,7 @@ class FED3_Viz(tk.Tk):
                     continue
         if self.failed_date_feds:
             return
-        args_dict['ax'] = self.AX        
+        args_dict['ax'] = self.AX
         plotdata = getdata.group_pr_plot(**args_dict)
         fig_name = self.create_plot_name('Group Breakpoint Plot')
         new_plot = FED_Plot(figname=fig_name, plotfunc=plots.group_pr_plot,
@@ -1874,7 +1881,7 @@ class FED3_Viz(tk.Tk):
         self.resize_plot(new_plot)
         plots.group_pr_plot(**args_dict)
         self.display_plot(new_plot)
-        
+
     def retrieval_plot_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
@@ -1892,7 +1899,7 @@ class FED3_Viz(tk.Tk):
                     else:
                         arg_dict['date_filter'] = (s,e)
                 plotdata = getdata.retrieval_time_single(**arg_dict)
-                fig_name = self.create_plot_name('Retrieval Time Plot for ' + obj.filename)               
+                fig_name = self.create_plot_name('Retrieval Time Plot for ' + obj.filename)
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plots.retrieval_time_single,
                                     plotdata=plotdata, arguments=arg_dict,
                                     x=7,y=3.5)
@@ -1900,15 +1907,15 @@ class FED3_Viz(tk.Tk):
                 self.resize_plot(new_plot)
                 plots.retrieval_time_single(**arg_dict)
                 self.display_plot(new_plot)
-            
+
     def retrieval_plot_multi_TK(self):
         arg_dict = self.get_current_settings_as_args()
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
-        if self.date_filter_val.get(): 
+        if self.date_filter_val.get():
             s,e = self.get_date_filter_dates()
             arg_dict['date_filter'] = (s,e)
-            for fed in FEDs_to_plot:     
+            for fed in FEDs_to_plot:
                 if not plots.date_filter_okay(fed.data, s, e):
                     self.failed_date_feds.append(fed)
                     continue
@@ -1918,15 +1925,15 @@ class FED3_Viz(tk.Tk):
         arg_dict['ax'] = self.AX
         fig_name = self.create_plot_name('Multi Retrieval Time Plot')
         plotfunc = plots.retrieval_time_multi
-        plotdata = getdata.retrieval_time_multi(**arg_dict)        
-        new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc, 
+        plotdata = getdata.retrieval_time_multi(**arg_dict)
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                             arguments=arg_dict, plotdata=plotdata,
                             x=7, y=3.5)
         self.PLOTS[fig_name] = new_plot
         self.resize_plot(new_plot)
         plotfunc(**arg_dict)
         self.display_plot(new_plot)
-    
+
     def battery_life_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
@@ -1943,8 +1950,8 @@ class FED3_Viz(tk.Tk):
                     else:
                         arg_dict['date_filter'] = (s,e)
                 arg_dict['ax'] = self.AX
-                plotfunc = plots.battery_plot   
-                fig_name = self.create_plot_name('Battery Life for ' + obj.filename)                  
+                plotfunc = plots.battery_plot
+                fig_name = self.create_plot_name('Battery Life for ' + obj.filename)
                 plotdata = getdata.battery_plot(**arg_dict)
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                                     plotdata=plotdata, arguments=arg_dict,
@@ -1953,7 +1960,7 @@ class FED3_Viz(tk.Tk):
                 self.resize_plot(new_plot)
                 plotfunc(**arg_dict)
                 self.display_plot(new_plot)
-        
+
     def motor_turns_TK(self):
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
         FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
@@ -1970,8 +1977,8 @@ class FED3_Viz(tk.Tk):
                     else:
                         arg_dict['date_filter'] = (s,e)
                 arg_dict['ax'] = self.AX
-                plotfunc = plots.motor_plot   
-                fig_name = self.create_plot_name('Motor Turns for ' + obj.filename)                  
+                plotfunc = plots.motor_plot
+                fig_name = self.create_plot_name('Motor Turns for ' + obj.filename)
                 plotdata = getdata.motor_plot(**arg_dict)
                 new_plot = FED_Plot(figname=fig_name, plotfunc=plotfunc,
                                     plotdata=plotdata, arguments=arg_dict,
@@ -1980,7 +1987,7 @@ class FED3_Viz(tk.Tk):
                 self.resize_plot(new_plot)
                 plotfunc(**arg_dict)
                 self.display_plot(new_plot)
-                
+
     #---HOME HELPER FUNCTIONS
     def update_file_view(self):
         self.files_spreadsheet.delete(*self.files_spreadsheet.get_children())
@@ -1989,22 +1996,22 @@ class FED3_Viz(tk.Tk):
                 tag = emoji.emojize(':warning:')
             else:
                 tag = ''
-            values = (tag, fed.basename, fed.mode, fed.events, 
+            values = (tag, fed.basename, fed.mode, fed.events,
                       fed.start_time.strftime('%b %d %Y, %H:%M'),
                       fed.end_time.strftime('%b %d %Y, %H:%M'),
                       str(fed.duration), ', '.join(fed.group))
             self.files_spreadsheet.insert('', i, str(i), values=values)
-            
+
     def update_group_view(self):
         self.GROUPS = list(set([name for fed in self.LOADED_FEDS for name in fed.group]))
         self.GROUPS.sort()
         self.group_view.delete(0,tk.END)
         for group in self.GROUPS:
             self.group_view.insert(tk.END,group)
-  
+
     def walk_filenames(self, folder):
         output = []
-        dirs = os.walk(folder)     
+        dirs = os.walk(folder)
         for directory in dirs:
             dirname = directory[0]
             filelist = directory[-1]
@@ -2013,14 +2020,14 @@ class FED3_Viz(tk.Tk):
                     path_to_file = os.path.join(dirname, file)
                     output.append(path_to_file)
         return output
-    
+
     def hover_text_one(self, event):
         widget = event.widget
         self.home_buttons_help.configure(text=self.hover_text_one_dict[widget])
-        
+
     def clear_hover_text_one(self, event):
         self.show_plot_help()
-    
+
     def show_plot_help(self, *event):
         selection = self.plot_treeview.selection()
         if selection:
@@ -2030,7 +2037,7 @@ class FED3_Viz(tk.Tk):
             else:
                 self.home_buttons_help.configure(text='')
         else:
-                self.home_buttons_help.configure(text='')      
+                self.home_buttons_help.configure(text='')
 
     def sort_FEDs(self, event, reverse):
         where_clicked = self.files_spreadsheet.identify_region(event.x,event.y)
@@ -2054,7 +2061,7 @@ class FED3_Viz(tk.Tk):
             if column_name == '':
                 self.LOADED_FEDS.sort(key=lambda x:len(x.missing_columns), reverse=reverse)
             self.update_file_view()
-    
+
     def is_plottable(self, plot_name):
         plottable = False
         if plot_name in ['Single Pellet Plot', 'Multi Pellet Plot',
@@ -2070,10 +2077,10 @@ class FED3_Viz(tk.Tk):
                     if not all(f.mode == 'PR' for f in selected):
                         plottable = False
             else:
-                plottable = False          
+                plottable = False
         elif plot_name == 'Single Poke Plot':
             if self.files_spreadsheet.selection():
-                if (self.poke_correct_val.get() or self.poke_error_val.get() or 
+                if (self.poke_correct_val.get() or self.poke_error_val.get() or
                     self.poke_left_val.get() or self.poke_right_val.get()):
                     plottable = True
             else:
@@ -2099,7 +2106,7 @@ class FED3_Viz(tk.Tk):
                                 to_plot.append(fed)
                                 break
                     if not all(f.mode == 'PR' for f in to_plot):
-                        plottable = False                 
+                        plottable = False
             else:
                 #if there are groups selected
                 if self.group_view.curselection():
@@ -2115,11 +2122,11 @@ class FED3_Viz(tk.Tk):
                                 to_plot.append(fed)
                                 break
                     if not all(f.mode == 'PR' for f in to_plot):
-                        plottable = False                 
+                        plottable = False
         else:
             plottable = False
         return plottable
-    
+
     def update_create_plot_button(self):
         plottables = []
         selected = self.plot_treeview.selection()
@@ -2130,7 +2137,7 @@ class FED3_Viz(tk.Tk):
             self.button_create_plot.configure(state=tk.NORMAL)
         else:
             self.button_create_plot.configure(state=tk.DISABLED)
-    
+
     def update_buttons_home(self,*event):
         self.update_create_plot_button()
         #if there are feds selected
@@ -2154,7 +2161,7 @@ class FED3_Viz(tk.Tk):
             self.button_load_groups.configure(state=tk.DISABLED)
         #if there are groups loaded
         if self.GROUPS:
-            self.button_save_groups.configure(state=tk.NORMAL)           
+            self.button_save_groups.configure(state=tk.NORMAL)
         else:
             self.button_save_groups.configure(state=tk.DISABLED)
         #if there are feds selected and groups loaded
@@ -2167,22 +2174,22 @@ class FED3_Viz(tk.Tk):
              self.button_descriptives.configure(state=tk.NORMAL)
         else:
             self.button_descriptives.configure(state=tk.DISABLED)
-            
+
     def update_all_buttons(self,*event):
         self.update_buttons_home()
         self.update_buttons_plot()
-        
+
     def create_okay(self):
         group_name = self.create_name.get()
         selected = self.files_spreadsheet.selection()
         FEDs_to_add = [self.LOADED_FEDS[int(i)] for i in selected]
         for fed in FEDs_to_add:
-            fed.group.append(group_name)       
+            fed.group.append(group_name)
         self.update_file_view()
         self.update_group_view()
         self.update_buttons_home()
         self.create_window.destroy()
-        
+
     def create_check(self, *args):
         new_name = self.create_name.get()
         if new_name == '':
@@ -2193,8 +2200,8 @@ class FED3_Viz(tk.Tk):
                 self.ok_button_create.configure(state=tk.DISABLED)
             else:
                 self.warning_var.set('')
-                self.ok_button_create.configure(state=tk.NORMAL)   
-    
+                self.ok_button_create.configure(state=tk.NORMAL)
+
     def select_group(self, event):
         clicked = self.group_view.curselection()
         if clicked:
@@ -2206,26 +2213,26 @@ class FED3_Viz(tk.Tk):
                         to_raise.append(i)
             to_raise = list(set(to_raise))
             self.files_spreadsheet.selection_set(to_raise)
-        self.update_buttons_home(None) 
-        
+        self.update_buttons_home(None)
+
     def open_url(self, url, *args):
         webbrowser.open_new(url)
-        
+
     def expand_plot_selector(self):
         self.plot_treeview.item(self.ps_pellet, open=True)
         self.plot_treeview.item(self.ps_poke, open=True)
         self.plot_treeview.item(self.ps_circadian, open=True)
         self.plot_treeview.item(self.ps_other, open=True)
-    
+
     def handle_plot_selelection(self, event):
         self.show_plot_help()
         self.update_buttons_home()
-     
+
     def select_all_FEDs(self, *event):
         items = len(self.LOADED_FEDS)
         self.files_spreadsheet.selection_set(list(range(items)))
         self.update_all_buttons()
-        
+
     def escape(self, *event):
         if self.focus_get() == self.files_spreadsheet:
             self.files_spreadsheet.selection_remove(self.files_spreadsheet.selection())
@@ -2235,15 +2242,15 @@ class FED3_Viz(tk.Tk):
             self.loading = False
         if self.plotting:
             self.plotting = False
-        self.update_all_buttons() 
-        
+        self.update_all_buttons()
+
     def check_addremove(self, *event):
         if self.edit_listbox.curselection():
             self.button_edit_add.configure(state=tk.NORMAL)
             self.button_edit_remove.configure(state=tk.NORMAL)
         else:
             self.button_edit_add.configure(state=tk.DISABLED)
-            self.button_edit_remove.configure(state=tk.DISABLED)  
+            self.button_edit_remove.configure(state=tk.DISABLED)
 
     def handle_edit(self, todo):
         selected_groups = self.edit_listbox.curselection()
@@ -2264,12 +2271,13 @@ class FED3_Viz(tk.Tk):
         self.update_group_view()
         self.update_file_view()
         self.edit_window.destroy()
-        
+
     def handle_stats_check(self):
         if self.stats_radio_var.get() != 'None':
             self.stats_okay_button.configure(state=tk.NORMAL)
 
     def stats_proceed(self):
+        time = dt.datetime.now().strftime('%m%d%y_%H%M%S')
         mini = int(self.meal_pelletmin_box.get())
         delay = int(self.mealdelay_box.get())
         if self.stats_radio_var.get() == 'from_feds':
@@ -2278,7 +2286,8 @@ class FED3_Viz(tk.Tk):
                                         meal_duration=delay)
             savepath = tk.filedialog.askdirectory(title='Select where to save stats')
             if savepath:
-                savename = self.create_file_name(savepath, 'FED Stats', ext='.csv')
+                name = 'FED Stats ' + time
+                savename = self.create_file_name(savepath, name, ext='.csv')
                 results.to_csv(savename)
         else:
             if self.stats_radio_var.get() == 'from_groups':
@@ -2292,12 +2301,13 @@ class FED3_Viz(tk.Tk):
                                                    meal_duration=delay)
             savepath = tk.filedialog.askdirectory(title='Select where to save stats')
             if savepath:
-                dirname = self.create_file_name(savepath, 'FED Stats')
+                name = 'FED Stats ' + time
+                dirname = self.create_file_name(savepath, name)
                 os.makedirs(dirname)
                 for group, result in results.items():
-                    result.to_csv(os.path.join(dirname, group) + '.csv')      
+                    result.to_csv(os.path.join(dirname, group) + '.csv')
         self.stat_window.destroy()
-        
+
     #---PLOT TAB BUTTON FUNCTIONS
     def rename_plot(self):
         clicked = self.plot_listbox.curselection()[0]
@@ -2326,13 +2336,13 @@ class FED3_Viz(tk.Tk):
                    columnspan=2)
         self.ok_button.grid(row=2,column=0,sticky='ew',padx=(20,20),pady=(20,20))
         self.cancel_button.grid(row=2,column=1,sticky='ew',padx=(20,20),pady=(20,20))
-         
+
     def delete_plot(self, **kwargs):
         raise_plots = True
         clicked=sorted(list(self.plot_listbox.curselection()), reverse=True)
         if 'all' in kwargs:
             if kwargs.get('all'):
-                clicked = sorted(list(range(len(self.PLOTS))), reverse=True)   
+                clicked = sorted(list(range(len(self.PLOTS))), reverse=True)
         if 'raise_plots' in kwargs:
             if not kwargs.get('raise_plots'):
                 raise_plots = False
@@ -2344,13 +2354,13 @@ class FED3_Viz(tk.Tk):
             new_plot_index=self.plot_listbox.size()-1
         if new_plot_index>=0 and raise_plots:
             new_plot=self.plot_listbox.get(new_plot_index)
-            self.raise_figure(new_plot, new=False)        
+            self.raise_figure(new_plot, new=False)
         else:
             self.clear_axes()
             self.canvas.draw_idle()
             self.nav_toolbar.update()
         self.update_buttons_plot(None)
-                
+
     def new_window_plot(self):
         in_use = [obj.in_use for obj in self.NEW_WINDOW_FIGS]
         if sum(in_use) == 5:
@@ -2359,8 +2369,8 @@ class FED3_Viz(tk.Tk):
         clicked=self.plot_listbox.curselection()
         graph_name=self.plot_listbox.get(clicked)
         plot_obj = self.PLOTS[graph_name]
-        self.reuse_new_window_figure(plot_obj)  
-        
+        self.reuse_new_window_figure(plot_obj)
+
     def reuse_new_window_figure(self, plot_obj):
         obj_to_reuse = next(x for x in self.NEW_WINDOW_FIGS if x.in_use == False)
         if obj_to_reuse.canvas == None:
@@ -2379,12 +2389,12 @@ class FED3_Viz(tk.Tk):
                                              int(plot_obj.y*plot_obj.dpi)))
         obj_to_reuse.canvas.draw_idle()
         obj_to_reuse.toolbar.update()
-            
+
     def create_new_window_canvas(self, new_window_fig, plot_obj):
         obj_to_reuse = new_window_fig
         new_window = tk.Toplevel()
         new_window.title(plot_obj.figname)
-        if not platform.system() == 'Darwin': 
+        if not platform.system() == 'Darwin':
             new_window.iconbitmap('img/graph_icon.ico')
         new_window.protocol("WM_DELETE_WINDOW", lambda: self.close_new_window(new_window))
         new_frame = ttk.Frame(new_window)
@@ -2403,16 +2413,16 @@ class FED3_Viz(tk.Tk):
         obj_to_reuse.toplevel = new_window
         obj_to_reuse.frame = new_frame
         obj_to_reuse.canvas = canvas
-        obj_to_reuse.toolbar = nav_toolbar    
-        
+        obj_to_reuse.toolbar = nav_toolbar
+
     def close_new_window(self, toplevel):
-        #set in_use of New_Window_Figure 
+        #set in_use of New_Window_Figure
         for obj in self.NEW_WINDOW_FIGS:
             if obj.toplevel == toplevel:
                 obj.in_use = False
         #close, but use withdraw
         toplevel.withdraw()
-            
+
     def save_plots(self):
         clicked=self.plot_listbox.curselection()
         if clicked:
@@ -2421,7 +2431,7 @@ class FED3_Viz(tk.Tk):
                 for i in clicked:
                     graph_name=self.plot_listbox.get(i)
                     if len(clicked) > 1:
-                        self.raise_figure(graph_name, new=False)          
+                        self.raise_figure(graph_name, new=False)
                     save_name = graph_name+'.png'
                     full_save = os.path.join(savepath,save_name)
                     if not self.overwrite_checkbox_val.get():
@@ -2435,7 +2445,7 @@ class FED3_Viz(tk.Tk):
                     self.canvas.draw_idle()
                     self.nav_toolbar.update()
                     self.update()
-                    
+
     def show_plot_code(self):
         clicked = self.plot_listbox.curselection()
         for i in clicked:
@@ -2443,7 +2453,7 @@ class FED3_Viz(tk.Tk):
             plotobj  = self.PLOTS[plotname]
             new_window = tk.Toplevel(self)
             new_window.title('Code for "' + plotname +'"')
-            if not platform.system() == 'Darwin': 
+            if not platform.system() == 'Darwin':
                 new_window.iconbitmap('img/python.ico')
             textview = tk.Text(new_window, width=150)
             code = fed_inspect.generate_code(plotobj)
@@ -2459,7 +2469,7 @@ class FED3_Viz(tk.Tk):
             save_button.grid(row=1,column=0,sticky='w')
             new_window.grid_rowconfigure(0,weight=1)
             new_window.grid_columnconfigure(0,weight=1)
-     
+
     def save_plot_data(self):
         clicked=self.plot_listbox.curselection()
         if clicked:
@@ -2490,24 +2500,24 @@ class FED3_Viz(tk.Tk):
                                                           ext = '.csv',
                                                           overwrite=overwrite)
                         df.to_csv(full_save)
-        
+
     #---PLOT HELPER FUNCTIONS
-    def display_plot(self, plot_obj, new=True):      
+    def display_plot(self, plot_obj, new=True):
         self.update()
         self.canvas.draw_idle()
-        self.nav_toolbar.update()             
+        self.nav_toolbar.update()
         if new:
             if self.on_display_func == 'heatmap_chronogram':
                 self.clear_axes()
                 plot_obj.plotfunc(**plot_obj.arguments)
             self.plot_listbox.insert(tk.END,plot_obj.figname)
             self.plot_listbox.selection_clear(0,self.plot_listbox.size())
-            self.plot_listbox.selection_set(self.plot_listbox.size()-1)     
+            self.plot_listbox.selection_set(self.plot_listbox.size()-1)
         self.update_buttons_plot()
         self.update()
         self.tabcontrol.select(self.plot_tab)
         self.on_display_func = plot_obj.plotfunc.__name__
-                
+
     def raise_figure(self, fig_name, new=True):
         plot_obj = self.PLOTS[fig_name]
         if platform.system() == 'Windows':
@@ -2520,7 +2530,7 @@ class FED3_Viz(tk.Tk):
             if self.on_display_func == 'heatmap_chronogram':
                 #annoying bug
                 self.clear_axes()
-                plot_obj.plotfunc(**plot_obj.arguments)              
+                plot_obj.plotfunc(**plot_obj.arguments)
         self.display_plot(plot_obj, new)
         if platform.system() == 'Windows':
             self.plot_cover.grid_remove()
@@ -2528,7 +2538,7 @@ class FED3_Viz(tk.Tk):
         self.plot_listbox.selection_clear(0,self.plot_listbox.size())
         self.plot_listbox.selection_set(plot_index)
         self.update_all_buttons()
-        
+
     def raise_figure_from_listbox(self, event):
         clicked=self.plot_listbox.curselection()
         if len(clicked) == 1:
@@ -2542,7 +2552,7 @@ class FED3_Viz(tk.Tk):
             fig_name = basename + ' ' + str(c)
             c+=1
         return fig_name
-    
+
     def create_file_name(self, savepath, savename, ext='', overwrite=False):
         file_name = savename + ext
         full_save = os.path.join(savepath, file_name)
@@ -2553,7 +2563,7 @@ class FED3_Viz(tk.Tk):
                 full_save = os.path.join(savepath,file_name)
                 c += 1
         return full_save
-             
+
     def update_buttons_plot(self,*event):
         if self.plot_listbox.curselection():
             self.plot_delete.configure(state=tk.NORMAL)
@@ -2561,10 +2571,10 @@ class FED3_Viz(tk.Tk):
             self.plot_data.configure(state=tk.NORMAL)
             self.plot_inspect.configure(state=tk.NORMAL)
             if len(self.plot_listbox.curselection()) == 1:
-                self.plot_rename.configure(state=tk.NORMAL) 
+                self.plot_rename.configure(state=tk.NORMAL)
                 self.plot_popout.configure(state=tk.NORMAL)
             else:
-                self.plot_rename.configure(state=tk.DISABLED)     
+                self.plot_rename.configure(state=tk.DISABLED)
                 self.plot_popout.configure(state=tk.DISABLED)
         else:
             self.plot_rename.configure(state=tk.DISABLED)
@@ -2573,15 +2583,15 @@ class FED3_Viz(tk.Tk):
             self.plot_inspect.configure(state=tk.DISABLED)
             self.plot_data.configure(state=tk.DISABLED)
             self.plot_inspect.configure(state=tk.DISABLED)
-            
+
     def plot_listbox_event(self,event):
         self.raise_figure_from_listbox(event)
         self.update_buttons_plot(event)
-    
+
     def rename_okay(self):
         new_name = self.rename_var.get()
         self.PLOTS = OrderedDict([(new_name,v) if k == self.old_name
-                                 else (k,v) for k,v in 
+                                 else (k,v) for k,v in
                                  self.PLOTS.items()])
         self.PLOTS[new_name].figname = new_name
         new_position = list(self.PLOTS.keys()).index(new_name)
@@ -2589,7 +2599,7 @@ class FED3_Viz(tk.Tk):
         self.plot_listbox.insert(new_position,new_name)
         self.rename_window.destroy()
         self.update_buttons_plot()
-        
+
     def rename_check(self,*args):
         new_name = self.rename_var.get()
         if new_name in list(self.PLOTS.keys()):
@@ -2597,8 +2607,8 @@ class FED3_Viz(tk.Tk):
             self.ok_button.configure(state=tk.DISABLED)
         else:
             self.warning_var.set('')
-            self.ok_button.configure(state=tk.NORMAL)      
-       
+            self.ok_button.configure(state=tk.NORMAL)
+
     def save_code(self, plotname, text):
         savepath = tk.filedialog.asksaveasfilename(title='Select where to save code',
                                                    defaultextension='.py',
@@ -2608,8 +2618,8 @@ class FED3_Viz(tk.Tk):
         if savepath:
             with open(savepath, 'w') as file:
                 file.write(text)
-                file.close()    
-        
+                file.close()
+
     def clear_axes(self):
         if self.CB:
             self.CB.remove()
@@ -2618,14 +2628,14 @@ class FED3_Viz(tk.Tk):
             ax.clear()
             if ax != self.AX:
                 ax.remove()
-    
+
     def resize_plot(self, plot_obj):
         self.tabcontrol.select(self.plot_tab)
         self.clear_axes()
         self.geometry('{0}x{1}'.format(plot_obj.x_pix, plot_obj.y_pix))
-        self.update()        
-    
-    #---SETTINGS TAB FUNCTIONS           
+        self.update()
+
+    #---SETTINGS TAB FUNCTIONS
     def check_pellet_type(self, *event):
         if self.pelletplottype_menu.get() == 'Frequency':
             self.pelletplotcumu_label.configure(fg='black')
@@ -2633,7 +2643,7 @@ class FED3_Viz(tk.Tk):
         else:
             self.pelletplotcumu_label.configure(fg='gray')
             self.pelletplotcumu_menu.configure(state=tk.DISABLED)
-            
+
     def check_average_align(self, *event):
         if self.average_method_menu.get() == 'shared time':
             self.average_align_ontime_label.configure(fg='black')
@@ -2643,7 +2653,7 @@ class FED3_Viz(tk.Tk):
             self.average_align_ontime_label.configure(fg='gray')
             self.average_alignstart_menu.configure(state=tk.DISABLED)
             self.average_aligndays_menu.configure(state=tk.DISABLED)
-    
+
     def check_date_filter(self, *event):
         if self.date_filter_val.get():
             self.date_filter_days_label.configure(fg='black')
@@ -2658,11 +2668,11 @@ class FED3_Viz(tk.Tk):
             self.date_filter_s_days.configure(state=tk.DISABLED)
             self.date_filter_e_days.configure(state=tk.DISABLED)
             self.date_filter_s_hour.configure(state=tk.DISABLED)
-            self.date_filter_e_hour.configure(state=tk.DISABLED)           
-    
+            self.date_filter_e_hour.configure(state=tk.DISABLED)
+
     def save_settings(self, dialog=True, savepath='', return_df=False):
         settings_dict = self.get_current_settings()
-        df = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])     
+        df = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])
         if return_df:
             return df
         else:
@@ -2671,9 +2681,9 @@ class FED3_Viz(tk.Tk):
                                                            defaultextension='.csv',
                                                            filetypes = [('Comma-Separated Values', '*.csv')],
                                                            initialdir='settings')
-            if savepath:         
+            if savepath:
                 df.to_csv(savepath)
-            
+
     def load_settings(self, dialog=True, settings_file=[''], from_df=None):
         settings_df = pd.DataFrame()
         if dialog:
@@ -2702,7 +2712,7 @@ class FED3_Viz(tk.Tk):
                 self.date_filter_e_days.configure(state=tk.DISABLED)
             else:
                 self.date_filter_e_days.set_date(e)
-            self.date_filter_s_hour.set(settings_df.loc['date_filter_s_hour','Values'])     
+            self.date_filter_s_hour.set(settings_df.loc['date_filter_s_hour','Values'])
             self.date_filter_e_hour.set(settings_df.loc['date_filter_e_hour','Values'])
             self.nightshade_checkbox_val.set(settings_df.loc['shade_dark','Values'])
             self.nightshade_lightson.set(settings_df.loc['lights_on','Values'])
@@ -2747,7 +2757,7 @@ class FED3_Viz(tk.Tk):
             self.check_average_align()
             self.check_pellet_type()
             self.check_date_filter()
-            
+
     #---SETTINGS HELPER FUNCTIONS
     def get_current_settings(self):
         settings_dict = dict(date_filter_val    =self.date_filter_val.get(),
@@ -2796,7 +2806,7 @@ class FED3_Viz(tk.Tk):
                              break_error        =self.pr_error_menu.get(),
                              break_show_indvl   =self.pr_show_indvl_val.get())
         return settings_dict
-    
+
     def get_current_settings_as_args(self):
         settings_dict = self.get_current_settings()
         for time_setting in ['lights_on','lights_off','average_align_start']:
@@ -2811,13 +2821,13 @@ class FED3_Viz(tk.Tk):
         else:
             settings_dict['retrieval_threshold'] = int(settings_dict['retrieval_threshold'])
         return settings_dict
-    
+
     def convert_settingsdict_to_df(self, settings_dict):
         def get_key(value, dictionary):
             items = dictionary.items()
             for key, val in items:
                 if value==val:
-                    return key          
+                    return key
         for time_setting in ['lights_on','lights_off','average_align_start']:
             settings_dict[time_setting] = get_key(settings_dict[time_setting], self.times_to_int)
         for bin_setting in ['pellet_bins','average_bins', 'poke_bins']:
@@ -2826,10 +2836,10 @@ class FED3_Viz(tk.Tk):
             settings_dict['retrieval_threshold'] = 'None'
         settingsdf = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])
         return settingsdf
-    
+
     def settings_canvas_config(self, event):
         self.settings_canvas.configure(scrollregion=self.settings_canvas.bbox("all"),)
-        
+
     def get_date_filter_dates(self):
         start_date = self.date_filter_s_days.get_date()
         start_hour = self.date_filter_s_hour.get()
@@ -2840,7 +2850,7 @@ class FED3_Viz(tk.Tk):
         end_hour = self.times_to_int[end_hour]
         end_stamp = dt.datetime.combine(end_date, dt.time(hour=end_hour))
         return start_stamp, end_stamp
-    
+
     def on_close(self):
         #save last used settings
         settingsdir = 'settings'
@@ -2852,7 +2862,7 @@ class FED3_Viz(tk.Tk):
             self.save_session(dialog=False)
         self.destroy()
         self.quit()
-    
+
     #---ERROR MESSAGES
     def raise_average_warning(self):
         warn_window = tk.Toplevel(self)
@@ -2861,12 +2871,12 @@ class FED3_Viz(tk.Tk):
         if not platform.system() == 'Darwin':
             warn_window.iconbitmap('img/exclam.ico')
         text = ("There are no intervals where the selected FEDs all overlap." +
-                '\n\nYou can still make an average pellet plot by changing the' +  
+                '\n\nYou can still make an average pellet plot by changing the' +
                 '\nalignment method for averaging from the settings tab.')
-                
+
         warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
         warning.pack(padx=(20,20),pady=(20,20))
-        
+
     def raise_load_errors(self,failed_names, weird_names=None):
         warn_window = tk.Toplevel(self,)
         warn_window.geometry('{}x{}'.format(600, 300))
@@ -2891,7 +2901,7 @@ class FED3_Viz(tk.Tk):
                            justify=tk.LEFT, wraplength=500)
         intro2 = ("The following files do not contain all the expected " +
                   "FED3 column names; some plots may not work or produce " +
-                  "unexpected results (this warning can be toggled from " + 
+                  "unexpected results (this warning can be toggled from " +
                   "the settings menu):\n")
         body2 = ''
         for name in weird_names:
@@ -2908,8 +2918,8 @@ class FED3_Viz(tk.Tk):
         warn_frame.bind('<Configure>', self.canvas_config)
 
     def canvas_config(self, event):
-        self.warn_canvas.configure(scrollregion=self.warn_canvas.bbox("all"),)    
-        
+        self.warn_canvas.configure(scrollregion=self.warn_canvas.bbox("all"),)
+
     def raise_new_window_warning(self,):
         warn_window = tk.Toplevel(self)
         warn_window.grab_set()
@@ -2918,10 +2928,10 @@ class FED3_Viz(tk.Tk):
             warn_window.iconbitmap('img/exclam.ico')
         text = ("Only 5 New Windows can be opened at one time, in order to" +
                 '\nprevent memory leak.  Please close one of the open windows.')
-                
+
         warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
         warning.pack(padx=(20,20),pady=(20,20))
-        
+
     def raise_date_filter_error(self):
         warn_window = tk.Toplevel(self)
         warn_window.grab_set()
@@ -2929,27 +2939,27 @@ class FED3_Viz(tk.Tk):
         if not platform.system() == 'Darwin':
             warn_window.iconbitmap('img/exclam.ico')
         text = ("The following files did not have any data within the date filter" +
-                '\nPlease edit or remove the global date filter to plot them:\n')   
+                '\nPlease edit or remove the global date filter to plot them:\n')
         for fed in self.failed_date_feds:
             text += '\n  - ' + fed.basename
         warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
         warning.pack(padx=(20,20),pady=(20,20))
-    
+
     def raise_fed_concat_error(self):
         warn_window = tk.Toplevel(self)
         warn_window.grab_set()
         warn_window.title('Error: cannot concatenate')
         if not platform.system() == 'Darwin':
             warn_window.iconbitmap('img/exclam.ico')
-        text = ("The selected FEDs have overlapping dates and could not be concatenated")                
+        text = ("The selected FEDs have overlapping dates and could not be concatenated")
         warning = tk.Label(warn_window, text=text, justify=tk.LEFT)
         warning.pack(padx=(20,20),pady=(20,20))
-    
+
     #---RIGHT CLICK FUNCS
     def r_raise_menu(self, event):
         widget = event.widget
         menu = None
-        if widget == self.files_spreadsheet:         
+        if widget == self.files_spreadsheet:
             if len(self.files_spreadsheet.selection()) == 1:
                 menu = self.r_menu_file_single
             elif len(self.files_spreadsheet.selection()) > 1:
@@ -2964,7 +2974,7 @@ class FED3_Viz(tk.Tk):
         if menu:
             menu.tk_popup(event.x_root, event.y_root,)
             menu.grab_release()
-            
+
     def r_open_location(self,):
         selected = self.files_spreadsheet.selection()
         fed = self.LOADED_FEDS[int(selected[0])]
@@ -2974,7 +2984,7 @@ class FED3_Viz(tk.Tk):
         except:
             opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
             subprocess.call([opener,dirname])
-        
+
     def r_open_externally(self):
         selected = self.files_spreadsheet.selection()
         fed = self.LOADED_FEDS[int(selected[0])]
@@ -2983,7 +2993,7 @@ class FED3_Viz(tk.Tk):
         except:
             opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
             subprocess.call([opener,fed.directory])
-        
+
     def r_load_plot_settings(self):
         current_settings_dict = self.get_current_settings_as_args()
         current_settings_df = self.convert_settingsdict_to_df(current_settings_dict)
@@ -2999,7 +3009,7 @@ class FED3_Viz(tk.Tk):
             if arg in output_df.index:
                 output_df.loc[arg,'Values'] = plot_settings_df.loc[arg, 'Values']
         self.load_settings(dialog=False,from_df=output_df)
-        
+
     def r_select_from_plot(self):
         clicked=self.plot_listbox.curselection()
         graph_name=self.plot_listbox.get(clicked)
@@ -3018,7 +3028,7 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.selection_set(to_select)
         self.update_buttons_home(None)
         self.tabcontrol.select(self.home_tab)
-            
+
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.on_close)
 root.bind('<Escape>', root.escape)
