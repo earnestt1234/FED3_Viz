@@ -2871,7 +2871,6 @@ def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
             total_pokes = left_pokes + right_pokes
             results.loc['Total Pokes' + name,v] = total_pokes
             if all(pd.isna(df['Correct_Poke'])):
-                print(True)
                 results.loc['Left Pokes (%)'+name,v] = left_pokes / total_pokes *100
             else:
                 correct_pokes = np.sum([d['Correct_Poke'].sum() for d in portions])
