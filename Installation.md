@@ -20,10 +20,18 @@ System Requirements:
 Instructions:
 
 1. Visit the [releases page](https://github.com/earnestt1234/FED3_Viz/releases)
+
 2. From the most recent version, download the`fed3viz-win64.zip` (under "Assets") and unzip.
-3. In the unzipped folder, navigate to `fed3viz/fed3viz.exe`.
-4. (Optional) Right-click > Create shortcut and place the shortcut in a less nasty folder.*  There are `.ico` files which can be used to replace the shortcut icon in the `img` folder.
-5. Double click the `.exe` or the shortcut to run - you may have to permit Windows security to let the application run (from an unknown developer).  Startup is sometimes slow on the first use but gets better.
+
+3. (Optional) Add a Windows Defender exclusion for the `fed3viz` folder (in the unzipped folder), following [these instruction from Microsoft](https://support.microsoft.com/en-us/help/4028485/windows-10-add-an-exclusion-to-windows-security).  
+
+   Explanation: FED3 Viz may be very slow to open (~1 min) when first starting if Windows antivirus has to scan it;  [you can see this thread for a discussion of the issue](http://pyinstaller.47505.x6.nabble.com/very-slow-start-td2089.html).  Adding the exclusion seems to fix the issue, and I have not found a way around that isn't significantly more complicated or expensive.  If you do add the exclusion, **you should not add any other foreign files to the `fed3viz` folder**.  You will also need to redo the exclusion if the folder moves.  If you do not want to add the exclusion, you can expect the first start of FED3 Viz to be slow each use, but following starts to be quicker.
+
+4. In the unzipped folder, navigate to `fed3viz/fed3viz.exe`.
+
+5. (Optional) Right-click > Create shortcut and place the shortcut in a less nasty folder.*  There are `.ico` files which can be used to replace the shortcut icon in the `img` folder.
+
+6. Double click the `.exe` or the shortcut to run - you may have to permit Windows security to let the application run (from an unknown developer).  Startup is sometimes slow on the first use but gets better.
 
 ### Mac:
 
