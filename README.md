@@ -86,7 +86,7 @@ There is a manual for FED3 Viz which covers the use of the program once it is in
 
 ## Updates
 
-Please report any issues, suggestions, or comments about FED3 Viz [through GitHub](https://github.com/earnestt1234/FED3_Viz/issues) or the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  FED3 Viz has no update scheduled, improvements may still be made to address bugs and feature requests.  Thank you do those inside and [outisde the lab](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c) who have provided suggestions and feedback for FED3 Viz!
+Please report any issues, suggestions, or comments about FED3 Viz [through GitHub](https://github.com/earnestt1234/FED3_Viz/issues) or the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  FED3 Viz has no updates scheduled, improvements may still be made to address bugs and feature requests.  Thank you do those inside and [outisde the lab](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c) who have provided suggestions and feedback for FED3 Viz!
 
 ## License
 
