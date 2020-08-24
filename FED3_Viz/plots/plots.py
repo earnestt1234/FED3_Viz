@@ -188,13 +188,13 @@ def night_intervals(array, lights_on, lights_off, instead_days=False):
     night_intervals : list
         List of tuples with structure (start of nighttime, end of nighttime).
     """
-    lights_on = datetime.time(hour=lights_on)
-    lights_off = datetime.time(hour=lights_off)
-    if lights_on == lights_off:
+    l_on = datetime.time(hour=lights_on)
+    l_off = datetime.time(hour=lights_off)
+    if l_on == l_off:
             night_intervals = []
             return night_intervals
     else:
-        at_night = [is_day_or_night(i, 'night') for i in array]
+        at_night = [is_day_or_night(i, 'night', lights_on=lights_on, lights_off=lights_off) for i in array]
     if instead_days:
         at_night = [not i for i in at_night]
     night_starts = []
