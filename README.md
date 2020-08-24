@@ -36,7 +36,7 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
   - correct and incorrect pokes
   - intervals between pellet retrieval
   - pellet retrieval time
-  - meal sizes     ***New feature!***
+  - meal sizes
   - progressive ratio breakpoints
   - circadian patterns of activity
   - grouped averages for multiple devices
@@ -44,12 +44,12 @@ FED3 is the [3rd version of the Feeding Experimentation Device](https://hackaday
 - Toolbar for live plot editing (from [`matplotlib`](https://matplotlib.org/3.1.1/users/navigation_toolbar.html))
 - Savable code and data for each plot
 - Sortable viewer showing recording properties
-- Summary statistics      ***New feature!***
+- Summary statistics
 - Group labels for averaging data
 - Savable settings
 - Savable "Sessions" (for reloading files, plots, and settings)
-- Use date cutoffs to filter data plotted     ***New feature!***
-- Concatenate data (from single recordings split over multiple files)     ***New feature!***
+- Use date cutoffs to filter data plotted
+- Concatenate data (from single recordings split over multiple files)
 
 See the Releases tab for specific notes about new each version.
 
@@ -84,18 +84,12 @@ FED3 Viz can either be run from a packaged application file, or from a Python in
 
 There is a manual for FED3 Viz which covers the use of the program once it is installed; it can be found [here](https://github.com/earnestt1234/FED3_Viz/blob/master/Manual.md), or [here as a pdf](https://github.com/earnestt1234/FED3_Viz/blob/master/pdfs/Manual.pdf).
 
-## Beta Statement
+## Updates
 
-**This program is currently in "beta"**: it has only been tested by a few individuals on their machines, with a small selection of data files.  Additionally, the program is still being actively worked on, and likely will be through summer 2020.  I am eager to have other people try the application and report bugs, preferably [through GitHub](https://github.com/earnestt1234/FED3_Viz/issues) or the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  
+Please report any issues, suggestions, or comments about FED3 Viz [through GitHub](https://github.com/earnestt1234/FED3_Viz/issues) or the [FED3 Google Group](https://groups.google.com/forum/#!forum/fedforum).  FED3 Viz has no update scheduled, improvements may still be made to address bugs and feature requests.  Thank you do those inside and [outisde the lab](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c) who have provided suggestions and feedback for FED3 Viz!
 
-Moreover, we will certainly consider and try to meet any requests for additional features/graphs! I greatly appreciate the [input so far, some of which have been added to FED3 Viz](https://groups.google.com/forum/#!topic/fedforum/YhF0pzMGD9c), and would love more.
+## License
 
-Things that would be great to get feedback on:
- - If you encounter any issue while using the program, like crashes or errors
- - Any confusing/unexpected behavior (whether my intention or not)
- - Any additional features you feel it is lacking
- - Little issues with the interface (like window size, buttons being grayed out, selection highlighting)
- 
 This work is licensed under a [Creative Commons Attribution 4.0 International
 License][cc-by].
 
