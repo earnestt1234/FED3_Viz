@@ -1,0 +1,1 @@
+pyinstaller --add-data "fed_inspect:fed_inspect" --add-data "getdata:getdata" --add-data "groups:groups" --add-data "img:img" --add-data "load:load" --add-data "plots:plots" --add-data "settings:settings" --add-data "_version.py:." --add-data "sessions:sessions" --icon=img/fedviz_logo.icns fed3viz.py

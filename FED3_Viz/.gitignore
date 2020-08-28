@@ -1,0 +1,4 @@
+#ignore pyinstaller build folders and spec
+build/
+dist/
+fed3viz.spec
