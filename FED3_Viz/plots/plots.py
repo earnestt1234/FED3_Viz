@@ -366,38 +366,46 @@ def date_format_x(ax, start, end):
     -------
     None.
     """
-    quarter_hours = mdates.MinuteLocator(byminute=[0,15,30,45])
-    all_hours = mdates.HourLocator()
-    quarter_days = mdates.HourLocator(byhour=[0,6,12,18])
-    days = mdates.DayLocator()
-    two_days = mdates.DayLocator(interval=2)
-    three_days = mdates.DayLocator(interval=3)
-    months = mdates.MonthLocator()
     d8_span = end - start
     if d8_span < datetime.timedelta(hours=12):
         xfmt = mdates.DateFormatter('%H:%M')
-        major = all_hours
-        minor = quarter_hours
-    elif (d8_span >= datetime.timedelta(hours=12)) and (d8_span < datetime.timedelta(hours=24)):
+        major = mdates.HourLocator()
+        minor = mdates.MinuteLocator(byminute=[0,15,30,45])
+    elif datetime.timedelta(hours=12) <= d8_span < datetime.timedelta(hours=24):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
-        major = quarter_days
-        minor = all_hours
-    elif (d8_span >= datetime.timedelta(hours=24)) and (d8_span < datetime.timedelta(days=3)):
+        major = mdates.HourLocator(byhour=[0,6,12,18])
+        minor = mdates.HourLocator()
+    elif datetime.timedelta(hours=24) <= d8_span < datetime.timedelta(days=3):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
-        major = days
-        minor = quarter_days
-    elif d8_span >= datetime.timedelta(days=3) and (d8_span < datetime.timedelta(days=6)):
+        major = mdates.DayLocator()
+        minor = mdates.HourLocator(byhour=[0,6,12,18])
+    elif datetime.timedelta(days=3) <= d8_span < datetime.timedelta(days=6):
         xfmt = mdates.DateFormatter('%b %d %H:%M')
-        major = two_days
-        minor = days
-    elif (d8_span >= datetime.timedelta(days=6)) and (d8_span < datetime.timedelta(days=20)):
+        major = mdates.DayLocator(interval=2)
+        minor = mdates.DayLocator()
+    elif datetime.timedelta(days=6) <= d8_span < datetime.timedelta(days=20):
         xfmt = mdates.DateFormatter('%b %d')
-        major = three_days
-        minor = days
-    elif d8_span >= datetime.timedelta(days=20):
+        major = mdates.DayLocator(interval=3)
+        minor = mdates.DayLocator()
+    elif datetime.timedelta(days=20) <= d8_span < datetime.timedelta(days=32):
+        xfmt = mdates.DateFormatter('%b %d')
+        major = mdates.DayLocator(interval=5)
+        minor = mdates.DayLocator()
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    elif datetime.timedelta(days=32) <= d8_span < datetime.timedelta(days=60):
+        xfmt = mdates.DateFormatter('%b %d')
+        major = mdates.DayLocator(interval=10)
+        minor = mdates.DayLocator(interval=5)
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    elif datetime.timedelta(days=62) <= d8_span < datetime.timedelta(days=120):
+        xfmt = mdates.DateFormatter('%b %d')
+        major = mdates.DayLocator(interval=15)
+        minor = mdates.DayLocator(interval=5)
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    elif d8_span >= datetime.timedelta(days=120):
         xfmt = mdates.DateFormatter("%b '%y")
-        major = months
-        minor = three_days
+        major = mdates.MonthLocator()
+        minor = mdates.DayLocator(bymonthday=[7,15,23])
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
     ax.xaxis.set_major_locator(major)
     ax.xaxis.set_major_formatter(xfmt)
