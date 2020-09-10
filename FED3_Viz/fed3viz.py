@@ -743,7 +743,8 @@ class FED3_Viz(tk.Tk):
 
         #   retrieval
         self.retrieval_threshold_menu = ttk.Combobox(self.retrieval_settings_frame,
-                                                     values=['None',60,120,300,600,1800,3600],
+                                                     values=['None',5,10,15,30,
+                                                             60,120,300,600],
                                                      width=10)
         self.retrieval_threshold_menu.set('None')
         #   progressive ratio
