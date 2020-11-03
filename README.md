@@ -1,4 +1,4 @@
-# FED3 Viz (Beta)
+# FED3 Viz
 a GUI for plotting FED3 data
 
 <p align="center">
