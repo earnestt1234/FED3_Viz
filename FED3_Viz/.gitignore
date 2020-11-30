@@ -2,3 +2,4 @@
 build/
 dist/
 fed3viz.spec
+*.pyc
