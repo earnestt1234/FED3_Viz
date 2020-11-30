@@ -168,16 +168,14 @@ class FED3_File():
 
     def handle_retrieval_time(self):
         """Convert the Retrieval_Time column to deal with non-numeric entries.
-        Currently, all are converted to np.nan.  Also, weakly tries to set
-        NaN retrieval times to 0 when there is a pellet event.
-        Issue due to very short retrieval times (<1 second) being logged as 0.
-        Likely will be fixed in future FED code."""
+        Currently, all are converted to np.nan.  No longer tries to convert
+        NaN values to 0 (see commented out section)"""
         self.data['Retrieval_Time'] = pd.to_numeric(self.data['Retrieval_Time'],errors='coerce')
-        try:
-            self.data.loc[(self.data['Event'] == 'Pellet') &
-                          pd.isnull(self.data['Retrieval_Time']), 'Retrieval_Time'] = 0
-        except:
-            pass
+        # try:
+        #     self.data.loc[(self.data['Event'] == 'Pellet') &
+        #                   pd.isnull(self.data['Retrieval_Time']), 'Retrieval_Time'] = 0
+        # except:
+        #     pass
 
     def reassign_events(self):
         """Reassign the "Event" column based on changes in the pellet and poke

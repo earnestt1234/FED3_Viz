@@ -530,6 +530,8 @@ class FED3_Viz(tk.Tk):
                                                 text='Date', fg='gray')
         self.date_filter_hours_label = tk.Label(self.general_settings_frame,
                                                 text='Hour', fg='gray')
+        self.img_format_label = tk.Label(self.general_settings_frame,
+                                         text='Image saving format')
         self.pellet_settings_label   = tk.Label(self.pellet_settings_frame,
                                                 text='Individual Pellet Plots',
                                                 font=self.section_font)
@@ -658,6 +660,10 @@ class FED3_Viz(tk.Tk):
         self.weirdfed_warning = ttk.Checkbutton(self.general_settings_frame,
                                                text='Show missing column warning when loading',
                                                var=self.weirdfed_warning_val)
+        self.img_format_menu = ttk.Combobox(self.general_settings_frame,
+                                            values=['.png', '.jpg', '.svg', '.pdf', '.tif'])
+        self.img_format_menu.set('.png')
+
         #   average
         self.average_error_menu = ttk.Combobox(self.average_settings_frame,
                                                values=['SEM','STD','raw data','None'],
@@ -843,6 +849,8 @@ class FED3_Viz(tk.Tk):
         self.loadduplicates_checkbox.grid(row=7,column=0,padx=(20,0),sticky='w')
         self.overwrite_checkbox.grid(row=8,column=0,padx=(20,0),sticky='w')
         self.weirdfed_warning.grid(row=9,column=0,padx=(20,0),sticky='w')
+        self.img_format_label.grid(row=10,column=0,padx=(20,0),sticky='w')
+        self.img_format_menu.grid(row=10,column=1,sticky='ew',columnspan=2)
 
         self.average_settings_label.grid(row=0,column=0,sticky='w',pady=(20,0))
         self.average_error_label.grid(row=1,column=0,padx=(20,215),sticky='w')
@@ -1010,7 +1018,7 @@ class FED3_Viz(tk.Tk):
         self.github2.grid(row=5,column=1,sticky='w')
         self.googlegr1.grid(row=6,column=0,sticky='w')
         self.googlegr2.grid(row=6,column=1,sticky='w')
-        self.caveat.grid(row=1, column=0, pady=40, columnspan=2)
+        # self.caveat.grid(row=1, column=0, pady=40, columnspan=2)
 
     #---LOAD SETTINGS ON START
     #try to load default settings when the application starts:
@@ -1031,6 +1039,19 @@ class FED3_Viz(tk.Tk):
             if os.path.isfile(default_file):
                 try:
                     self.load_settings(dialog=False,settings_file=[default_file])
+                    now = dt.datetime.today().date()
+                    if str(self.date_filter_s_days.cget('state')) == 'disabled':
+                        self.date_filter_s_days.configure(state=tk.NORMAL)
+                        self.date_filter_s_days.set_date(now)
+                        self.date_filter_s_days.configure(state=tk.DISABLED)
+                    else:
+                        self.date_filter_s_days.set_date(now)
+                    if str(self.date_filter_e_days.cget('state')) == 'disabled':
+                        self.date_filter_e_days.configure(state=tk.NORMAL)
+                        self.date_filter_e_days.set_date(now)
+                        self.date_filter_e_days.configure(state=tk.DISABLED)
+                    else:
+                        self.date_filter_e_days.set_date(now)
                 except:
                     print("Found 'DEFAULT.CSV' settings file, but couldn't load!")
 
@@ -2426,6 +2447,7 @@ class FED3_Viz(tk.Tk):
 
     def save_plots(self):
         clicked=self.plot_listbox.curselection()
+        ext = self.img_format_menu.get()
         if clicked:
             savepath = tk.filedialog.askdirectory(title='Select where to save highlighted plots')
             if savepath:
@@ -2433,12 +2455,12 @@ class FED3_Viz(tk.Tk):
                     graph_name=self.plot_listbox.get(i)
                     if len(clicked) > 1:
                         self.raise_figure(graph_name, new=False)
-                    save_name = graph_name+'.png'
+                    save_name = graph_name+ext
                     full_save = os.path.join(savepath,save_name)
                     if not self.overwrite_checkbox_val.get():
                         c=1
                         while os.path.exists(full_save):
-                            save_name = graph_name +  ' (' + str(c) + ').png'
+                            save_name = graph_name +  ' (' + str(c) + ')' + ext
                             full_save = os.path.join(savepath,save_name)
                             c+=1
                     self.FIGURE.savefig(full_save,dpi=300)
@@ -2687,20 +2709,27 @@ class FED3_Viz(tk.Tk):
 
     def load_settings(self, dialog=True, settings_file=[''], from_df=None):
         settings_df = pd.DataFrame()
+        now = None
         if dialog:
             settings_file = tk.filedialog.askopenfilenames(title='Select FED3 Data',
                                                            defaultextension='.csv',
                                                            filetypes=[('Comma-Separated Values', '*.csv')],
                                                            initialdir='settings')
+
         if isinstance(from_df, pd.DataFrame):
             settings_df = from_df
         else:
             if settings_file:
                 settings_df = pd.read_csv(settings_file[0],index_col=0)
+                if os.path.basename(settings_file[0]).lower() == 'default.csv':
+                    now = dt.datetime.now().date()
         if not settings_df.empty:
             self.date_filter_val.set(settings_df.loc['date_filter_val','Values'])
             s = pd.to_datetime(settings_df.loc['date_filter_s_days','Values'])
             e = pd.to_datetime(settings_df.loc['date_filter_e_days','Values'])
+            if now is not None:
+                s = now
+                e = now
             if str(self.date_filter_s_days.cget('state')) == 'disabled':
                 self.date_filter_s_days.configure(state=tk.NORMAL)
                 self.date_filter_s_days.set_date(s)
@@ -2715,6 +2744,7 @@ class FED3_Viz(tk.Tk):
                 self.date_filter_e_days.set_date(e)
             self.date_filter_s_hour.set(settings_df.loc['date_filter_s_hour','Values'])
             self.date_filter_e_hour.set(settings_df.loc['date_filter_e_hour','Values'])
+            self.img_format_menu.set(settings_df.loc['img_format','Values'])
             self.nightshade_checkbox_val.set(settings_df.loc['shade_dark','Values'])
             self.nightshade_lightson.set(settings_df.loc['lights_on','Values'])
             self.nightshade_lightsoff.set(settings_df.loc['lights_off','Values'])
@@ -2766,6 +2796,7 @@ class FED3_Viz(tk.Tk):
                              date_filter_e_days =self.date_filter_e_days.get_date(),
                              date_filter_s_hour =self.date_filter_s_hour.get(),
                              date_filter_e_hour =self.date_filter_e_hour.get(),
+                             img_format         =self.img_format_menu.get(),
                              shade_dark         =self.nightshade_checkbox_val.get(),
                              lights_on          =self.nightshade_lightson.get(),
                              lights_off         =self.nightshade_lightsoff.get(),
