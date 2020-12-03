@@ -2557,6 +2557,118 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, **kwargs):
 
     return fig if 'ax' not in kwargs else None
 
+def circle_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
+                      lights_on, lights_off, **kwargs):
+    """
+    FED3 Viz: Make a polar line plot showing the average 24 hour cycle of a
+    value for Grouped devices.
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    groups : list of strings
+        Groups to average (based on the group attribute of each FED3_File)
+    circ_value : str
+        String value pointing to a variable to plot; any string accepted
+        by resample_get_yvals()
+    circ_error : str
+        What error bars to show ("SEM", "STD", or "None")
+    circ_show_indvl : bool
+        Whether to show individual files as their own lines; if True, error
+        bars will not be shown.
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    pellet_color : str
+        matplotlib named color string to color line
+    **kwargs :
+        ax : matplotlib.axes.Axes
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    retrieval_threshold=None
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for FED in FEDs:
+        assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
+    if circ_show_indvl:
+        circ_error = "None"
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150,
+                               subplot_kw=dict(polar=True))
+    else:
+        ax = kwargs['ax']
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    for i, group in enumerate(groups):
+        group_vals = []
+        for FED in FEDs:
+            if group in FED.group:
+                df = FED.data
+                if 'date_filter' in kwargs:
+                    s, e = kwargs['date_filter']
+                    df = df[(df.index >= s) &
+                            (df.index <= e)].copy()
+                byhour = df.groupby([df.index.hour])
+                byhour = byhour.apply(resample_get_yvals,circ_value,retrieval_threshold)
+                byhourday = df.groupby([df.index.hour,df.index.date])
+                num_days_by_hour = byhourday.sum().index.get_level_values(0).value_counts()
+                byhour = byhour.divide(num_days_by_hour, axis=0)
+                new_index = list(range(lights_on, 24)) + list(range(0,lights_on))
+                reindexed = byhour.reindex(new_index)
+                reindexed.index.name = 'hour'
+                if circ_value in ['pellets', 'correct pokes','errors']:
+                    reindexed = reindexed.fillna(0)
+                y = reindexed
+                x = range(0,24)
+                if circ_show_indvl:
+                    ax.plot(x,y,color=colors[i],alpha=.3,linewidth=.8)
+                group_vals.append(y)
+        group_mean = np.nanmean(group_vals, axis=0)
+        label = group
+        error_shade = np.nan
+        if circ_error == "SEM":
+            error_shade = stats.sem(group_vals, axis=0,nan_policy='omit')
+            label += ' (±' + circ_error + ')'
+        elif circ_error == 'STD':
+            error_shade = np.nanstd(group_vals, axis=0)
+            label += ' (±' + circ_error + ')'
+        if circ_show_indvl:
+            error_shade = np.nan
+        if "%" in circ_value:
+            ax.set_ylim(0,100)
+        x = range(24)
+        y = group_mean
+        ax.plot(x,y,color=colors[i], label=label)
+        ax.fill_between(x, y-error_shade, y+error_shade, color=colors[i],
+                        alpha=.3)
+    ax.set_xlabel('Hours (since start of light cycle)')
+    ax.set_xticks([0,6,12,18,24])
+    ax.set_ylabel(circ_value)
+    ax.set_title('Chronogram')
+    if shade_dark:
+        off = new_index.index(lights_off)
+        ax.axvspan(off,24,color='gray',alpha=.2,zorder=0,label='lights off')
+    ax.legend(bbox_to_anchor=(1,1),loc='upper left')
+    plt.tight_layout()
+
+    return fig if 'ax' not in kwargs else None
+
 def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     '''
     FED3 Viz: Create a histogram of interpellet intervals aggregated for
