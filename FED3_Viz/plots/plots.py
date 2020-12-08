@@ -2390,8 +2390,6 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         Integer between 0 and 23 denoting the start of the light cycle.
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
-    pellet_color : str
-        matplotlib named color string to color line
     **kwargs :
         ax : matplotlib.axes.Axes
             Axes to plot on, a new Figure and Axes are
@@ -2583,8 +2581,6 @@ def circle_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, sha
         Integer between 0 and 23 denoting the start of the light cycle.
     lights_off : int
         Integer between 0 and 23 denoting the end of the light cycle.
-    pellet_color : str
-        matplotlib named color string to color line
     **kwargs :
         ax : matplotlib.axes.Axes
             Axes to plot on, a new Figure and Axes are
@@ -2610,8 +2606,10 @@ def circle_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, sha
     if circ_show_indvl:
         circ_error = "None"
     if 'ax' not in kwargs:
-        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150,
+        fig, ax = plt.subplots(figsize=(5,5), dpi=150,
                                subplot_kw=dict(polar=True))
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(-1)
     else:
         ax = kwargs['ax']
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -2635,36 +2633,141 @@ def circle_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, sha
                 if circ_value in ['pellets', 'correct pokes','errors']:
                     reindexed = reindexed.fillna(0)
                 y = reindexed
-                x = range(0,24)
                 if circ_show_indvl:
-                    ax.plot(x,y,color=colors[i],alpha=.3,linewidth=.8)
+                    x = np.linspace(0, 2*np.pi, 25)
+                    wrapped = np.append(y, y[0])
+                    ax.plot(x,wrapped,color=colors[i],alpha=.3,linewidth=.8)
                 group_vals.append(y)
         group_mean = np.nanmean(group_vals, axis=0)
         label = group
         error_shade = np.nan
         if circ_error == "SEM":
             error_shade = stats.sem(group_vals, axis=0,nan_policy='omit')
+            error_shade = np.append(error_shade, error_shade[0])
             label += ' (±' + circ_error + ')'
         elif circ_error == 'STD':
             error_shade = np.nanstd(group_vals, axis=0)
+            error_shade = np.append(error_shade, error_shade[0])
             label += ' (±' + circ_error + ')'
         if circ_show_indvl:
             error_shade = np.nan
         if "%" in circ_value:
             ax.set_ylim(0,100)
-        x = range(24)
-        y = group_mean
+        x = np.linspace(0, 2*np.pi, 25)
+        y = np.append(group_mean, group_mean[0])
         ax.plot(x,y,color=colors[i], label=label)
         ax.fill_between(x, y-error_shade, y+error_shade, color=colors[i],
                         alpha=.3)
     ax.set_xlabel('Hours (since start of light cycle)')
-    ax.set_xticks([0,6,12,18,24])
-    ax.set_ylabel(circ_value)
-    ax.set_title('Chronogram')
+    ax.set_xticks(np.linspace(0, 2*np.pi, 5))
+    ax.set_xticklabels([0, 6, 12, 18, None])
+    ax.set_title('Chronogram ({})'.format(circ_value), pad=10)
     if shade_dark:
         off = new_index.index(lights_off)
-        ax.axvspan(off,24,color='gray',alpha=.2,zorder=0,label='lights off')
+        theta = (off/24)*2*np.pi
+        ax.fill_between(np.linspace(theta, 2*np.pi, 100), 0, ax.get_rmax(),
+                        color='gray',alpha=.2,zorder=0,label='lights off')
     ax.legend(bbox_to_anchor=(1,1),loc='upper left')
+    plt.tight_layout()
+
+    return fig if 'ax' not in kwargs else None
+
+def spiny_chronogram(FEDs, circ_value, resolution, shade_dark, lights_on, lights_off,
+                     **kwargs):
+    """
+    FED3 Viz: Make a spiny polar line plot showing the average 24 hour cycle
+    of a value, averaged for several devices.
+
+    Parameters
+    ----------
+    FEDs : list of FED3_File objects
+        FED3 files (loaded by load.FED3_File)
+    circ_value : str
+        String value pointing to a variable to plot; any string accepted
+        by resample_get_yvals()
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    **kwargs :
+        ax : matplotlib.axes.Axes
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        retrieval_threshold : int or float
+            Sets the maximum value when dependent is 'retrieval time'
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+
+    def meanbytime(g):
+        mindate = g.index.date.min()
+        maxdate = g.index.date.max()
+        diff = maxdate-mindate
+        days = diff.total_seconds()/86400
+        return g.mean()/days
+
+    s = "Resolution in minutes must evenly divide one hour."
+    assert resolution in [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60], s
+    resolution = str(resolution) + 'T'
+    retrieval_threshold=None
+    t_on = datetime.time(hour=lights_on)
+
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    for FED in FEDs:
+        assert isinstance(FED, FED3_File),'Non FED3_File passed to daynight_plot()'
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(5,5), dpi=150,
+                               subplot_kw=dict(polar=True))
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(-1)
+    else:
+        ax = kwargs['ax']
+    group_vals = []
+    for FED in FEDs:
+        df = FED.data.copy()
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+        r = df.groupby([pd.Grouper(freq=resolution)]).apply(resample_get_yvals,
+                                                            circ_value,
+                                                            retrieval_threshold)
+        r = r.groupby([r.index.time]).apply(meanbytime)
+        loci = r.index.get_loc(t_on)
+        new_index = pd.Index(pd.concat([r.index[loci:].to_series(), r.index[:loci].to_series()]))
+        r = r.reindex(new_index)
+        hours = pd.Series([i.hour for i in r.index])
+        minutes = pd.Series([i.minute/60 for i in r.index])
+        float_index = hours + minutes
+        r.index = float_index
+        group_vals.append(r)
+    group_mean = np.nanmean(group_vals, axis=0)
+    if "%" in circ_value:
+        ax.set_ylim(0,100)
+    x = np.linspace(0, 2*np.pi, len(group_mean)+1)
+    for n, val in enumerate(group_mean):
+        ax.plot([0, x[n]], [0, val], color='crimson', lw=1)
+    ax.set_xlabel('Hours (since start of light cycle)')
+    ax.set_xticks(np.linspace(0, 2*np.pi, 5))
+    ax.set_xticklabels([0, 6, 12, 18, None])
+    ax.set_title('Chronogram ({})'.format(circ_value), pad=10)
+    if shade_dark:
+        off = r.index.get_loc(lights_off)
+        theta = (off/len(group_mean))*2*np.pi
+        ax.fill_between(np.linspace(theta, 2*np.pi, 100), 0, ax.get_rmax(),
+                        color='gray',alpha=.2,zorder=0,label='lights off')
+        ax.legend(bbox_to_anchor=(1,1),loc='upper left')
     plt.tight_layout()
 
     return fig if 'ax' not in kwargs else None
