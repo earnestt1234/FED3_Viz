@@ -3032,15 +3032,21 @@ def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
             results.loc['Number of Meals',v] =  meals.max()
             results.loc['Average Pellets per Meal',v] =  meals.value_counts().mean()
             results.loc['% Pellets within Meals',v] =  (len(meals.dropna())/
-                                                       len(meals) * 100)
+                                                        len(meals) * 100)
 
         #pokes
         total_pokes = df['Left_Poke_Count'].max()+df['Right_Poke_Count'].max()
         results.loc['Total Pokes',v] = total_pokes
         if all(pd.isna(df['Correct_Poke'])):
-            results.loc['Left Pokes (%)',v] = df['Left_Poke_Count'].max()/total_pokes*100
+            if total_pokes > 0:
+                results.loc['Left Pokes (%)',v] = df['Left_Poke_Count'].max()/total_pokes*100
+            else:
+                results.loc['Left Pokes (%)',v] = 0
         else:
-            results.loc['Correct Pokes (%)',v] = df['Correct_Poke'].sum()/total_pokes*100
+            if total_pokes > 0:
+                results.loc['Correct Pokes (%)',v] = df['Correct_Poke'].sum()/total_pokes*100
+            else:
+                results.loc['Correct Pokes (%)',v] = 0
 
 
         #other
@@ -3072,6 +3078,10 @@ def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
 
         night_hours = np.sum(night_hours)
         day_hours = np.sum(day_hours)
+        print(night_slices)
+        print(day_slices)
+        print(night_hours)
+        print(day_hours)
 
         for name, portions, hourz in zip([' (Night)', ' (Day)'], [night_slices, day_slices],
                                          [night_hours, day_hours]):
