@@ -17,7 +17,7 @@ class FED3_File():
     def __init__(self,directory):
         """
         Reads FED3 data, adds variables, and assigns attributes
-        based on recording.
+        based on recording.  Will fail if there are no logged rows.
 
         Parameters
         ----------
@@ -71,15 +71,13 @@ class FED3_File():
         self.duration = self.end_time-self.start_time
         self.add_elapsed_time()
         self.add_binary_pellet_count()
-        try:
-            self.reassign_events()
-        except:
-            pass
+        self.reassign_events()
         self.add_interpellet_intervals()
         self.add_correct_pokes()
-        self.group = []
-        self.mode = self.determine_mode()
         self.handle_retrieval_time()
+        self.handle_poke_time()
+        self.mode = self.determine_mode()
+        self.group = []
 
     def __repr__(self):
         """Shows the directory used to make the file."""
@@ -95,6 +93,9 @@ class FED3_File():
     def add_binary_pellet_count(self):
         """Convert cumulative pellet count to binary value for each row.
         Stored in new Binary_Pellets column."""
+        if "Pellet_Count" not in self.data.columns:
+            self.data['Binary_Pellets'] = np.nan
+            return
         self.data['Binary_Pellets'] = self.data['Pellet_Count'].diff()
         pos = self.data.columns.get_loc('Binary_Pellets')
         pos2 = self.data.columns.get_loc('Pellet_Count')
@@ -129,6 +130,11 @@ class FED3_File():
         in a new Correct_Poke column, also creates Binary_Left_Pokes and
         Binary_Right_Pokes."""
         df = self.data
+        a = 'Left_Poke_Count' not in df.columns
+        b = 'Right_Poke_Count' not in df.columns
+        if any((a, b)):
+            df['Correct_Poke'] = np.nan
+            return
         df['Binary_Left_Pokes']  = df['Left_Poke_Count'].diff()
         df['Binary_Right_Pokes'] = df['Right_Poke_Count'].diff()
         df.iloc[0,df.columns.get_loc('Binary_Left_Pokes')] = df['Left_Poke_Count'][0]
@@ -170,6 +176,9 @@ class FED3_File():
         """Convert the Retrieval_Time column to deal with non-numeric entries.
         Currently, all are converted to np.nan.  No longer tries to convert
         NaN values to 0 (see commented out section)"""
+        if 'Retrieval_Time' not in self.data.columns:
+            self.data['Retrieval_Time'] = np.nan
+            return
         self.data['Retrieval_Time'] = pd.to_numeric(self.data['Retrieval_Time'],errors='coerce')
         # try:
         #     self.data.loc[(self.data['Event'] == 'Pellet') &
@@ -179,10 +188,19 @@ class FED3_File():
 
     def reassign_events(self):
         """Reassign the "Event" column based on changes in the pellet and poke
-        counts.  Catches some errors with improper event logging."""
-        if 'Event' in self.data.columns:
+        counts.  Catches some errors with improper event logging.  Weekly tries
+        and exits if errors encountered."""
+        try:
             events = ["Pellet" if v else 'Poke' for v in self.data['Binary_Pellets']]
             self.data['Event'] = events
+        except:
+            pass
+
+    def handle_poke_time(self):
+        """Creates a dummy poke time column if one hasn't been created (newer
+        FED feature as of Fall 2020."""
+        if 'Poke_Time' not in self.data.columns:
+            self.data['Poke_Time'] = np.nan
 
 class FedCannotConcat(Exception):
     """Error when FEDs can't be concatendated"""

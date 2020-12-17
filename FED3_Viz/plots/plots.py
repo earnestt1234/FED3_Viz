@@ -2026,6 +2026,95 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
 
     return fig if 'ax' not in kwargs else None
 
+def poketime_plot(FED, poke_show_correct, poke_show_error, poke_show_left,
+                  poke_show_right, shade_dark, lights_on, lights_off,
+                  **kwargs):
+    """
+    FED3 Viz: Generate a scatter plot showing poke time for a device
+    Must have the Poke_Time column added.
+
+    Parameters
+    ----------
+    FED : FED3_File object
+        FED3 file (loaded by load.FED3_File)
+    poke_show_correct : bool
+        Whether to plot correct pokes
+    poke_show_error : bool
+        Whether to plot incorrect pokes
+    poke_show_left : bool
+        Whether to plot left pokes
+    poke_show_right : bool
+        Whether to plot right pokes
+    shade_dark : bool
+        Whether to shade lights-off periods
+    lights_on : int
+        Integer between 0 and 23 denoting the start of the light cycle.
+    lights_off : int
+        Integer between 0 and 23 denoting the end of the light cycle.
+    **kwargs :
+        ax : matplotlib.axes.Axes
+            Axes to plot on, a new Figure and Axes are
+            created if not passed
+        date_filter : array
+            A two-element array of datetimes (start, end) used to filter
+            the data
+        **kwargs also allows FED3 Viz to pass all settings to all functions.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    assert isinstance(FED, FED3_File), 'Non FED3_File passed to poke_plot()'
+    if 'ax' not in kwargs:
+        fig, ax = plt.subplots(figsize=(7,3.5), dpi=150)
+    else:
+        ax = kwargs['ax']
+    df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        base_df = df[(df.index) <= s].copy()
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
+    correct_pokes = df['Correct_Poke']
+    if poke_show_correct:
+        y = df['Poke_Time'][correct_pokes == 1]
+        x = y.index
+        ax.scatter(x, y, color='mediumseagreen', label = 'correct pokes', s=5)
+    if poke_show_error:
+        y = df['Poke_Time'][correct_pokes == 0]
+        x = y.index
+        ax.scatter(x, y, color='indianred', label = 'error pokes', s=5)
+    if poke_show_left:
+        try:
+            diff = df[df['Event'] == 'Poke']['Left_Poke_Count'].diff()
+        except:
+            diff = df['Left_Poke_Count'].diff()
+        y = df['Poke_Time'][diff > 0]
+        x = y.index
+        ax.scatter(x, y, color='cornflowerblue', label = 'left pokes')
+    if poke_show_right:
+        try:
+            diff = df[df['Event'] == 'Poke']['Right_Poke_Count'].diff()
+        except:
+            diff = df['Right_Poke_Count'].diff()
+        y = df['Poke_Time'][diff > 0]
+        x = y.index
+        ax.scatter(x, y, color='gold', label = 'right pokes')
+    date_format_x(ax, x[0], x[-1])
+    ax.set_xlabel('Time')
+    ylabel = 'Poke Time (s)'
+    ax.set_ylabel(ylabel)
+    title = ('Poke Time for ' + FED.filename)
+    ax.set_title(title)
+    if shade_dark:
+        shade_darkness(ax, min(df.index), max(df.index),
+                       lights_on=lights_on,
+                       lights_off=lights_off)
+    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    plt.tight_layout()
+
+    return fig if 'ax' not in kwargs else None
+
 #---Progressive Ratio Plots
 def pr_plot(FEDs, break_hours, break_mins, break_style, **kwargs):
     """
@@ -3031,22 +3120,18 @@ def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
                                 meal_duration=meal_duration)
             results.loc['Number of Meals',v] =  meals.max()
             results.loc['Average Pellets per Meal',v] =  meals.value_counts().mean()
+            d = len(meals) * 100 if len(meals) > 0 else 1
             results.loc['% Pellets within Meals',v] =  (len(meals.dropna())/
-                                                        len(meals) * 100)
+                                                        d)
 
         #pokes
         total_pokes = df['Left_Poke_Count'].max()+df['Right_Poke_Count'].max()
+        d = total_pokes * 100 if total_pokes else 1
         results.loc['Total Pokes',v] = total_pokes
         if all(pd.isna(df['Correct_Poke'])):
-            if total_pokes > 0:
-                results.loc['Left Pokes (%)',v] = df['Left_Poke_Count'].max()/total_pokes*100
-            else:
-                results.loc['Left Pokes (%)',v] = 0
+            results.loc['Left Pokes (%)',v] = df['Left_Poke_Count'].max()/d
         else:
-            if total_pokes > 0:
-                results.loc['Correct Pokes (%)',v] = df['Correct_Poke'].sum()/total_pokes*100
-            else:
-                results.loc['Correct Pokes (%)',v] = 0
+            results.loc['Correct Pokes (%)',v] = df['Correct_Poke'].sum()/d
 
 
         #other
@@ -3078,13 +3163,11 @@ def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
 
         night_hours = np.sum(night_hours)
         day_hours = np.sum(day_hours)
-        print(night_slices)
-        print(day_slices)
-        print(night_hours)
-        print(day_hours)
 
         for name, portions, hourz in zip([' (Night)', ' (Day)'], [night_slices, day_slices],
                                          [night_hours, day_hours]):
+            if len(portions) == 0:
+                continue
             results.loc['Pellets Taken' + name, v] = np.sum([d['Pellet_Count'].max()-d['Pellet_Count'].min()
                                                              for d in portions])
             results.loc['Pellets per Hour' + name, v] = np.sum([d['Pellet_Count'].max()-d['Pellet_Count'].min()
@@ -3093,21 +3176,23 @@ def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
             concat_meals = label_meals(concat_meals.dropna(),
                                        meal_pellet_minimum=meal_pellet_minimum,
                                        meal_duration=meal_duration)
+            d = len(concat_meals) if len(concat_meals) > 0 else 1
             results.loc['Number of Meals' + name, v] = concat_meals.max()
             results.loc['Average Pellets per Meal' + name, v] = concat_meals.value_counts().mean()
             results.loc['% Pellets within Meals' + name, v] = (len(concat_meals.dropna())/
-                                                               len(concat_meals))*100
+                                                               d)*100
             left_pokes = np.sum([d['Left_Poke_Count'].max() - d['Left_Poke_Count'].min()
                                  for d in portions])
             right_pokes = np.sum([d['Right_Poke_Count'].max() - d['Right_Poke_Count'].min()
                                  for d in portions])
             total_pokes = left_pokes + right_pokes
             results.loc['Total Pokes' + name,v] = total_pokes
+            d = total_pokes if total_pokes > 0 else 1
             if all(pd.isna(df['Correct_Poke'])):
-                results.loc['Left Pokes (%)'+name,v] = left_pokes / total_pokes *100
+                results.loc['Left Pokes (%)'+name,v] = left_pokes / d *100
             else:
                 correct_pokes = np.sum([d['Correct_Poke'].sum() for d in portions])
-                results.loc['Correct Pokes (%)'+name,v] = correct_pokes / total_pokes * 100
+                results.loc['Correct Pokes (%)'+name,v] = correct_pokes / d * 100
         output_list.append(results.astype(float))
     output = pd.concat(output_list, axis=1)
     avg = output.mean(axis=1)
