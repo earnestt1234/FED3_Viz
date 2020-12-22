@@ -78,13 +78,13 @@ def pellet_plot_multi_unaligned(FEDs,*args,**kwargs):
     for df in df_list:
         output = output.join(df, how='outer')
     output.index.name = 'Time'
-    return output        
+    return output
 
 def pellet_freq_multi_aligned(FEDs, pellet_bins, *args,**kwargs):
     df_list = []
     for file in FEDs:
         df = file.data
-        if 'date_filter' in kwargs:         
+        if 'date_filter' in kwargs:
             s, e = kwargs['date_filter']
             df = df[(df.index >= s) &
                     (df.index <= e)].copy()
@@ -100,7 +100,7 @@ def pellet_freq_multi_aligned(FEDs, pellet_bins, *args,**kwargs):
     for df in df_list:
         output = output.join(df, how='outer')
     output.index.name = 'Elapsed Hours'
-    return output    
+    return output
 
 def pellet_freq_multi_unaligned(FEDs, pellet_bins, *args,**kwargs):
     df_list = []
@@ -121,7 +121,7 @@ def pellet_freq_multi_unaligned(FEDs, pellet_bins, *args,**kwargs):
     output.index.name = 'Time'
     return output
 
-def average_plot_ondatetime(FEDs, groups, dependent, average_bins, 
+def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
                             average_error, *args, **kwargs):
     retrieval_threshold=None
     if 'retrieval_threshold' in kwargs:
@@ -164,7 +164,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
                 if file.basename not in output.columns:
                     indvl_line = pd.DataFrame({file.basename:y},
                                               index=y.index)
-                    output = output.join(indvl_line, how='outer')                     
+                    output = output.join(indvl_line, how='outer')
         group_avg = np.nanmean(avg, axis=0)
         group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
@@ -177,7 +177,7 @@ def average_plot_ondatetime(FEDs, groups, dependent, average_bins,
     return output
 
 def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_start,
-                        average_align_days, average_error, *args, 
+                        average_align_days, average_error, *args,
                         **kwargs):
     retrieval_threshold=None
     if 'retrieval_threshold' in kwargs:
@@ -189,7 +189,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                                  day=1,
                                  hour=average_align_start)
     end_datetime = start_datetime + dt.timedelta(days=average_align_days)
-    date_range = pd.date_range(start_datetime,end_datetime,freq=average_bins)    
+    date_range = pd.date_range(start_datetime,end_datetime,freq=average_bins)
     for i, group in enumerate(groups):
         avg = []
         for file in FEDs:
@@ -203,7 +203,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                     y = left_right_bias(df, average_bins, version='ontime',
                                         starttime=average_align_start)
                 elif dependent == 'left pokes':
-                    y = left_right_noncumulative(df,average_bins,side='l',version='ontime', 
+                    y = left_right_noncumulative(df,average_bins,side='l',version='ontime',
                                                  starttime=average_align_start)
                 elif dependent == 'right pokes':
                     y = left_right_noncumulative(df,average_bins,side='r',version='ontime',
@@ -222,7 +222,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
                     indvl_line = pd.DataFrame({file.basename:y},
                                               index=y.index)
                     output = output.join(indvl_line, how='outer')
-                    
+
         group_avg = np.nanmean(avg, axis=0)
         group_to_add = pd.DataFrame({group:group_avg}, index=y.index)
         if average_error == 'SEM':
@@ -234,7 +234,7 @@ def average_plot_ontime(FEDs, groups, dependent, average_bins, average_align_sta
     hours_since_start = [(i - output.index[0]).total_seconds()/3600
                          for i in output.index]
     output.index = hours_since_start
-    output.index.name = 'Elapsed Hours (since ' + str(average_align_start) + ':00)' 
+    output.index.name = 'Elapsed Hours (since ' + str(average_align_start) + ':00)'
     return output
 
 def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
@@ -278,7 +278,7 @@ def average_plot_onstart(FEDs, groups, dependent, average_bins, average_error,
                     df = df.groupby(pd.Grouper(key='Elapsed_Time',freq=average_bins,
                                                   base=0))
                     y = df.apply(resample_get_yvals, dependent, retrieval_threshold)
-                y = y.reindex(longest_index)           
+                y = y.reindex(longest_index)
                 y.index = [time.total_seconds()/3600 for time in y.index]
                 avg.append(y)
                 if file.basename not in output.columns:
@@ -328,16 +328,16 @@ def interpellet_interval_plot(FEDs, kde, logx, *args, **kwargs):
                 kde_df = pd.DataFrame(kde_dic, index=kde[0])
                 kde_output = kde_output.join(kde_df, how='outer')
             else:
-                kde_output[FED.basename] = np.nan                 
+                kde_output[FED.basename] = np.nan
         bar_x = [v.get_x() for v in plot.patches]
         bar_h = [v.get_height() for v in plot.patches]
         bar_dic = {FED.basename:bar_h}
         bar_df = pd.DataFrame(bar_dic, index=bar_x)
         bar_output = bar_output.join(bar_df, how='outer')
-        plt.close()      
+        plt.close()
     kde_output.index.name = 'log10(minutes)' if logx else 'minutes'
     bar_output.index.name = 'log10(minutes)' if logx else 'minutes'
-    return kde_output, bar_output       
+    return kde_output, bar_output
 
 def group_interpellet_interval_plot(FEDs, groups, kde, logx, *args, **kwargs):
     kde_output = pd.DataFrame()
@@ -354,12 +354,12 @@ def group_interpellet_interval_plot(FEDs, groups, kde, logx, *args, **kwargs):
         div = 900/50
         bins = [i*div for i in range(50)]
     for group in groups:
-        #made to not disrupt fig in app            
+        #made to not disrupt fig in app
         fig = plt.figure()
         plt.clf()
         all_vals = []
         for FED in FEDs:
-            if group in FED.group:             
+            if group in FED.group:
                 df = FED.data
                 y = list(df['Interpellet_Intervals'][df['Interpellet_Intervals'] > 0])
                 if logx:
@@ -407,7 +407,7 @@ def meal_size_histogram(FEDs, meal_pellet_minimum, meal_duration,
         longest_meal = 5
     bins = range(1,longest_meal+2)
     for series, fed in zip(sizes,FEDs):
-        #made to not disrupt fig in app            
+        #made to not disrupt fig in app
         fig = plt.figure()
         plt.clf()
         plot = sns.distplot(series,bins=bins,kde=False,label=fed.basename,
@@ -446,7 +446,7 @@ def grouped_meal_size_histogram(FEDs, groups, meal_pellet_minimum, meal_duration
         longest_meal = 5
     bins = range(1,longest_meal+2)
     for series, group in zip(sizes,groups):
-        #made to not disrupt fig in app            
+        #made to not disrupt fig in app
         fig = plt.figure()
         plt.clf()
         plot = sns.distplot(series,bins=bins,kde=False,label=group,
@@ -488,7 +488,7 @@ def retrieval_time_multi(FEDs, retrieval_threshold, **kwargs):
         output = output.join(df, how='outer')
     output.index.name = 'Elapsed Hours'
     output = output.dropna(axis=0, how='all')
-    return output 
+    return output
 
 def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                   *args, **kwargs):
@@ -511,12 +511,12 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                     df = df[(df.index >= s) &
                             (df.index <= e)].copy()
                 nights = night_intervals(df.index, lights_on, lights_off)
-                days = night_intervals(df.index, lights_on, lights_off, 
+                days = night_intervals(df.index, lights_on, lights_off,
                                        instead_days=True)
                 durs = get_daynight_count(df.index[0], df.index[-1],
                                                 lights_on, lights_off)
                 days_completed = durs['day']
-                nights_completed = durs['night']          
+                nights_completed = durs['night']
                 day_vals = []
                 night_vals = []
                 for start, end in days:
@@ -532,7 +532,7 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 if fed.basename not in used:
                     f = fed.basename
                     output.loc[circ_value,f+' day'] = np.nanmean(day_vals)
-                    output.loc[circ_value,f+' night'] = np.nanmean(night_vals)  
+                    output.loc[circ_value,f+' night'] = np.nanmean(night_vals)
                     used.append(fed.basename)
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
@@ -543,7 +543,7 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
             group_avg_df.loc[circ_value,group+' night SEM']= stats.sem(group_night_values,nan_policy='omit')
         if circ_error == 'STD':
             group_avg_df.loc[circ_value,group+' day STD'] = np.nanstd(group_day_values)
-            group_avg_df.loc[circ_value,group+' night STD'] = np.nanstd(group_night_values)       
+            group_avg_df.loc[circ_value,group+' night STD'] = np.nanstd(group_night_values)
     output = output.merge(group_avg_df, left_index=True, right_index=True)
     return output
 
@@ -558,7 +558,7 @@ def poke_plot(FED, poke_bins, poke_show_correct, poke_show_error, poke_show_left
         s, e = kwargs['date_filter']
         base_df = df[(df.index) <= s].copy()
         df = df[(df.index >= s) &
-                (df.index <= e)].copy()   
+                (df.index <= e)].copy()
         base_correct = pd.Series([1 if i==True else np.nan
                                   for i in base_df['Correct_Poke']]).cumsum()
         base_wrong = pd.Series([1 if i==False else np.nan
@@ -655,13 +655,67 @@ def poke_bias(FED, poke_bins, bias_style, *args, **kwargs):
     output = pd.DataFrame(y, index=x)
     return output
 
+def poketime_plot(FED, poke_show_correct, poke_show_error, poke_show_left,
+                  poke_show_right, poketime_cutoff, *args, **kwargs):
+    output=pd.DataFrame()
+    df = FED.data
+    if 'date_filter' in kwargs:
+        s, e = kwargs['date_filter']
+        df = df[(df.index >= s) &
+                (df.index <= e)].copy()
+    if poke_show_correct:
+        correct_pokes = df['Correct_Poke']
+        y = df['Poke_Time'][correct_pokes == 1]
+        if poketime_cutoff is not None:
+            y[y > poketime_cutoff] = np.nan
+        y = y.rename('Correct Pokes')
+        x = y.index
+        temp = pd.DataFrame(y, index=x,)
+        output = output.join(temp, how='outer')
+    if poke_show_error:
+        correct_pokes = df['Correct_Poke']
+        y = df['Poke_Time'][correct_pokes == 0]
+        if poketime_cutoff is not None:
+            y[y > poketime_cutoff] = np.nan
+        y = y.rename('Incorrect Pokes')
+        x = y.index
+        temp = pd.DataFrame(y, index=x,)
+        output = output.join(temp, how='outer')
+    if poke_show_left:
+        try:
+            where = df['Left_Poke_Count'].where(df['Event'] == 'Poke', np.nan).ffill()
+            diff = where.diff()
+        except:
+            diff = df['Left_Poke_Count'].diff()
+        y = df['Poke_Time'][diff > 0]
+        if poketime_cutoff is not None:
+            y[y > poketime_cutoff] = np.nan
+        y = y.rename('Left Pokes')
+        x = y.index
+        temp = pd.DataFrame(y, index=x,)
+        output = output.join(temp, how='outer')
+    if poke_show_right:
+        try:
+            where = df['Right_Poke_Count'].where(df['Event'] == 'Poke', np.nan).ffill()
+            diff = where.diff()
+        except:
+            diff = df['Left_Poke_Count'].diff()
+        y = df['Poke_Time'][diff > 0]
+        if poketime_cutoff is not None:
+            y[y > poketime_cutoff] = np.nan
+        y = y.rename('Right Pokes')
+        x = y.index
+        temp = pd.DataFrame(y, index=x,)
+        output = output.join(temp, how='outer')
+    return output
+
 def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
     retrieval_threshold=None
     if 'retrieval_threshold' in kwargs:
         retrieval_threshold = kwargs['retrieval_threshold']
     matrix = []
     index = []
-    for FED in FEDs:       
+    for FED in FEDs:
         df = FED.data
         if 'date_filter' in kwargs:
             s, e = kwargs['date_filter']
@@ -682,7 +736,7 @@ def heatmap_chronogram(FEDs, circ_value, lights_on, *args, **kwargs):
     avg = matrix.mean(axis=0)
     avg = avg.rename('Average')
     matrix = matrix.append(avg)
-    
+
     return matrix
 
 def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
@@ -710,14 +764,14 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
                 reindexed = byhour.reindex(new_index)
                 if circ_value in ['pellets', 'correct pokes','errors']:
                     reindexed = reindexed.fillna(0)
-                y = reindexed                
+                y = reindexed
                 group_vals.append(y)
                 if FED.basename not in output.columns:
                     temp = pd.DataFrame({FED.basename:reindexed}, index=new_index)
                     output = output.join(temp, how='outer',)
         x = list(range(0,24))
         output.index = x
-        group_mean = np.nanmean(group_vals, axis=0)    
+        group_mean = np.nanmean(group_vals, axis=0)
         to_add = pd.DataFrame({group:group_mean})
         if circ_error == "SEM":
             to_add[group + " SEM"] = stats.sem(group_vals, axis=0,nan_policy='omit')
@@ -726,8 +780,14 @@ def line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade
         avgs = avgs.join(to_add, how='outer')
     output = output.join(avgs, how='outer')
     output.index.name = "Hours"
-        
+
     return output
+
+def circle_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
+                    lights_on, lights_off, *args, **kwargs):
+    # simply use the line chronogram function
+    return line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
+                           lights_on, lights_off, *args, **kwargs)
 
 def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     kde_output = pd.DataFrame()
@@ -775,7 +835,7 @@ def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
                 kde_df = pd.DataFrame(kde_dic, index=kde[0])
                 kde_output = kde_output.join(kde_df, how='outer')
             else:
-                kde_output[label] = np.nan            
+                kde_output[label] = np.nan
         bar_x = [v.get_x() for v in plot.patches]
         bar_h = [v.get_height() for v in plot.patches]
         bar_dic = {label:bar_h}

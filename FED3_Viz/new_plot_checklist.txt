@@ -1,0 +1,17 @@
+FED3Viz New Plot Checklist
+--------------------------
+
+1. Write plot function
+2. Write getdata function
+
+If new settings:
+  3. Add widgets
+  4. Add to get_current_settings, get_current_settings_as_args, convert_settingsdict_to_df, and load_settings
+  5. Save new default settings
+
+6. Link name help text (self.plot_nodes_help)
+7. Link name to plotting function with fed3viz.py (self.plot_nodes_func)
+8. Write the plotting function with fed3viz.py
+9. Insert name into self.plot_treeview
+10. Add to is_plottable()
+11. Add to fed_inspect

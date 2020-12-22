@@ -1,7 +1,7 @@
 ,Values
 date_filter_val,False
-date_filter_s_days,2020-07-08
-date_filter_e_days,2020-07-08
+date_filter_s_days,2020-12-21
+date_filter_e_days,2020-12-21
 date_filter_s_hour,noon
 date_filter_e_hour,noon
 img_format,.png
@@ -32,6 +32,7 @@ norm_meals,True
 meal_pellet_minimum,1
 meal_duration,1
 retrieval_threshold,None
+poketime_cutoff,None
 poke_style,Cumulative
 poke_bins,1 hour
 poke_show_correct,True

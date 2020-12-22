@@ -9,7 +9,6 @@ extra columns.
 from difflib import SequenceMatcher
 import os
 import pandas as pd
-import numbers
 import numpy as np
 
 class FED3_File():
@@ -42,6 +41,9 @@ class FED3_File():
                             'Right_Poke_Count',
                             'Pellet_Count',
                             'Retrieval_Time',]
+        self.needed_names = ['Pellet_Count',
+                             'Left_Poke_Count',
+                             'Right_Poke_Count',]
 
         self.basename = os.path.basename(directory)
         splitext = os.path.splitext(self.basename)
@@ -63,7 +65,7 @@ class FED3_File():
                     self.foreign_columns.append(column)
         except Exception as e:
             raise e
-        self.missing_columns = [name for name in self.fixed_names if
+        self.missing_columns = [name for name in self.needed_names if
                                 name not in self.data.columns]
         self.events = len(self.data.index)
         self.end_time = pd.Timestamp(self.data.index.values[-1])
@@ -157,7 +159,7 @@ class FED3_File():
         """Find the recording mode of the file.  Returns the mode as a string."""
         mode = 'Unknown'
         column = pd.Series()
-        for name in ['FR_Ratio',' FR_Ratio','Mode','Session_Type']:
+        for name in ['FR','FR_Ratio',' FR_Ratio','Mode','Session_Type']:
             if name in self.data.columns:
                 column = self.data[name]
         if not column.empty:

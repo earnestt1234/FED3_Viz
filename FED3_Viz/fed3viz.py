@@ -82,6 +82,7 @@ class FED3_Viz(tk.Tk):
                                                          toolbar=None,in_use=False))
         self.FIGURE, self.AX = plt.subplots(figsize=(5,3.5),dpi=150) #fig/axes used in plot tab
         self.CB = None
+        self.POLAR = False
         times = []
         for xm in [' am', ' pm']:
             for num in range(0,12):
@@ -212,6 +213,7 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_poke, 6, text='Poke Bias Plot')
         self.plot_treeview.insert(self.ps_poke, 7, text='Average Poke Bias Plot (Correct %)')
         self.plot_treeview.insert(self.ps_poke, 8, text='Average Poke Bias Plot (Left %)')
+        self.plot_treeview.insert(self.ps_poke, 9, text='Poke Time Plot')
         self.ps_pr = self.plot_treeview.insert('', 3, text='Progressive Ratio')
         self.plot_treeview.insert(self.ps_pr, 1, text = 'Breakpoint Plot')
         self.plot_treeview.insert(self.ps_pr, 2, text = 'Group Breakpoint Plot')
@@ -219,7 +221,8 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_circadian, 1, text='Day/Night Plot')
         self.plot_treeview.insert(self.ps_circadian, 2, text='Day/Night Interpellet Interval Plot')
         self.plot_treeview.insert(self.ps_circadian, 3, text='Chronogram (Line)')
-        self.plot_treeview.insert(self.ps_circadian, 4, text='Chronogram (Heatmap)')
+        self.plot_treeview.insert(self.ps_circadian, 4, text='Chronogram (Circle)')
+        self.plot_treeview.insert(self.ps_circadian, 5, text='Chronogram (Heatmap)')
         self.ps_other = self.plot_treeview.insert("", 5, text='Diagnostic')
         self.plot_treeview.insert(self.ps_other, 1, text='Battery Life')
         self.plot_treeview.insert(self.ps_other, 2, text='Motor Turns')
@@ -334,9 +337,11 @@ class FED3_Viz(tk.Tk):
                                 'Poke Bias Plot':'Plot the tendency to pick one poke over another',
                                 'Average Poke Bias Plot (Correct %)':'Plot the average Group tendency to poke the active poke (Groups make individual curves)',
                                 'Average Poke Bias Plot (Left %)':'Plot the average Group tendency to poke the left poke (Groups make individual curves)',
+                                'Poke Time Plot':'Plot the time the nose poke beam was broken for each poke',
                                 'Day/Night Plot':'Plot Group averages for day/night on a bar chart',
                                 'Day/Night Interpellet Interval Plot':'Plot intervals between pellet retrieval for Grouped animals, grouping by day and night',
-                                'Chronogram (Line)':'Plot average 24-hour curves for groups',
+                                'Chronogram (Line)':'Plot average 24-hour behavior for groups',
+                                'Chronogram (Circle)':'Plot average 24-hour behavior for groups in a circular plot',
                                 'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
                                 'Group Breakpoint Plot':'Plot the average breakpoint for Groups (maximum pellets or pokes reached before a period of inactivity)',
@@ -362,9 +367,11 @@ class FED3_Viz(tk.Tk):
                                 'Average Poke Plot (Left)':self.avg_plot_TK,
                                 'Average Poke Plot (Right)':self.avg_plot_TK,
                                 'Poke Bias Plot':self.poke_bias_single_TK,
+                                'Poke Time Plot':self.poketime_plot_TK,
                                 'Average Poke Bias Plot (Correct %)':self.avg_plot_TK,
                                 'Average Poke Bias Plot (Left %)':self.avg_plot_TK,
                                 'Chronogram (Line)':self.chronogram_line_TK,
+                                'Chronogram (Circle)':self.chronogram_circle_TK,
                                 'Chronogram (Heatmap)':self.chronogram_heatmap_TK,
                                 'Breakpoint Plot':self.breakpoint_plot,
                                 'Group Breakpoint Plot':self.group_breakpoint_plot,
@@ -505,18 +512,22 @@ class FED3_Viz(tk.Tk):
         self.retrieval_settings_frame.grid(row=0,column=0,sticky='nsew',
                                            pady=(0,20),padx=(20))
 
+        self.poketime_settings_frame = tk.Frame(self.settings_col2)
+        self.poketime_settings_frame.grid(row=1,column=0,sticky='nsew',
+                                          padx=(20), pady=(0,20))
+
         self.pr_settings_frame = tk.Frame(self.settings_col2)
-        self.pr_settings_frame.grid(row=1,column=0,sticky='nsew',padx=(20))
+        self.pr_settings_frame.grid(row=2,column=0,sticky='nsew',padx=(20))
 
         self.poke_settings_frame = tk.Frame(self.settings_col2)
-        self.poke_settings_frame.grid(row=2,column=0,sticky='nsew',padx=(20))
+        self.poke_settings_frame.grid(row=3,column=0,sticky='nsew',padx=(20))
 
         self.daynight_settings_frame = tk.Frame(self.settings_col2)
-        self.daynight_settings_frame.grid(row=3,column=0,sticky='nsew',
+        self.daynight_settings_frame.grid(row=4,column=0,sticky='nsew',
                                           padx=(20,20), pady=(20,0))
 
         self.load_settings_frame = tk.Frame(self.settings_col2)
-        self.load_settings_frame.grid(row=4,column=0,sticky='nsew',
+        self.load_settings_frame.grid(row=5,column=0,sticky='nsew',
                                       padx=(20,20), pady=(0,40))
 
         #labels
@@ -575,7 +586,12 @@ class FED3_Viz(tk.Tk):
                                         text='Retrieval Time',
                                         font=self.section_font)
         self.retrieval_threshold_label = tk.Label(self.retrieval_settings_frame,
-                                                  text='Threshold for excluding retrieval times (seconds)')
+                                                  text='Cutoff for excluding retrieval times (seconds)')
+        self.poketime_label = tk.Label(self.poketime_settings_frame,
+                                       text='Poke Time',
+                                       font=self.section_font)
+        self.poketime_cutoff_label = tk.Label(self.poketime_settings_frame,
+                                              text='Cutoff for excluding poke times (seconds)')
         self.pr_settings_label = tk.Label(self.pr_settings_frame,
                                           text='Progressive Ratio',
                                           font=self.section_font)
@@ -753,6 +769,13 @@ class FED3_Viz(tk.Tk):
                                                              60,120,300,600],
                                                      width=10)
         self.retrieval_threshold_menu.set('None')
+
+        #   poke time
+        self.poketime_cutoff_menu = ttk.Combobox(self.poketime_settings_frame,
+                                                 values=['None',1,2,3,4,5,10,20,30],
+                                                 width=10)
+        self.poketime_cutoff_menu.set('None')
+
         #   progressive ratio
         self.pr_style_menu = ttk.Combobox(self.pr_settings_frame,
                                           values=['pellets','pokes'],
@@ -894,6 +917,10 @@ class FED3_Viz(tk.Tk):
         self.retrieval_label.grid(row=0,column=0,sticky='w')
         self.retrieval_threshold_label.grid(row=1,column=0,sticky='w',padx=(20,100))
         self.retrieval_threshold_menu.grid(row=1,column=1,sticky='w',)
+
+        self.poketime_label.grid(row=0,column=0,sticky='w')
+        self.poketime_cutoff_label.grid(row=1,column=0,sticky='w',padx=(20,100))
+        self.poketime_cutoff_menu.grid(row=1,column=1,sticky='w',)
 
         self.pr_settings_label.grid(row=0,column=0,sticky='w')
         self.pr_style_label.grid(row=1,column=0,sticky='w',padx=(20,0))
@@ -1410,6 +1437,10 @@ class FED3_Viz(tk.Tk):
                 if self.plotting:
                     if text in self.plot_nodes_func:
                         self.clear_axes()
+                        if text in ['Chronogram (Circle)'] and not self.POLAR:
+                            self.convert_polar_axes()
+                        elif text not in ['Chronogram (Circle)'] and self.POLAR:
+                            self.convert_polar_axes()
                         plotting_function = self.plot_nodes_func[text]
                         if plotting_function == self.avg_plot_TK:
                             plotting_function(text)
@@ -1737,6 +1768,42 @@ class FED3_Viz(tk.Tk):
         plots.line_chronogram(**args_dict)
         self.display_plot(new_plot)
 
+    def chronogram_circle_TK(self):
+        args_dict = self.get_current_settings_as_args()
+        if self.allgroups_val.get():
+            groups = self.GROUPS
+        else:
+            ints = [int(i) for i in self.group_view.curselection()]
+            groups = [self.GROUPS[i] for i in ints]
+        args_dict['groups'] = groups
+        feds = []
+        for fed in self.LOADED_FEDS:
+            for group in fed.group:
+                if group in groups:
+                    feds.append(fed)
+                    break
+        args_dict['FEDs'] = feds
+        if self.date_filter_val.get():
+            s,e = self.get_date_filter_dates()
+            args_dict['date_filter'] = (s,e)
+            for fed in feds:
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
+        args_dict['ax'] = self.AX
+        plotdata = getdata.circle_chronogram(**args_dict)
+        value = args_dict['circ_value'].capitalize()
+        fig_name = self.create_plot_name(value + ' Chronogram (Circle)')
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.circle_chronogram,
+                            arguments=args_dict, plotdata=plotdata,
+                            x=7, y=3.5)
+        self.PLOTS[fig_name] = new_plot
+        self.resize_plot(new_plot)
+        plots.circle_chronogram(**args_dict)
+        self.display_plot(new_plot)
+
     def chronogram_heatmap_TK(self):
         arg_dict = self.get_current_settings_as_args()
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
@@ -1841,6 +1908,33 @@ class FED3_Viz(tk.Tk):
                 self.PLOTS[fig_name] = new_plot
                 self.resize_plot(new_plot)
                 plots.poke_bias(**arg_dict)
+                self.display_plot(new_plot)
+
+    def poketime_plot_TK(self):
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        for obj in FEDs_to_plot:
+            if self.plotting == True:
+                self.clear_axes()
+                arg_dict = self.get_current_settings_as_args()
+                arg_dict['FED'] = obj
+                if self.date_filter_val.get():
+                    s,e = self.get_date_filter_dates()
+                    if not plots.date_filter_okay(obj.data, s, e):
+                        self.failed_date_feds.append(obj)
+                        continue
+                    else:
+                        arg_dict['date_filter'] = (s,e)
+                arg_dict['ax'] = self.AX
+                fig_name = self.create_plot_name('Poke time plot for ' + obj.filename)
+                plotdata=getdata.poketime_plot(**arg_dict)
+                new_plot = FED_Plot(figname=fig_name, plotfunc=plots.poketime_plot,
+                                    plotdata=plotdata,
+                                    arguments=arg_dict,
+                                    x=7,y=3.5)
+                self.PLOTS[fig_name] = new_plot
+                self.resize_plot(new_plot)
+                plots.poketime_plot(**arg_dict)
                 self.display_plot(new_plot)
 
     def breakpoint_plot(self):
@@ -2100,7 +2194,7 @@ class FED3_Viz(tk.Tk):
                         plottable = False
             else:
                 plottable = False
-        elif plot_name == 'Single Poke Plot':
+        elif plot_name in ['Single Poke Plot', 'Poke Time Plot']:
             if self.files_spreadsheet.selection():
                 if (self.poke_correct_val.get() or self.poke_error_val.get() or
                     self.poke_left_val.get() or self.poke_right_val.get()):
@@ -2112,7 +2206,8 @@ class FED3_Viz(tk.Tk):
                           'Average Poke Plot (Left)','Average Poke Plot (Right)',
                           'Average Poke Bias Plot (Correct %)','Average Poke Bias Plot (Left %)',
                           'Group Interpellet Interval','Group Breakpoint Plot',
-                          'Average Retrieval Time Plot', 'Group Meal Size Histogram']:
+                          'Average Retrieval Time Plot', 'Group Meal Size Histogram',
+                          'Chronogram (Circle)']:
             #if the all groups box is checked
             if self.allgroups_val.get():
                 #if there are any groups
@@ -2652,6 +2747,15 @@ class FED3_Viz(tk.Tk):
             if ax != self.AX:
                 ax.remove()
 
+    def convert_polar_axes(self):
+        self.AX.remove()
+        if self.POLAR:
+            self.AX = self.FIGURE.add_subplot()
+        else:
+            self.AX = self.FIGURE.add_subplot(polar=True)
+        self.POLAR = not self.POLAR
+
+
     def resize_plot(self, plot_obj):
         self.tabcontrol.select(self.plot_tab)
         self.clear_axes()
@@ -2771,6 +2875,7 @@ class FED3_Viz(tk.Tk):
             self.meal_pelletmin_box.set(settings_df.loc['meal_pellet_minimum','Values'])
             self.mealdelay_box.set(settings_df.loc['meal_duration','Values'])
             self.retrieval_threshold_menu.set(settings_df.loc['retrieval_threshold','Values'])
+            self.poketime_cutoff_menu.set(settings_df.loc['poketime_cutoff','Values'])
             self.pr_style_menu.set(settings_df.loc['break_style','Values'])
             self.pr_hours_menu.set(settings_df.loc['break_hours','Values'])
             self.pr_mins_menu.set(settings_df.loc['break_mins','Values'])
@@ -2824,6 +2929,7 @@ class FED3_Viz(tk.Tk):
                              meal_pellet_minimum=self.meal_pelletmin_box.get(),
                              meal_duration      =self.mealdelay_box.get(),
                              retrieval_threshold=self.retrieval_threshold_menu.get(),
+                             poketime_cutoff    =self.poketime_cutoff_menu.get(),
                              poke_style         =self.poke_style_menu.get(),
                              poke_bins          =self.poke_bins_menu.get(),
                              poke_show_correct  =self.poke_correct_val.get(),
@@ -2852,6 +2958,10 @@ class FED3_Viz(tk.Tk):
             settings_dict['retrieval_threshold'] = None
         else:
             settings_dict['retrieval_threshold'] = int(settings_dict['retrieval_threshold'])
+        if settings_dict['poketime_cutoff'] == 'None':
+            settings_dict['poketime_cutoff'] = None
+        else:
+            settings_dict['poketime_cutoff'] = int(settings_dict['poketime_cutoff'])
         return settings_dict
 
     def convert_settingsdict_to_df(self, settings_dict):
@@ -2866,6 +2976,8 @@ class FED3_Viz(tk.Tk):
             settings_dict[bin_setting] = get_key(settings_dict[bin_setting], self.freq_bins_to_args)
         if settings_dict['retrieval_threshold'] == None:
             settings_dict['retrieval_threshold'] = 'None'
+        if settings_dict['poketime_cutoff'] == None:
+            settings_dict['poketime_cutoff'] = 'None'
         settingsdf = pd.DataFrame.from_dict(settings_dict, orient='index',columns=['Values'])
         return settingsdf
 

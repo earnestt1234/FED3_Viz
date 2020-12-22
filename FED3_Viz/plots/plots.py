@@ -2027,7 +2027,8 @@ def poke_bias(FED, poke_bins, bias_style, shade_dark, lights_on,
     return fig if 'ax' not in kwargs else None
 
 def poketime_plot(FED, poke_show_correct, poke_show_error, poke_show_left,
-                  poke_show_right, shade_dark, lights_on, lights_off,
+                  poke_show_right, poketime_cutoff,
+                  shade_dark, lights_on, lights_off,
                   **kwargs):
     """
     FED3 Viz: Generate a scatter plot showing poke time for a device
@@ -2045,6 +2046,8 @@ def poketime_plot(FED, poke_show_correct, poke_show_error, poke_show_left,
         Whether to plot left pokes
     poke_show_right : bool
         Whether to plot right pokes
+    poketime_cutoff : int
+        Time (in seconds) to limit poke times.
     shade_dark : bool
         Whether to shade lights-off periods
     lights_on : int
@@ -2072,32 +2075,41 @@ def poketime_plot(FED, poke_show_correct, poke_show_error, poke_show_left,
     df = FED.data
     if 'date_filter' in kwargs:
         s, e = kwargs['date_filter']
-        base_df = df[(df.index) <= s].copy()
         df = df[(df.index >= s) &
                 (df.index <= e)].copy()
     correct_pokes = df['Correct_Poke']
     if poke_show_correct:
         y = df['Poke_Time'][correct_pokes == 1]
+        if poketime_cutoff is not None:
+            y[y > poketime_cutoff] = np.nan
         x = y.index
         ax.scatter(x, y, color='mediumseagreen', label = 'correct pokes', s=5)
     if poke_show_error:
         y = df['Poke_Time'][correct_pokes == 0]
+        if poketime_cutoff is not None:
+            y[y > poketime_cutoff] = np.nan
         x = y.index
         ax.scatter(x, y, color='indianred', label = 'error pokes', s=5)
     if poke_show_left:
         try:
-            diff = df[df['Event'] == 'Poke']['Left_Poke_Count'].diff()
+            where = df['Left_Poke_Count'].where(df['Event'] == 'Poke', np.nan).ffill()
+            diff = where.diff()
         except:
             diff = df['Left_Poke_Count'].diff()
         y = df['Poke_Time'][diff > 0]
+        if poketime_cutoff is not None:
+            y[y > poketime_cutoff] = np.nan
         x = y.index
         ax.scatter(x, y, color='cornflowerblue', label = 'left pokes')
     if poke_show_right:
         try:
-            diff = df[df['Event'] == 'Poke']['Right_Poke_Count'].diff()
+            where = df['Right_Poke_Count'].where(df['Event'] == 'Poke', np.nan).ffill()
+            diff = where.diff()
         except:
             diff = df['Right_Poke_Count'].diff()
         y = df['Poke_Time'][diff > 0]
+        if poketime_cutoff is not None:
+            y[y > poketime_cutoff] = np.nan
         x = y.index
         ax.scatter(x, y, color='gold', label = 'right pokes')
     date_format_x(ax, x[0], x[-1])
@@ -2697,10 +2709,10 @@ def circle_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, sha
     if 'ax' not in kwargs:
         fig, ax = plt.subplots(figsize=(5,5), dpi=150,
                                subplot_kw=dict(polar=True))
-        ax.set_theta_zero_location("N")
-        ax.set_theta_direction(-1)
     else:
-        ax = kwargs['ax']
+        ax = kwargs['ax'] # should be a polar axes
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     for i, group in enumerate(groups):
         group_vals = []
