@@ -80,7 +80,7 @@ class FED3_Viz(tk.Tk):
             self.NEW_WINDOW_FIGS.append(New_Window_Figure(toplevel=None,fig=fig,ax=ax,
                                                          frame=None,canvas=None,
                                                          toolbar=None,in_use=False))
-        self.FIGURE, self.AX = plt.subplots(figsize=(5,3.5),dpi=150) #fig/axes used in plot tab
+        self.FIGURE, self.AX = plt.subplots(figsize=(5,3.5), dpi=150) #fig/axes used in plot tab
         self.CB = None
         self.POLAR = False
         times = []
@@ -1437,11 +1437,8 @@ class FED3_Viz(tk.Tk):
                 if self.plotting:
                     if text in self.plot_nodes_func:
                         self.clear_axes()
-                        if text in ['Chronogram (Circle)'] and not self.POLAR:
-                            self.convert_polar_axes()
-                        elif text not in ['Chronogram (Circle)'] and self.POLAR:
-                            self.convert_polar_axes()
                         plotting_function = self.plot_nodes_func[text]
+                        self.format_polar_axes(text)
                         if plotting_function == self.avg_plot_TK:
                             plotting_function(text)
                         else:
@@ -2627,6 +2624,7 @@ class FED3_Viz(tk.Tk):
         if new:
             if self.on_display_func == 'heatmap_chronogram':
                 self.clear_axes()
+                self.format_polar_axes(plot_obj.plotfunc)
                 plot_obj.plotfunc(**plot_obj.arguments)
             self.plot_listbox.insert(tk.END,plot_obj.figname)
             self.plot_listbox.selection_clear(0,self.plot_listbox.size())
@@ -2641,6 +2639,7 @@ class FED3_Viz(tk.Tk):
         if platform.system() == 'Windows':
             self.plot_cover.grid()
         self.resize_plot(plot_obj)
+        print(type(self.AX))
         if plot_obj.plotfunc.__name__ == 'heatmap_chronogram':
             self.CB = plot_obj.plotfunc(**plot_obj.arguments)
         else:
@@ -2648,6 +2647,7 @@ class FED3_Viz(tk.Tk):
             if self.on_display_func == 'heatmap_chronogram':
                 #annoying bug
                 self.clear_axes()
+                self.format_polar_axes(plot_obj.plotfunc)
                 plot_obj.plotfunc(**plot_obj.arguments)
         self.display_plot(plot_obj, new)
         if platform.system() == 'Windows':
@@ -2747,18 +2747,27 @@ class FED3_Viz(tk.Tk):
             if ax != self.AX:
                 ax.remove()
 
-    def convert_polar_axes(self):
-        self.AX.remove()
-        if self.POLAR:
-            self.AX = self.FIGURE.add_subplot()
+    def format_polar_axes(self, plotfunc):
+        if callable(plotfunc):
+            circle_funcs = [plots.circle_chronogram]
         else:
+            circle_funcs = ['Chronogram (Circle)']
+        if plotfunc in circle_funcs and not self.POLAR:
+            print('turning on polar...')
+            self.AX.remove()
             self.AX = self.FIGURE.add_subplot(polar=True)
-        self.POLAR = not self.POLAR
-
+            self.POLAR = True
+        elif plotfunc not in circle_funcs and self.POLAR:
+            print('turning off polar...')
+            self.AX.remove()
+            self.AX = self.FIGURE.add_subplot()
+            self.POLAR = False
+        print(type(self.AX))
 
     def resize_plot(self, plot_obj):
         self.tabcontrol.select(self.plot_tab)
         self.clear_axes()
+        self.format_polar_axes(plot_obj.plotfunc)
         self.geometry('{0}x{1}'.format(plot_obj.x_pix, plot_obj.y_pix))
         self.update()
 
