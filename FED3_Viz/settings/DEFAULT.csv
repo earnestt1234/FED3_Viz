@@ -1,7 +1,7 @@
 ,Values
 date_filter_val,False
-date_filter_s_days,2020-12-21
-date_filter_e_days,2020-12-21
+date_filter_s_days,2020-12-31
+date_filter_e_days,2020-12-31
 date_filter_s_hour,noon
 date_filter_e_hour,noon
 img_format,.png
@@ -26,6 +26,7 @@ average_align_days,3
 circ_value,pellets
 circ_error,SEM
 circ_show_indvl,False
+resolution,10
 kde,True
 logx,True
 norm_meals,True

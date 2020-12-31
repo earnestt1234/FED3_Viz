@@ -789,6 +789,59 @@ def circle_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, sha
     return line_chronogram(FEDs, groups, circ_value, circ_error, circ_show_indvl, shade_dark,
                            lights_on, lights_off, *args, **kwargs)
 
+def spiny_chronogram(FEDs, circ_value, resolution, lights_on, **kwargs):
+    output = pd.DataFrame()
+
+    def meanbytime(g):
+        mindate = g.index.date.min()
+        maxdate = g.index.date.max()
+        diff = maxdate-mindate
+        days = diff.total_seconds()/86400
+        days += 1
+        return g.mean()/days
+
+    s = "Resolution in minutes must evenly divide one hour."
+    assert resolution in [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60], s
+    resolution = str(resolution) + 'T'
+    retrieval_threshold=None
+    t_on = dt.time(hour=lights_on)
+
+    if 'retrieval_threshold' in kwargs:
+        retrieval_threshold = kwargs['retrieval_threshold']
+    if not isinstance(FEDs, list):
+        FEDs = [FEDs]
+    group_vals = []
+    for FED in FEDs:
+        df = FED.data.copy()
+        if 'date_filter' in kwargs:
+            s, e = kwargs['date_filter']
+            df = df[(df.index >= s) &
+                    (df.index <= e)].copy()
+        r = df.groupby([pd.Grouper(freq=resolution)]).apply(resample_get_yvals,
+                                                            circ_value,
+                                                            retrieval_threshold)
+        r = r.groupby([r.index.time]).apply(meanbytime)
+        all_stamps = pd.date_range('01-01-2020 00:00:00',
+                                   '01-02-2020 00:00:00',
+                                   freq=resolution, closed='left').time
+        r = r.reindex(all_stamps)
+        loci = r.index.get_loc(t_on)
+        new_index = pd.Index(pd.concat([r.index[loci:].to_series(), r.index[:loci].to_series()]))
+        r = r.reindex(new_index)
+        hours = pd.Series([i.hour for i in r.index])
+        minutes = pd.Series([i.minute/60 for i in r.index])
+        float_index = hours + minutes
+        r.index = float_index
+        group_vals.append(r)
+        temp = pd.DataFrame({FED.basename:r}, index=r.index)
+        output = output.join(temp, how='outer')
+    group_mean = np.nanmean(group_vals, axis=0)
+    temp = pd.DataFrame({'Group Mean':group_mean}, index=r.index)
+    output = output.join(temp, how='outer')
+    output.index.name = 'Hour of day'
+
+    return output
+
 def day_night_ipi_plot(FEDs, kde, logx, lights_on, lights_off, **kwargs):
     kde_output = pd.DataFrame()
     bar_output = pd.DataFrame()

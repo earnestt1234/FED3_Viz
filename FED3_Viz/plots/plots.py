@@ -2813,6 +2813,7 @@ def spiny_chronogram(FEDs, circ_value, resolution, shade_dark, lights_on, lights
         maxdate = g.index.date.max()
         diff = maxdate-mindate
         days = diff.total_seconds()/86400
+        days += 1
         return g.mean()/days
 
     s = "Resolution in minutes must evenly divide one hour."
@@ -2830,10 +2831,10 @@ def spiny_chronogram(FEDs, circ_value, resolution, shade_dark, lights_on, lights
     if 'ax' not in kwargs:
         fig, ax = plt.subplots(figsize=(5,5), dpi=150,
                                subplot_kw=dict(polar=True))
-        ax.set_theta_zero_location("N")
-        ax.set_theta_direction(-1)
     else:
         ax = kwargs['ax']
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
     group_vals = []
     for FED in FEDs:
         df = FED.data.copy()
@@ -2845,6 +2846,10 @@ def spiny_chronogram(FEDs, circ_value, resolution, shade_dark, lights_on, lights
                                                             circ_value,
                                                             retrieval_threshold)
         r = r.groupby([r.index.time]).apply(meanbytime)
+        all_stamps = pd.date_range('01-01-2020 00:00:00',
+                                   '01-02-2020 00:00:00',
+                                   freq=resolution, closed='left').time
+        r = r.reindex(all_stamps)
         loci = r.index.get_loc(t_on)
         new_index = pd.Index(pd.concat([r.index[loci:].to_series(), r.index[:loci].to_series()]))
         r = r.reindex(new_index)

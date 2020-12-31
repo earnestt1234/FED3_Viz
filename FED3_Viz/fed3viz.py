@@ -56,6 +56,21 @@ class New_Window_Figure():
         self.canvas = canvas
         self.toolbar = toolbar
         self.in_use = in_use
+        self.polar = False
+
+    def format_polar_axes(self, plotfunc):
+        if callable(plotfunc):
+            circle_funcs = [plots.circle_chronogram, plots.spiny_chronogram]
+        else:
+            circle_funcs = ['Chronogram (Circle)', 'Chronogram (Spiny)']
+        if plotfunc in circle_funcs and not self.polar:
+            self.ax.remove()
+            self.ax = self.fig.add_subplot(polar=True)
+            self.polar = True
+        elif plotfunc not in circle_funcs and self.polar:
+            self.ax.remove()
+            self.ax = self.fig.add_subplot()
+            self.polar = False
 
 class FED3_Viz(tk.Tk):
     def __init__(self):
@@ -223,6 +238,7 @@ class FED3_Viz(tk.Tk):
         self.plot_treeview.insert(self.ps_circadian, 3, text='Chronogram (Line)')
         self.plot_treeview.insert(self.ps_circadian, 4, text='Chronogram (Circle)')
         self.plot_treeview.insert(self.ps_circadian, 5, text='Chronogram (Heatmap)')
+        self.plot_treeview.insert(self.ps_circadian, 6, text='Chronogram (Spiny)')
         self.ps_other = self.plot_treeview.insert("", 5, text='Diagnostic')
         self.plot_treeview.insert(self.ps_other, 1, text='Battery Life')
         self.plot_treeview.insert(self.ps_other, 2, text='Motor Turns')
@@ -340,9 +356,10 @@ class FED3_Viz(tk.Tk):
                                 'Poke Time Plot':'Plot the time the nose poke beam was broken for each poke',
                                 'Day/Night Plot':'Plot Group averages for day/night on a bar chart',
                                 'Day/Night Interpellet Interval Plot':'Plot intervals between pellet retrieval for Grouped animals, grouping by day and night',
-                                'Chronogram (Line)':'Plot average 24-hour behavior for groups',
-                                'Chronogram (Circle)':'Plot average 24-hour behavior for groups in a circular plot',
+                                'Chronogram (Line)':'Plot average 24-hour behavior for Groups',
+                                'Chronogram (Circle)':'Plot average 24-hour behavior for Groups in a circular plot',
                                 'Chronogram (Heatmap)':'Make a 24-hour heatmap with individual devices as rows',
+                                'Chronogram (Spiny)': 'Plot averaged 24-hour behavior for multiple selected files with higher temporal resolution',
                                 'Breakpoint Plot':'Plot the breakpoint for individual files (maximum pellets or pokes reached before a period of inactivity)',
                                 'Group Breakpoint Plot':'Plot the average breakpoint for Groups (maximum pellets or pokes reached before a period of inactivity)',
                                 'Retrieval Time Plot':'Plot the retrieval time for each pellet (along with pellets retrieved) for a single device',
@@ -372,6 +389,7 @@ class FED3_Viz(tk.Tk):
                                 'Average Poke Bias Plot (Left %)':self.avg_plot_TK,
                                 'Chronogram (Line)':self.chronogram_line_TK,
                                 'Chronogram (Circle)':self.chronogram_circle_TK,
+                                'Chronogram (Spiny)':self.chronogram_spiny_TK,
                                 'Chronogram (Heatmap)':self.chronogram_heatmap_TK,
                                 'Breakpoint Plot':self.breakpoint_plot,
                                 'Group Breakpoint Plot':self.group_breakpoint_plot,
@@ -572,6 +590,8 @@ class FED3_Viz(tk.Tk):
                                               text='Values to plot')
         self.daynight_error_label  = tk.Label(self.daynight_settings_frame,
                                               text='Error value')
+        self.spiny_resolution_label = tk.Label(self.daynight_settings_frame,
+                                               text='Resolution for spiny chronograms (minutes)')
         self.ipi_settings_label = tk.Label(self.ipi_settings_frame,
                                            text='Interpellet Interval Plots',
                                            font=self.section_font)
@@ -737,6 +757,10 @@ class FED3_Viz(tk.Tk):
         self.daynight_show_indvl = ttk.Checkbutton(self.daynight_settings_frame,
                                                   text='Show individual FED data points',
                                                   var=self.daynight_show_indvl_val)
+        self.spiny_resolution_menu = ttk.Combobox(self.daynight_settings_frame,
+                                                  values=[1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60])
+        self.spiny_resolution_menu.set(10)
+
         #   ipi
         self.ipi_kde_val = tk.BooleanVar()
         self.ipi_kde_val.set(True)
@@ -901,7 +925,9 @@ class FED3_Viz(tk.Tk):
         self.daynight_values.grid(row=1,column=1,sticky='w')
         self.daynight_error_label.grid(row=2,column=0,sticky='w',padx=(20,175))
         self.daynight_error_menu.grid(row=2,column=1,sticky='w')
-        self.daynight_show_indvl.grid(row=3,column=0,sticky='w',padx=(20,0))
+        self.spiny_resolution_label.grid(row=3, column=0, sticky='w', padx=(20,175))
+        self.spiny_resolution_menu.grid(row=3, column=1, sticky='w')
+        self.daynight_show_indvl.grid(row=4,column=0,sticky='w',padx=(20,0))
 
         self.ipi_settings_label.grid(row=0,column=0,sticky='w')
         self.ipi_kde_checkbox.grid(row=1,column=0,sticky='w',padx=(20,0))
@@ -1801,6 +1827,33 @@ class FED3_Viz(tk.Tk):
         plots.circle_chronogram(**args_dict)
         self.display_plot(new_plot)
 
+    def chronogram_spiny_TK(self):
+        arg_dict = self.get_current_settings_as_args()
+        to_plot = [int(i) for i in self.files_spreadsheet.selection()]
+        FEDs_to_plot = [self.LOADED_FEDS[i] for i in to_plot]
+        arg_dict['FEDs'] = FEDs_to_plot
+        if self.date_filter_val.get():
+            s,e = self.get_date_filter_dates()
+            arg_dict['date_filter'] = (s,e)
+            for fed in FEDs_to_plot:
+                if not plots.date_filter_okay(fed.data, s, e):
+                    self.failed_date_feds.append(fed)
+                    continue
+        if self.failed_date_feds:
+            return
+        arg_dict['ax'] = self.AX
+        arg_dict['return_cb'] = True
+        value = arg_dict['circ_value'].capitalize()
+        fig_name = self.create_plot_name(value + ' Chronogram (Heatmap)')
+        plotdata = getdata.spiny_chronogram(**arg_dict)
+        new_plot = FED_Plot(figname=fig_name, plotfunc=plots.spiny_chronogram,
+                            arguments=arg_dict, plotdata=plotdata,
+                            x=7, y=3.5)
+        self.PLOTS[fig_name] = new_plot
+        self.resize_plot(new_plot)
+        plots.spiny_chronogram(**arg_dict)
+        self.display_plot(new_plot)
+
     def chronogram_heatmap_TK(self):
         arg_dict = self.get_current_settings_as_args()
         to_plot = [int(i) for i in self.files_spreadsheet.selection()]
@@ -2181,7 +2234,8 @@ class FED3_Viz(tk.Tk):
                          'Interpellet Interval', 'Poke Bias Plot',
                          'Chronogram (Heatmap)', 'Breakpoint Plot', 'Retrieval Time Plot',
                          'Multi Retrieval Time Plot', 'Battery Life', 'Motor Turns',
-                         'Day/Night Interpellet Interval Plot', 'Meal Size Histogram']:
+                         'Day/Night Interpellet Interval Plot', 'Meal Size Histogram',
+                         'Chronogram (Spiny)']:
             if self.files_spreadsheet.selection():
                 plottable = True
                 if plot_name == 'Breakpoint Plot':
@@ -2492,6 +2546,7 @@ class FED3_Viz(tk.Tk):
         obj_to_reuse.in_use = True
         new_arguments = {key:val for key,val in plot_obj.arguments.items() if key != 'ax'}
         obj_to_reuse.ax.clear()
+        obj_to_reuse.format_polar_axes(plot_obj.plotfunc)
         new_arguments['ax'] = obj_to_reuse.ax
         for ax in obj_to_reuse.fig.axes:
             ax.clear()
@@ -2625,7 +2680,7 @@ class FED3_Viz(tk.Tk):
             if self.on_display_func == 'heatmap_chronogram':
                 self.clear_axes()
                 self.format_polar_axes(plot_obj.plotfunc)
-                plot_obj.plotfunc(**plot_obj.arguments)
+                self.recall_plotfunc(plot_obj)
             self.plot_listbox.insert(tk.END,plot_obj.figname)
             self.plot_listbox.selection_clear(0,self.plot_listbox.size())
             self.plot_listbox.selection_set(self.plot_listbox.size()-1)
@@ -2639,16 +2694,15 @@ class FED3_Viz(tk.Tk):
         if platform.system() == 'Windows':
             self.plot_cover.grid()
         self.resize_plot(plot_obj)
-        print(type(self.AX))
         if plot_obj.plotfunc.__name__ == 'heatmap_chronogram':
-            self.CB = plot_obj.plotfunc(**plot_obj.arguments)
+            self.CB = self.recall_plotfunc(plot_obj)
         else:
-            plot_obj.plotfunc(**plot_obj.arguments)
+            self.recall_plotfunc(plot_obj)
             if self.on_display_func == 'heatmap_chronogram':
                 #annoying bug
                 self.clear_axes()
                 self.format_polar_axes(plot_obj.plotfunc)
-                plot_obj.plotfunc(**plot_obj.arguments)
+                self.recall_plotfunc(plot_obj)
         self.display_plot(plot_obj, new)
         if platform.system() == 'Windows':
             self.plot_cover.grid_remove()
@@ -2749,20 +2803,17 @@ class FED3_Viz(tk.Tk):
 
     def format_polar_axes(self, plotfunc):
         if callable(plotfunc):
-            circle_funcs = [plots.circle_chronogram]
+            circle_funcs = [plots.circle_chronogram, plots.spiny_chronogram]
         else:
-            circle_funcs = ['Chronogram (Circle)']
+            circle_funcs = ['Chronogram (Circle)', 'Chronogram (Spiny)']
         if plotfunc in circle_funcs and not self.POLAR:
-            print('turning on polar...')
             self.AX.remove()
             self.AX = self.FIGURE.add_subplot(polar=True)
             self.POLAR = True
         elif plotfunc not in circle_funcs and self.POLAR:
-            print('turning off polar...')
             self.AX.remove()
             self.AX = self.FIGURE.add_subplot()
             self.POLAR = False
-        print(type(self.AX))
 
     def resize_plot(self, plot_obj):
         self.tabcontrol.select(self.plot_tab)
@@ -2770,6 +2821,11 @@ class FED3_Viz(tk.Tk):
         self.format_polar_axes(plot_obj.plotfunc)
         self.geometry('{0}x{1}'.format(plot_obj.x_pix, plot_obj.y_pix))
         self.update()
+
+    def recall_plotfunc(self, plotobj):
+        func = plotobj.plotfunc
+        plotobj.arguments.update({'ax':self.AX})
+        return func(**plotobj.arguments)
 
     #---SETTINGS TAB FUNCTIONS
     def check_pellet_type(self, *event):
@@ -2878,6 +2934,7 @@ class FED3_Viz(tk.Tk):
             self.daynight_values.set(settings_df.loc['circ_value','Values'])
             self.daynight_error_menu.set(settings_df.loc['circ_error','Values'])
             self.daynight_show_indvl_val.set(settings_df.loc['circ_show_indvl','Values'])
+            self.spiny_resolution_menu.set(settings_df.loc['resolution','Values'])
             self.ipi_kde_val.set(settings_df.loc['kde','Values'])
             self.ipi_log_val.set(settings_df.loc['logx','Values'])
             self.norm_meal_val.set(settings_df.loc['norm_meals','Values'])
@@ -2932,6 +2989,7 @@ class FED3_Viz(tk.Tk):
                              circ_value         =self.daynight_values.get(),
                              circ_error         =self.daynight_error_menu.get(),
                              circ_show_indvl    =self.daynight_show_indvl_val.get(),
+                             resolution         =self.spiny_resolution_menu.get(),
                              kde                =self.ipi_kde_val.get(),
                              logx               =self.ipi_log_val.get(),
                              norm_meals         =self.norm_meal_val.get(),
@@ -2961,7 +3019,7 @@ class FED3_Viz(tk.Tk):
         for bin_setting in ['pellet_bins','average_bins', 'poke_bins']:
             settings_dict[bin_setting] = self.freq_bins_to_args[settings_dict[bin_setting]]
         for int_setting in ['average_align_days','break_hours','break_mins',
-                            'meal_pellet_minimum','meal_duration']:
+                            'meal_pellet_minimum','meal_duration', 'resolution']:
             settings_dict[int_setting] = int(settings_dict[int_setting])
         if settings_dict['retrieval_threshold'] == 'None':
             settings_dict['retrieval_threshold'] = None
