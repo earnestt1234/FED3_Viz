@@ -2,7 +2,7 @@
 
 There are two methods for running FED3 Viz: either **downloading the application** or **running the Python script**.
 
-The application (created with [PyInstaller](https://www.pyinstaller.org/)) works like any other computer GUI: just double-click to start.  This method of installation is intended for people who don't have Python installed or don't want to mess around with any code.  Currently, there are 64-bit Windows and Mac OS X options.
+The application (created with [PyInstaller](https://www.pyinstaller.org/)) works like any other computer GUI: just double-click to start.  This method of installation is intended for people who don't have Python installed or don't want to mess around with any code.  Currently, there are 64-bit Windows and Mac OS X options.  **I recommend using Windows if you have the choice between that and Mac;** FED3 Viz is primarily developed on Windows, and can be significantly slower on some newer Mac devices that I have tested ([see this issue](https://stackoverflow.com/questions/64937106/plotting-with-tkinter-slows-and-crashes-on-newer-macs)).
 
 The more universal option is running the FED3 Viz Python script in your own interpreter.  This option will involve some futzing with a terminal, but I've done my best to provide detailed instructions below.
 

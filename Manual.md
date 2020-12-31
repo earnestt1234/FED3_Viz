@@ -7,9 +7,9 @@
 </p>
 
 
-**Written for version**: v0.4.1 (Beta)
+**Updated for version**: v0.5.0
 
-**Version/Manual Date**: 7/23/2020
+**Version/Manual Date**: 12/31/2020
 
 **GitHub**: [https://github.com/earnestt1234/FED3_Viz](https://github.com/earnestt1234/FED3_Viz)
 
@@ -95,7 +95,7 @@ On the FED3 Viz GitHub, there is an [Installation.md](https://github.com/earnest
 - [Quick Tips](#quick-tips)
 - [FAQ](#faq)
 - [Appendix](#appendix)
-- [Averaging Methods Diagram](#averaging-methods-diagram)
+  - [Averaging Methods Diagram](#averaging-methods-diagram)
   - [FED3 Arduino Versions](#fed3-arduino-versions)
   - [Averaging Methods Diagram](#averaging-methods-diagram)
   - [Plot Column Dependencies](#plot-column-dependencies)
@@ -184,9 +184,7 @@ When folders are being loaded, a progress bar will appear in the Info Bar.  To h
 
 ##### How FEDs Are Loaded
 
-FED3 Viz will attempt to load every file `.csv` or `.xlsx` file selected by the Load Button file dialogue using a Python library for working with tabular data (`pandas`).  The loading process first tries to parse the file to find columns matching the standard FED3 data columns (as of the time of writing this manual).
-
-*Standard FED3 Data Columns:*
+FED3 Viz will attempt to load every file `.csv` or `.xlsx` file selected by the Load Button file dialogue using a Python library for working with tabular data (`pandas`).  The loading process first tries to parse the file to find columns matching (more or less) the standard FED3 data columns (as of the time of creating this manual):
 
 - MM:DD:YYYY hh:mm:ss
 - Device_Name
@@ -195,10 +193,12 @@ FED3 Viz will attempt to load every file `.csv` or `.xlsx` file selected by the 
 - Session_Type
 - Event
 - Active_Poke
-- Left_Poke
-- Right_Poke
+- Left_Poke_Count
+- Right_Poke_Count
 - Pellet_Count
 - Retrieval_Time
+
+With updates to the FED3 code, the specific columns included in FED3 data have changed.  So if you see that your data does not match the columns above, this is not necessarily an issue.  Each plot is only dependent on some data columns - these dependencies are shown in the [Appendix](#plot-column-dependencies).  The key columns you should look for are MM:DD:YYYY hh:mm:ss, Pellet_Count, Left_Poke_Count, and Right_Poke_Count.  The first is necessary for loading the data, while the rest are used for the majority of plots in FED3 Viz (see Loading Errors below or the FAQ for additional discussion).
 
 These columns are looked for **by name, not the content or type of data in the column**.  If all correctly found, these columns will be used to try and generate additional variables used for plotting (elapsed time, pellets as a binary entries, etc.).  By default, files with the same name will not be reloaded (even if they reside in different folders); to load duplicate file names, untick **Settings > General > Don't load a FED if it's filename is already loaded**. 
 
@@ -207,9 +207,9 @@ These columns are looked for **by name, not the content or type of data in the c
 An error message pop-up may be raised if there are any issues encountered during the loading process.  The two major types of errors are:
 
 - Unrecognized: the file(s) was not recognized as FED3 data.  This error means that the program failed to load the data.  This can occur from attempts to read non `.csv` or `.xlsx` files, or from correct file types that differ significantly from the standard FED3 file format.  This error can not be suppressed.
-- Missing Data: the file(s) is missing at least one of the default columns.  This means that the file was loaded, but it may be missing some columns which are used by FED3 Viz for plotting; it is meant to serve as a warning that some plots may be unavailable or may produce unexpected results.  This error can occur when the raw data has been edited to remove or rename columns, or when using an earlier version of FED3 Arduino code (see the [Appendix](#appendix) for a discussion).  This error can be suppressed by unticking **Settings > General > Show missing column warning when loading.**
+- Missing Data: the file(s) is missing at least one of these columns: Pellet_Count, Left_Poke_Count, or Right_Poke_Count.  This error can occur when the raw data has been edited to remove or rename columns, or when using an earlier version of FED3 Arduino code (see the [Appendix](#appendix) for a discussion).  Most of the plots and analyses in FED3 Viz depend on at least one of these columns, so you should expect some plots to fail for these files if this warning is displayed.  This error can be suppressed by unticking **Settings > General > Show missing column warning when loading.**
 
-Further discussion of problems with loading may be brought up in the [FAQ](#FAQ) as the application develops.  Additionally, the dependent columns of each plot can be viewed in the Appendix.
+Further discussion of problems with loading may be brought up in the [FAQ](#FAQ) as the application develops.
 
 ### File View
 
@@ -538,8 +538,19 @@ The Poke Bias Plot visualizes the preference for one poke versus another over ti
 <p align="center">
 	<img src="img/manual/avg_pokebias.png" width="700">
 </p>
-
 Average Poke Bias plots average the poke bias (see above) for Grouped devices.  Note that the dynamic coloring style cannot be used here.
+
+### Poketime Plot
+
+*Can use night shading* :new_moon_with_face:
+
+*Creates one plot for each highlighted file* :bar_chart::bar_chart::bar_chart:
+
+<p align="center">
+	<img src="img/manual/poketime.png" width="500">
+</p>
+
+A scatter plot of the lengths of the beam break for every nose poke.  Like the Single Poke Plot (see above), you can use the settings under **Settings > Individual Poke Plots** to select whether to plot times for correct pokes, incorrect pokes, left pokes, or right pokes (at least one must be selected).  There is also a cutoff which can be used to filter out particularly long poke times, as these may correspond to blocks other than the mouse's nose (**Settings > Poke Time > Cutoff to exclude poke times (s)**).
 
 ### Breakpoint Plot
 
@@ -591,6 +602,20 @@ There are a few settings which affect these plots, as well as Circadian Plots ([
 
 These and other circadian plots all refer to the light/dark cycle, which is set under **Settings > General > Shade dark periods (lights on/lights off)**.
 
+### Chronogram (Circle)
+
+*Can use night shading* :new_moon_with_face:
+
+*Uses groups* :paperclip:
+
+<p align="center">
+	<img src="img/manual/chronocircle.png" width="700">
+</p>
+
+
+
+This plot is a circularized version of the Chronogram (Line) plot (see above); the same settings apply.  The 12 o'clock point shows the start of the light cycle.
+
 ### Chronogram (Heatmap)
 
 *Combines all highlighted files into a single plot* :bar_chart:
@@ -602,6 +627,20 @@ These and other circadian plots all refer to the light/dark cycle, which is set 
 The Heatmap version of the Chronogram is simply a different representation of the data from the Chonogram (Line) Plot (see above).  Rather than an average line, each file is shown as a row in a heatmap, where the colors correspond to the selected variable value over the averaged 24-hour period.
 
 Note that this plot type does not use Groups; it plots what is selected in the File View, and provides an average of them in the final row of the heatmap.
+
+### Chronogram (Spiny)
+
+*Combines all highlighted files into a single plot* :bar_chart:
+
+*Can use night shading* :new_moon_with_face:
+
+<p align="center">
+	<img src="img/manual/chronospiny.png" width="700">
+</p>
+
+This is another take on a circular chronogram.  This plot creates one plot showing the averaged 24-hour behavior for *selected files, rather than Grouped files*.  Each "spine" represents the behavior for that time of the day, averaged over the entirety of the recording for each recording.  The temporal resolution can be set under **Settings > Circadian > Resolution for spiny chronograms (minutes).**
+
+**Note that these plots tend to be slower to compute than others!**
 
 ### Day/Night Plot
 
@@ -680,7 +719,7 @@ Note that by default, FED3 Viz will not overwrite images or data saved with conf
 
 ##### Saving Images
 
-To save plots, highlight one or more plots from the Plot List and click the **Save Plots Button**.  This will bring up a file dialogue, and prompt the user to select a folder to save the images in.   Plots are saved in `.png` format at 300 DPI.  The name of the file will be the same as the plot's name in the Plot List.  Note that the Navigation Toolbar also has a button that can save plots, but using it (in this case) will limit the DPI (to 125 or 150, depending on the plot).
+To save plots, highlight one or more plots from the Plot List and click the **Save Plots Button**.  This will bring up a file dialogue, and prompt the user to select a folder to save the images in.  Plots are saved at 300 DPI in either JPEG, PNG, SVG, PDF, or TIFF format.  The output format can be specified under **Settings > General > Image saving format**.  The name of the file will be the same as the plot's name in the Plot List.  Note that the Navigation Toolbar also has a button that can save plots, but using it (in this case) will limit the DPI (to 125 or 150, depending on the plot) and the format to PNG.
 
 ##### Saving Code
 
@@ -763,7 +802,11 @@ This section will mainly cover troubleshooting and issues; please also check the
   
 - **The program slows down, doesn't respond, or crashes.**  In previous iterations of the code, I experienced slowdown when many FED files were loaded in one go (especially with long files) or when a plot was created with many devices shown as separate curves.  In my experience, the program recovered and finished the loading/plotting after a few seconds.  To avoid these issues, I had to select fewer (10 or less) devices when loading (i.e. per push of the Load Button) or plotting devices.  However, changes since then have cleared up some of these issues (on my end; the program now "checks in" in between each device load or plot creation).  If the problems on your device result in frequent crashes or persistent slow downs, even when using small amounts of data, please report this.  I have taken a relatively minimal approach to optimizing speed, and there may be ways to improve.
 
+  Another issue has sprung up on new Macs, namely the plotting being much slower.  I have found that with at least OS X Catalina, the same FED3 Viz code runs much slower when plotting compared to earlier operating systems.  Unfortunately, I do not know a fix for this at the moment, but I have opened an issue [here](https://stackoverflow.com/questions/64937106/plotting-with-tkinter-slows-and-crashes-on-newer-macs).
+
 - **I can't load some of my FED data, or I can load but some plots don't work**.  The most likely cause is that you have a previous version of FED output data, or that there have been edits to raw data.  FED3 Viz tries to handle old formats of the data, but there may be cases which cannot be handled.  Otherwise, there may have been errors in data logging which either break plot creation or cause odd output (we will aim to resolve these issues in the FED3 Arduino code, rather than to handle them in FED3 Viz).  Some examples of current data are included on GitHub in the `example_data` folder.  You can compare your data to these to see if there might be any obvious differences; you can also test that the example data load correctly.  Please share any specific issues on GitHub.  
+
+  You may also have a newer version of data that FED3 Viz isn't prepared for; please let me know if this is the case!
 
 - **I do have differently formatted data; how can I know which plots work?**  If the discrepancy is that your data files are missing some columns (because of editing or previous file formats), the best bet is to check the [Appendix](#appendix) and look at the plot column dependencies - these are literally the columns that the program interacts with in order to make the plot.  If the issue is that there are changed values (i.e. not written by FED3) in the data, the results are more unpredictable.  Additionally, there are some specific notes about pokes in older file formats provided in the Appendix.
 
@@ -784,19 +827,19 @@ This section will mainly cover troubleshooting and issues; please also check the
 
 - **I'm encountering issues when using files with the same name**.  Please report these; there could be some errors with duplicate files or files with exactly matching names which need to be resolved.  The easiest workaround before a fix is to rename files (outside of FED3 Viz) to be unique. 
 
-- **Will there be more plots/features added?**  Possibly!  FED3 Viz will likely be worked on through Summer 2020.  Please share any suggestions for development on GitHub or the FED3 Google Group.
+- **Will there be more plots/features added?**  Possibly!  While FED3 Viz is being developed less frequently, new plots have been added from user feedback.  Please share any suggestions for development on GitHub or the FED3 Google Group.
 
 - **Why can't I open more than 5 plots in a New Window?**  As of v0.3.0, a limit of 5 was placed on New Windows in order to prevent memory consumption.  In previous versions of FED3 Viz, there was no limit, but there was also a memory leak issue: creation of any new plot (in a New Window or not) would increase the memory used by the application (by several megabytes).  This memory usage was *un-recoverable* until the application closed; deleting plots or closing windows would not lower the memory usage.  This would be a potential issue if one was to create many plots, or have FED3 Viz running in tandem with other applications.
 
   Now, this issue has been fixed; instead of creating a new "figure" (`matplotlib.figure.Figure`) with each plot, a single one is reused.  There are also 5 "New Window" figures that are reused to show plots in new windows.  There is no limit on the amount of plots that can be created, only how many can be displayed simultaneously.
 
 - **I saved the Python code for a plot and it doesn't run or my plot looks different.**  This could be due to many issues, but some possible causes are:
-  
+
   - You are not using Python 3 to run the script
   - You do not have the necessary packages installed to run the script, or their versions are incompatible with FED3 Viz.  The packages used by FED3 Viz are documented in the `requirements.txt` file on GitHub
   - Your IDE is not showing the plot (sometimes an issue with how inline plotting is handled; sometimes this causes plots not to show on the first run)
   - There is an error in the output plot script, which is certainly possible!  The most likely issues are that some of the necessary helper functions were not included or the arguments are improperly formatted.  Please report these errors on GitHub with the specific context, both to help solve your specific case and to improve the application.
-  
+
 - **I have suggestions for improving the plot code I saved.**  You may rightfully wonder why the code to make a simple line plot ends up being 400 lines!  Please note that FED3 Viz's plotting functions are designed to handle different settings on the fly, and the code to make one specific plot may be writable in a much less verbose way.  Some pieces of the code may be helpful for the application, but irrelevant to your specific plot.
 
   That being said, I would enjoy discussing (on GitHub) and possibly including any proposed changes which significantly contribute to the readable or speed of the code.  Aside from that, sharing code may be useful for other users.
@@ -845,21 +888,23 @@ See in higher resolution at `FED3_Viz/img/manual/average_illustration.png`.
 
 This table shows which columns of a FED3 data file are used by FED3 Viz to create each plot.  If a file is missing a column, or contains changes in a column, associated plots may not be able to be created.
 
-| **Plot**                                                     | **MM:DD:YYYY hh:mm:ss** | **Pellet_Count**   | **Left_Poke_Count** | **Right_Poke_Count** | **Active_Poke**    | **Event**          | Retrieval_Time     | **Battery_Voltage** | **Motor_Turns**    |
-| ------------------------------------------------------------ | ----------------------- | ------------------ | ------------------- | -------------------- | ------------------ | ------------------ | ------------------ | ------------------- | ------------------ |
-| Single Pellet Plot                                           | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
-| Multi Pellet Plot                                            | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
-| Average Pellet Plot                                          | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
-| Inter Pellet  Interval Plots                                 | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
-| Single Retrieval Time Plot                                   | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |
-| Multi Retrieval Time and Average Retrieval Time Plots        | :heavy_check_mark:      |                    |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |
-| Any Plot of Correct / Error Pokes (Single Poke, Average Poke, Poke Bias) | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: | :heavy_check_mark: |                    |                     |                    |
-| Any Plot of Left / Right Pokes (Single Poke, Average Poke, Poke Bias) | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   |                    |                    |                    |                     |                    |
-| Circadian (Pellets or IPI)                                   | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |
-| Circadian (Correct / Error Pokes)                            | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: | :heavy_check_mark: |                    |                     |                    |
-| Circadian (Retrieval Time)                                   | :heavy_check_mark:      |                    |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |
-| Battery Life Plot                                            | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    | :heavy_check_mark:  |                    |
-| Motor Turns Plot                                             | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    |                     | :heavy_check_mark: |
+| **Plot**                                                     | **MM:DD:YYYY hh:mm:ss** | **Pellet_Count**   | **Left_Poke_Count** | **Right_Poke_Count** | **Active_Poke**    | **Event**          | Retrieval_Time     | **Battery_Voltage** | **Motor_Turns**    | **Poke_Time**      |
+| ------------------------------------------------------------ | ----------------------- | ------------------ | ------------------- | -------------------- | ------------------ | ------------------ | ------------------ | ------------------- | ------------------ | ------------------ |
+| Single Pellet Plot                                           | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |                    |
+| Multi Pellet Plot                                            | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |                    |
+| Average Pellet Plot                                          | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |                    |
+| Inter Pellet  Interval Plots                                 | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |                    |
+| Single Retrieval Time Plot                                   | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |                    |
+| Multi Retrieval Time and Average Retrieval Time Plots        | :heavy_check_mark:      |                    |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |                    |
+| Any Plot of Correct / Error Pokes (Single Poke, Average Poke, Poke Bias) | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: | :heavy_check_mark: |                    |                     |                    |                    |
+| Any Plot of Left / Right Pokes (Single Poke, Average Poke, Poke Bias) | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   |                    |                    |                    |                     |                    |                    |
+| Poketime Plot (Left / Right)                                 | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   |                    |                    |                    |                     |                    | :heavy_check_mark: |
+| Poketime Plot (Correct/ Incorrect)                           | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: | :heavy_check_mark: |                    |                     |                    | :heavy_check_mark: |
+| Circadian (Pellets or IPI)                                   | :heavy_check_mark:      | :heavy_check_mark: |                     |                      |                    |                    |                    |                     |                    |                    |
+| Circadian (Correct / Error Pokes)                            | :heavy_check_mark:      |                    | :heavy_check_mark:  | :heavy_check_mark:   | :heavy_check_mark: | :heavy_check_mark: |                    |                     |                    |                    |
+| Circadian (Retrieval Time)                                   | :heavy_check_mark:      |                    |                     |                      |                    |                    | :heavy_check_mark: |                     |                    |                    |
+| Battery Life Plot                                            | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    | :heavy_check_mark:  |                    |                    |
+| Motor Turns Plot                                             | :heavy_check_mark:      |                    |                     |                      |                    |                    |                    |                     | :heavy_check_mark: |                    |
 
 <div style="page-break-after: always; break-after: page;"></div> 
 
