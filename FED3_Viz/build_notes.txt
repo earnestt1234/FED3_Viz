@@ -1,5 +1,8 @@
 Changes made for building EXE:
 
+-use the developer pyinstaller
+pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+
 -fix babel imports for tkcalender, from https://tekrecipes.com/2019/04/17/modulenotfounderror-no-module-named-babel-numbers/
 Locate the tkcalendar folder under venv/lib/python3.x/site-packages of your project folder.
 
