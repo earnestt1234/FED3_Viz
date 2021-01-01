@@ -3137,9 +3137,9 @@ def fed_summary(FEDs, meal_pellet_minimum=1, meal_duration=1,
                                 meal_duration=meal_duration)
             results.loc['Number of Meals',v] =  meals.max()
             results.loc['Average Pellets per Meal',v] =  meals.value_counts().mean()
-            d = len(meals) * 100 if len(meals) > 0 else 1
+            d = len(meals) if len(meals) > 0 else 1
             results.loc['% Pellets within Meals',v] =  (len(meals.dropna())/
-                                                        d)
+                                                        d) * 100
 
         #pokes
         total_pokes = df['Left_Poke_Count'].max()+df['Right_Poke_Count'].max()
