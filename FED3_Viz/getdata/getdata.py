@@ -520,19 +520,19 @@ def daynight_plot(FEDs, groups, circ_value, lights_on, lights_off, circ_error,
                 day_vals = []
                 night_vals = []
                 for start, end in days:
-                    day_slice = df[(df.index>start) & (df.index<end)].copy()
+                    day_slice = df[(df.index>=start) & (df.index<end)].copy()
                     day_vals.append(resample_get_yvals(day_slice, circ_value,
                                                        retrieval_threshold))
                 for start, end in nights:
-                    night_slice = df[(df.index>start) & (df.index<end)].copy()
+                    night_slice = df[(df.index>=start) & (df.index<end)].copy()
                     night_vals.append(resample_get_yvals(night_slice, circ_value,
                                                          retrieval_threshold))
                 group_day_values.append(np.nansum(day_vals)/days_completed)
                 group_night_values.append(np.nansum(night_vals)/nights_completed)
                 if fed.basename not in used:
                     f = fed.basename
-                    output.loc[circ_value,f+' day'] = np.nanmean(day_vals)
-                    output.loc[circ_value,f+' night'] = np.nanmean(night_vals)
+                    output.loc[circ_value,f+' day'] = np.nansum(day_vals)/days_completed
+                    output.loc[circ_value,f+' night'] = np.nansum(night_vals)/nights_completed
                     used.append(fed.basename)
         group_day_mean = np.nanmean(group_day_values)
         group_night_mean = np.nanmean(group_night_values)
