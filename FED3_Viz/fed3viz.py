@@ -1147,6 +1147,8 @@ class FED3_Viz(tk.Tk):
         self.r_menu_file_single.add_command(label='Create Group', command=self.create_group)
         self.r_menu_file_single.add_command(label='Edit Group', command=self.edit_group)
         self.r_menu_file_single.add_separator()
+        self.r_menu_file_single.add_command(label='Set date filter', command=self.r_set_datefilter_fromfiles)
+        self.r_menu_file_single.add_separator()
         self.r_menu_file_single.add_command(label='Delete', command=self.delete_FEDs)
 
         self.r_menu_file_multi = tkinter.Menu(self, tearoff=0,)
@@ -1154,6 +1156,8 @@ class FED3_Viz(tk.Tk):
         self.r_menu_file_multi.add_command(label='Edit Group', command=self.edit_group)
         self.r_menu_file_multi.add_separator()
         self.r_menu_file_multi.add_command(label='Concatenate', command=self.concat_feds)
+        self.r_menu_file_multi.add_separator()
+        self.r_menu_file_multi.add_command(label='Set date filter', command=self.r_set_datefilter_fromfiles)
         self.r_menu_file_multi.add_separator()
         self.r_menu_file_multi.add_command(label='Delete', command=self.delete_FEDs)
 
@@ -3239,6 +3243,30 @@ class FED3_Viz(tk.Tk):
         self.files_spreadsheet.selection_set(to_select)
         self.update_buttons_home(None)
         self.tabcontrol.select(self.home_tab)
+
+    def r_set_datefilter_fromfiles(self):
+        selected = self.files_spreadsheet.selection()
+        feds = [self.LOADED_FEDS[int(i)] for i in selected]
+        if not feds:
+            return
+        s = min([fed.start_time for fed in feds])
+        e = max([fed.end_time for fed in feds])
+        shour = list(self.times_to_int.keys())[s.hour]
+        ehour = list(self.times_to_int.keys())[e.hour]
+        if str(self.date_filter_s_days.cget('state')) == 'disabled':
+            self.date_filter_s_days.configure(state=tk.NORMAL)
+            self.date_filter_s_days.set_date(s)
+            self.date_filter_s_days.configure(state=tk.DISABLED)
+        else:
+            self.date_filter_s_days.set_date(s)
+        if str(self.date_filter_e_days.cget('state')) == 'disabled':
+            self.date_filter_e_days.configure(state=tk.NORMAL)
+            self.date_filter_e_days.set_date(e)
+            self.date_filter_e_days.configure(state=tk.DISABLED)
+        else:
+            self.date_filter_e_days.set_date(e)
+        self.date_filter_s_hour.set(shour)
+        self.date_filter_e_hour.set(ehour)
 
 root = FED3_Viz()
 root.protocol("WM_DELETE_WINDOW", root.on_close)

@@ -248,25 +248,10 @@ def fed_concat(feds):
     if not is_concatable(feds):
         raise FedCannotConcat('FED file dates overlap, cannot concat')
     output=[]
-    original_names = ['Device_Number',
-                      'Battery_Voltage',
-                      'Motor_Turns',
-                      'Session_Type',
-                      'Event',
-                      'Active_Poke',
-                      'Left_Poke_Count',
-                      'Right_Poke_Count',
-                      'Pellet_Count',
-                      'Retrieval_Time',]
-    for fed in feds:
-        cols = fed.data.columns
-        for name in original_names:
-            if name not in cols:
-                original_names.remove(name)
     offsets = {}
     sorted_feds = sorted(feds, key=lambda x: x.start_time)
     for i, fed in enumerate(sorted_feds):
-        df = fed.data.copy().loc[:,original_names]
+        df = fed.data.copy()
         if i==0:
             df['Concat_#'] = i
             output.append(df)
