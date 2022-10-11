@@ -91,7 +91,7 @@ FED3 Viz was built in Python 3.7.7, with specific versions of some 3rd party pac
 To make a virtual environment with Anaconda (a la [these instructions](https://docs.anaconda.com/anaconda/user-guide/tasks/switch-environment/)), open Anaconda Prompt on Windows, or on Mac you can just use Terminal (for the latter if you find you can't use `conda` commands, you may have to do some [additional setup](https://towardsdatascience.com/how-to-successfully-install-anaconda-on-a-mac-and-actually-get-it-to-work-53ce18025f97)).  Run the following command, where `fed_viz` is the name you give the new environment:
 
 ```
-conda create --name fed_fiz python=3.7
+conda create --name fed_viz python=3.7
 ```
 
 Once finished, "activate" the environment by running (on Windows):
