@@ -1,3 +1,9 @@
+### FED3 Viz now archived
+
+**No more development is planned for FED3 Viz in the near future.  See the [fed3 Python package](https://github.com/earnestt1234/fed3) for more updated code**
+
+---
+
 # FED3 Viz
 a GUI for plotting FED3 data
 
