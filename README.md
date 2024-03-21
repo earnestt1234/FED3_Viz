@@ -1,6 +1,8 @@
-### FED3 Viz now archived
+# :warning: FED3VIZ now archived! :warning:
 
-**No more development is planned for FED3 Viz in the near future.  See the [fed3 Python package](https://github.com/earnestt1234/fed3) for more updated code**
+- No more development is planned for FED3Viz in the near future
+- Bugs are still being logged on the Issues page.  However, this is just for the sake of documentation.  No pull requests will be accepted. 
+- See the [fed3 Python package](https://github.com/earnestt1234/fed3) for more updated code.
 
 ---
 
